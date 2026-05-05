@@ -3,7 +3,7 @@ import { runWorkflow } from "../src/workflow.js";
 
 describe("Workflow", () => {
   it("should complete a workflow cycle", async () => {
-    // This test mocks the LLM calls — real LLM not needed
+    // NOTE: this is an integration test that calls the real DeepSeek API
     const result = await runWorkflow("say hello in one word", {
       systemPrompt: "You are a helpful assistant. Keep responses brief.",
     });

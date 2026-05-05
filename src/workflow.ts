@@ -1,12 +1,4 @@
-import { createLLM, type LLMMessage } from "./llm.js";
-import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-
-export type Stage =
-  | { phase: "plan"; prompt: string }
-  | { phase: "execute"; prompt: string }
-  | { phase: "review"; prompt: string }
-  | { phase: "refine"; prompt: string };
+import { createLLM } from "./llm.js";
 
 export interface WorkflowResult {
   plan: string;
@@ -21,10 +13,9 @@ export interface WorkflowResult {
  */
 export async function runWorkflow(
   task: string,
-  context?: { projectRoot?: string; systemPrompt?: string },
+  context?: { systemPrompt?: string },
 ): Promise<WorkflowResult> {
   const llm = createLLM({ temperature: 0.6 });
-  const projectRoot = context?.projectRoot ?? process.cwd();
 
   // --- Plan ---
   const plan = await llm.chat([

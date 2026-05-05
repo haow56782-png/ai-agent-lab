@@ -38,15 +38,15 @@
   --vib-header-height:     56px;    /* 顶部导航 */
   --vib-tab-bar-height:    64px;    /* 底部 Tab 栏 */
   --vib-status-bar-height: 44px;    /* 状态栏高度 */
-  --vib-home-bg-noise:     'noise-texture.png'; /* 首页噪点背景 */
+  /* 仪表盘布局 (admin-dashboard.md 参考) */
+  --vib-sidebar-width:      256px;  /* 侧边栏展开宽度 */
+  --vib-sidebar-collapsed:  72px;   /* 侧边栏折叠宽度 */
+  --vib-dashboard-padding:  24px;   /* 内容区内边距 */
+  --vib-home-bg-noise:     url('noise-texture.png'); /* 首页噪点背景——需确保文件存在于项目 */
 
   /* ============================================================
-     阴影
+     阴影 (定义于 colors.css，此处不重复)
      ============================================================ */
-  --vib-shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.3);
-  --vib-shadow-md:   0 4px 16px rgba(0, 0, 0, 0.4);
-  --vib-shadow-lg:   0 8px 32px rgba(0, 0, 0, 0.5);
-  --vib-shadow-gold: 0 4px 24px rgba(247, 152, 29, 0.25);
 
   /* ============================================================
      过渡

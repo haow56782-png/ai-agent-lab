@@ -86,6 +86,7 @@
   --vib-bg-secondary:  var(--vib-gray-81);    /* 次级背景 / 卡片 */
   --vib-bg-card:       var(--vib-gray-80);    /* 卡片背景 */
   --vib-bg-card-alt:   var(--vib-gray-73);    /* 卡片高亮/选中 */
+  --vib-bg-tertiary:   var(--vib-gray-75);    /* 第三级背景提升 */
   --vib-bg-elevated:   var(--vib-gray-71);    /* 浮层面板 */
   --vib-bg-hover:      var(--vib-gray-70);    /* 悬浮状态 */
   --vib-bg-input:      var(--vib-gray-80);    /* 输入框背景 */
@@ -107,15 +108,19 @@
   --vib-border:         var(--vib-gray-73);
   --vib-border-light:   var(--vib-gray-75);
   --vib-border-lighter: var(--vib-gray-82);
+  --vib-border-focus:   var(--vib-purple-blue);
   --vib-divider:        var(--vib-gray-74);
 
   /* 语义状态 */
   --vib-success:        var(--vib-green);
   --vib-success-bg:     rgba(134, 243, 168, 0.1);
+  --vib-success-text:   var(--vib-green);      /* 同义别名 */
   --vib-error:          var(--vib-red);
   --vib-error-bg:       rgba(233, 48, 85, 0.1);
+  --vib-error-text:     var(--vib-red);        /* 同义别名 */
   --vib-warning:        var(--vib-gold);
   --vib-warning-bg:     rgba(243, 206, 134, 0.1);
+  --vib-warning-text:   var(--vib-gold);       /* 同义别名 */
   --vib-info:           var(--vib-blue);
   --vib-info-bg:        rgba(114, 177, 255, 0.1);
   --vib-badge-success:  rgba(134, 243, 168, 0.15);

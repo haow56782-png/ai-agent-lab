@@ -38,7 +38,7 @@ export function renderToolInstructions(): string {
     defs
       .map((t) => `- **${t.name}**: ${t.description}`)
       .join("\n") +
-    `\nCall a tool by writing: {"tool":"${defs[0]?.name}","args":{...}}\n`
+    `\nCall a tool by writing: {"tool":"<name>","args":{...}}\n`
   );
 }
 

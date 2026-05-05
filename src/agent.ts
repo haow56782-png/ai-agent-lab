@@ -1,7 +1,6 @@
 import type { LLMMessage } from "./llm.js";
 import { createLLM } from "./llm.js";
-import { executeToolCall, getToolDefinitions, renderToolInstructions } from "./tools/index.js";
-import { join } from "node:path";
+import { executeToolCall, renderToolInstructions } from "./tools/index.js";
 
 export interface AgentConfig {
   projectRoot?: string;

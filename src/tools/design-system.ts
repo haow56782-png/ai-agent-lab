@@ -137,7 +137,6 @@ registerTool(
   async (args, _ctx) => {
     const component = args.component as string;
     const variant = (args.variant as string) ?? "default";
-
     const bgVar =
       variant === "primary"
         ? "var(--vib-color-primary)"
@@ -149,14 +148,24 @@ registerTool(
         ? "var(--vib-color-text-on-primary)"
         : "var(--vib-color-text-primary)";
 
+    // Component-specific radius (from Figma tokens)
+    const radiusMap: Record<string, string> = {
+      button: "var(--vib-radius-xl)",
+      card: "var(--vib-radius-sm)",
+      modal: "var(--vib-radius-lg)",
+      tag: "var(--vib-radius-xs)",
+      badge: "var(--vib-radius-xl)",
+    };
+    const radius = radiusMap[component] ?? "var(--vib-radius-md)";
+
     return (
       `.vib-${component} {\n` +
       `  background: ${bgVar};\n` +
       `  color: ${textVar};\n` +
-      `  border-radius: var(--vib-radius-lg);\n` +
+      `  border-radius: ${radius};\n` +
       `  padding: var(--vib-spacing-md) var(--vib-spacing-lg);\n` +
-      `  font-family: var(--vib-font-body);\n` +
-      `  font-size: var(--vib-font-size-md);\n` +
+      `  font-family: var(--vib-font-cn);\n` +
+      `  font-size: var(--vib-text-md);\n` +
       `}\n`
     );
   },

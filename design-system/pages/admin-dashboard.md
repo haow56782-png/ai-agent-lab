@@ -34,7 +34,7 @@ The VIB Admin Dashboard is the primary interface for power users and administrat
 |---------|------|-------|
 | Sidebar (expanded) | 256px | `--vib-sidebar-width` |
 | Sidebar (collapsed) | 72px | `--vib-sidebar-collapsed` |
-| Header height | 64px | `--vib-header-height` |
+| Header height | 56px | `--vib-header-height` |
 | Content padding | 24px | `--vib-dashboard-padding` |
 
 ### Layout Rules
@@ -187,10 +187,10 @@ LOGO (24px height)            [Collapse btn]
   width: 8px; height: 8px;
   border-radius: 50%;
 }
-.vib-status-dot.online   { background: var(--vib-success-text); }
+.vib-status-dot.online   { background: var(--vib-success); }
 .vib-status-dot.offline  { background: var(--vib-text-tertiary); }
-.vib-status-dot.error    { background: var(--vib-error-text); }
-.vib-status-dot.pending  { background: var(--vib-warning-text); }
+.vib-status-dot.error    { background: var(--vib-error); }
+.vib-status-dot.pending  { background: var(--vib-warning); }
 ```
 
 ### Agent Detail Panel
@@ -241,11 +241,11 @@ LOGO (24px height)            [Collapse btn]
 ```css
 /* Chart.js / ECharts overrides for VIB theme */
 .vib-chart {
-  font-family: var(--vib-font-sans);
+  font-family: var(--vib-font-en);
   grid-line-color: var(--vib-border-light);
   label-color: var(--vib-text-secondary);
   primary-line: var(--vib-brand-primary);
-  secondary-line: var(--vib-brand-secondary);
+  secondary-line: var(--vib-brand-primary-muted);
 }
 ```
 - Line charts: 2px stroke, no fill by default, circle dots on hover

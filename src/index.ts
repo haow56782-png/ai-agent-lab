@@ -3,6 +3,7 @@ import { createAgent } from "./agent.js";
 import { createLLM } from "./llm.js";
 import { runWorkflow } from "./workflow.js";
 import { createInterface } from "node:readline/promises";
+import { readFile } from "node:fs/promises";
 
 // Register all tools (side-effect imports)
 import "./tools/design-system.js";
@@ -21,11 +22,17 @@ async function main() {
     case "workflow":
       await workflowMode(process.argv.slice(3).join(" "));
       break;
+    case "eval":
+      await evalMode(process.argv[3] ?? "all");
+      break;
+    case "tasks":
+      await tasksMode();
+      break;
     case "check":
       await checkMode();
       break;
     default:
-      console.log(`Usage: npm run dev [repl|once|workflow|check] [prompt...]`);
+      console.log(`Usage: npm run dev [repl|once|workflow|eval|tasks|check] [param...]`);
   }
 }
 
@@ -85,6 +92,33 @@ async function workflowMode(task: string) {
     console.log(`\n## Refined\n${result.refined}`);
   }
   console.log(`\n[Stages: ${result.stages}]`);
+}
+
+/** Eval mode: run evaluation scenarios */
+async function evalMode(scenario: string) {
+  const { runEval } = await import("../evals/runner.js");
+  await runEval(scenario);
+}
+
+/** Tasks mode: list registered tasks from catalog */
+async function tasksMode() {
+  try {
+    const catalog = JSON.parse(
+      await readFile(new URL("../tasks/catalog.json", import.meta.url), "utf-8"),
+    );
+    console.log(`\nTask Catalog v${catalog.version}`);
+    console.log(`─`.repeat(40));
+    for (const task of catalog.tasks) {
+      const tags = (task.tags as string[]).join(", ");
+      console.log(`  ${task.id}  ${task.name}`);
+      console.log(`       ${task.description}`);
+      console.log(`       [${tags}]`);
+      console.log();
+    }
+    console.log(`${catalog.tasks.length} tasks registered.`);
+  } catch (err) {
+    console.error("Failed to load task catalog:", err);
+  }
 }
 
 /** Check mode: verify LLM connectivity */

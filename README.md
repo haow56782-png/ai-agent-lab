@@ -44,39 +44,71 @@ npm run dev check
 ```
 ai-agent-lab/
 ├── CLAUDE.md                  # Claude Code 项目指令
+├── docs/                      # 产品定义文档
+│   ├── vision.md              #   产品愿景 + 成功标准
+│   ├── personas.md            #   用户画像
+│   ├── domain-model.md        #   领域模型 (Game/Prediction/Metrics)
+│   └── roadmap.md             #   路线图 + 优先级矩阵
+│
 ├── design-system/             # Figma 驱动设计系统
-│   ├── brand.md               # 品牌规范
-│   ├── tokens/                # 设计 Token (CSS)
-│   ├── preview.html           # 可视化预览
-│   └── pages/                 # 页面指南
+│   ├── brand.md               #   品牌规范
+│   ├── tokens/                #   设计 Token (CSS)
+│   ├── preview.html           #   可视化预览
+│   └── pages/                 #   页面指南
+│
+├── tasks/                     # 任务注册表
+│   ├── catalog.json           #   所有 Agent 任务的清单
+│   ├── TASK-gemini.md         #   游戏预测任务定义
+│   ├── TASK-design-token.md   #   设计 Token 任务定义
+│   ├── TASK-component-css.md  #   组件 CSS 任务定义
+│   └── TASK-workflow.md       #   工作流任务定义
+│
+├── evals/                     # 评测框架
+│   ├── runner.ts              #   评测运行器
+│   ├── metrics.ts             #   指标定义 (accuracy/latency/completeness)
+│   ├── scenarios/             #   评测场景
+│   │   ├── prediction-basic.ts
+│   │   ├── prediction-edge.ts
+│   │   └── design-system.ts
+│   └── reports/               #   评测报告
 │
 ├── src/                       # Agent 后端
-│   ├── index.ts               # 入口 (REPL / once / workflow)
-│   ├── agent.ts               # Agent 核心 (ReAct 循环)
-│   ├── llm.ts                 # LLM 客户端 (DeepSeek)
-│   ├── tools/                 # 工具注册表
-│   │   ├── index.ts           #   注册 + 调用引擎
-│   │   ├── design-system.ts   #   设计系统工具
-│   │   └── game-prediction.ts #   游戏预测工具
-│   └── workflow.ts            # 工作流引擎
+│   ├── index.ts               #   入口 (repl/once/workflow/eval/tasks/check)
+│   ├── agent.ts               #   Agent 核心 (ReAct 循环)
+│   ├── llm.ts                 #   LLM 客户端 (DeepSeek)
+│   ├── domain/                #   领域逻辑
+│   │   ├── game.ts            #     Game 实体 + Enums
+│   │   ├── prediction.ts      #     预测服务
+│   │   └── metrics.ts         #     指标聚合服务
+│   ├── tools/                 #   工具注册表
+│   │   ├── index.ts           #     注册 + 调用引擎
+│   │   ├── design-system.ts   #     设计系统工具
+│   │   └── game-prediction.ts #     游戏预测工具
+│   └── workflow.ts            #   工作流引擎
 │
 ├── skills/                    # OpenClaw 技能系统
-│   ├── manifest.json          # 技能清单
-│   ├── design-token.ts        # 设计 Token 技能
-│   ├── figma-import.ts        # Figma 导入技能
-│   └── game-prediction.ts     # 游戏预测技能
+│   ├── manifest.json          #   技能清单
+│   ├── design-token.ts        #   设计 Token 技能
+│   ├── figma-import.ts        #   Figma 导入技能
+│   └── game-prediction.ts     #   游戏预测技能
 │
 ├── prompts/                   # 提示词
-│   ├── agent-system.md        # Agent 系统提示词
-│   ├── planner.md             # 规划阶段提示词
-│   ├── executor.md            # 执行阶段提示词
-│   └── game-prediction.md     # 游戏预测领域提示词
+│   ├── agent-system.md        #   Agent 系统提示词
+│   ├── planner.md             #   规划阶段提示词
+│   ├── executor.md            #   执行阶段提示词
+│   └── game-prediction.md     #   游戏预测领域提示词
 │
-├── tests/                     # 测试
-│   ├── llm.test.ts            # LLM 客户端测试
-│   ├── agent.test.ts          # Agent 测试
-│   ├── tools.test.ts          # 工具测试
-│   └── workflow.test.ts       # 工作流测试
+├── tests/                     # 测试 (24 tests)
+│   ├── capabilities/          #   能力验证测试
+│   │   ├── prediction.test.ts
+│   │   ├── design-system.test.ts
+│   │   └── workflow.test.ts
+│   ├── evals/                 #   评测框架测试
+│   │   └── runner.test.ts
+│   ├── llm.test.ts
+│   ├── agent.test.ts
+│   ├── tools.test.ts
+│   └── workflow.test.ts
 │
 ├── tutorial-screenshots/      # CLD 安装教程
 ├── .env                       # API 密钥 (不提交)
@@ -92,10 +124,12 @@ ai-agent-lab/
 |---------|-------------|
 | `npm run dev` | Start interactive REPL |
 | `npm run dev once <prompt>` | Run one-shot prompt |
-| `npm run dev workflow <task>` | Run Plan→Execute→Review→Refine |
+| `npm run dev workflow <task>` | Plan→Execute→Review→Refine |
+| `npm run dev eval <scenario>` | Run evaluation scenario (`all` for all) |
+| `npm run dev tasks` | List registered tasks |
 | `npm run dev check` | Verify LLM connectivity |
 | `npm run build` | Compile TypeScript to dist/ |
-| `npm test` | Run all tests |
+| `npm test` | Run all tests (24 total) |
 | `npm run typecheck` | TypeScript type checking |
 
 ## Design System

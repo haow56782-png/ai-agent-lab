@@ -1,9 +1,13 @@
 import { registerTool } from "./index.js";
+import { predict } from "../domain/prediction.js";
+import { getMetrics } from "../domain/metrics.js";
+import type { PredictionMode, Timeframe } from "../domain/game.js";
+import { findGame } from "../domain/game.js";
 
 registerTool(
   {
     name: "predict_game_outcome",
-    description: "Predict game outcome using stored historical patterns and current context",
+    description: "Predict game outcome using historical patterns and current context",
     parameters: {
       type: "object",
       properties: {
@@ -17,27 +21,24 @@ registerTool(
       required: ["game"],
     },
   },
-  async (args, _ctx) => {
-    const game = args.game as string;
-    const mode = (args.mode as string) ?? "quick";
+  async (args) => {
+    const gameName = args.game as string;
+    const mode = ((args.mode as string) ?? "quick").toUpperCase() as PredictionMode;
 
-    // Placeholder: real prediction logic integrates with model inference
-    return JSON.stringify(
-      {
-        game,
-        mode,
-        prediction: "pending_model_inference",
-        confidence: 0.0,
-        timestamp: new Date().toISOString(),
-        factors: [
-          "historical_patterns",
-          "current_context",
-          "player_behavior",
-        ],
-      },
-      null,
-      2,
-    );
+    if (!gameName.trim()) {
+      return JSON.stringify({ error: "Game name is required", suggestion: "Try: Gemini, Gem Saviour, Treasure Bowl" }, null, 2);
+    }
+
+    const game = findGame(gameName);
+    if (!game) {
+      return JSON.stringify({
+        error: `Unknown game: "${gameName}"`,
+        suggestion: "Known games: Gemini, Gem Saviour, Treasure Bowl",
+      }, null, 2);
+    }
+
+    const result = await predict({ game, mode });
+    return JSON.stringify(result, null, 2);
   },
 );
 
@@ -58,18 +59,15 @@ registerTool(
       required: ["game"],
     },
   },
-  async (args, _ctx) => {
-    return JSON.stringify(
-      {
-        game: args.game,
-        timeframe: args.timeframe ?? "24h",
-        activeUsers: 0,
-        totalPredictions: 0,
-        avgAccuracy: 0,
-        status: "data_pending",
-      },
-      null,
-      2,
-    );
+  async (args) => {
+    const gameName = args.game as string;
+    const timeframe = ((args.timeframe as string) ?? "24h").toUpperCase() as Timeframe;
+
+    if (!gameName.trim()) {
+      return JSON.stringify({ error: "Game name is required" }, null, 2);
+    }
+
+    const result = await getMetrics(gameName, timeframe);
+    return JSON.stringify(result, null, 2);
   },
 );

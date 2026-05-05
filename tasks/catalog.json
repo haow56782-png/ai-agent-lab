@@ -1,0 +1,82 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-05-06",
+  "description": "VIB AI Agent — 所有 Agent 可执行任务的注册表",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "name": "game-prediction-quick",
+      "description": "快速预测指定游戏的下一个结果",
+      "domain": "game-prediction",
+      "inputs": {
+        "game": "string (required) — 游戏名称",
+        "mode": "string (optional, default: quick) — quick | detailed"
+      },
+      "success_criteria": {
+        "output_contains": ["game", "prediction", "confidence", "factors", "timestamp"],
+        "confidence_range": [0.0, 1.0],
+        "latency_ms_max": 10000,
+        "factors_min": 1
+      },
+      "tags": ["prediction", "core"]
+    },
+    {
+      "id": "TASK-002",
+      "name": "game-metrics",
+      "description": "获取指定游戏的运行时指标",
+      "domain": "game-prediction",
+      "inputs": {
+        "game": "string (required)",
+        "timeframe": "string (optional, default: 24h) — 24h | 7d | 30d"
+      },
+      "success_criteria": {
+        "output_contains": ["game", "timeframe", "activeUsers", "totalPredictions", "avgAccuracy"],
+        "latency_ms_max": 10000
+      },
+      "tags": ["metrics", "core"]
+    },
+    {
+      "id": "TASK-003",
+      "name": "read-design-tokens",
+      "description": "读取 VIB 设计系统 Token（颜色/字体/间距/品牌）",
+      "domain": "design-system",
+      "inputs": {
+        "category": "string (optional, default: all) — all | colors | typography | spacing | brand"
+      },
+      "success_criteria": {
+        "output_contains": ["--vib-"],
+        "latency_ms_max": 5000
+      },
+      "tags": ["design-system", "core"]
+    },
+    {
+      "id": "TASK-004",
+      "name": "generate-component-css",
+      "description": "生成 VIB 主题组件 CSS",
+      "domain": "design-system",
+      "inputs": {
+        "component": "string (required) — button | card | modal | tag | badge",
+        "variant": "string (optional, default: default) — primary | secondary | default"
+      },
+      "success_criteria": {
+        "output_contains": [".vib-", "var(--vib-"],
+        "latency_ms_max": 5000
+      },
+      "tags": ["design-system", "generation"]
+    },
+    {
+      "id": "TASK-005",
+      "name": "workflow-plan-execute-review",
+      "description": "多步骤 Plan→Execute→Review→Refine 工作流",
+      "domain": "workflow",
+      "inputs": {
+        "task": "string (required) — 要执行的任务描述"
+      },
+      "success_criteria": {
+        "output_contains": ["## Plan", "## Output", "## Review"],
+        "latency_ms_max": 60000
+      },
+      "tags": ["workflow", "advanced"]
+    }
+  ]
+}

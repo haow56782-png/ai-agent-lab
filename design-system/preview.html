@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIB AI Design System — Figma 还原预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --vib-primary: #4E41FF;
+    --vib-primary-hover: #3A2EE8;
+    --vib-gold: #F3CE86;
+    --vib-gold-gradient: linear-gradient(135deg, #FFDE6C, #F7981D);
+    --vib-green: #86F3A8;
+    --vib-red: #E93055;
+    --vib-blue: #72B1FF;
+    --vib-bg: #0E0E0E;
+    --vib-bg2: #121212;
+    --vib-card: #1D1D1F;
+    --vib-card2: #262626;
+    --vib-card3: #2B2B2B;
+    --vib-text: #FFFFFF;
+    --vib-text2: #838383;
+    --vib-text3: #6E6E6E;
+    --vib-border: #3C3C3C;
+    --vib-border-light: #2A2A2A;
+    --vib-radius: 16px;
+    --vib-radius-sm: 12px;
+    --vib-radius-lg: 20px;
+    --vib-radius-xl: 30px;
+    --vib-radius-full: 999px;
+    --vib-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    --vib-shadow-gold: 0 4px 24px rgba(247,152,29,0.2);
+  }
+
+  [data-theme="light"] {
+    --vib-bg: #F4F6F8;
+    --vib-bg2: #FFFFFF;
+    --vib-card: #FFFFFF;
+    --vib-card2: #F5F5F5;
+    --vib-card3: #EEEEEE;
+    --vib-text: #141414;
+    --vib-text2: #6E6E6E;
+    --vib-text3: #999999;
+    --vib-border: #D5D5D5;
+    --vib-border-light: #E8E8E8;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
+    background: var(--vib-bg);
+    color: var(--vib-text);
+    line-height: 1.6;
+    transition: background .3s, color .3s;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #4E41FF, #7366FF);
+    padding: 40px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 80% 20%, rgba(255,222,108,0.15), transparent 60%);
+  }
+  .header h1 {
+    font-size: 2.5rem; font-weight: 800;
+    position: relative; z-index: 1;
+  }
+  .header .subtitle {
+    position: relative; z-index: 1;
+    color: rgba(255,255,255,0.8);
+    font-size: 1rem; margin-top: 4px;
+  }
+  .header .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 4px 16px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    margin-top: 12px;
+    position: relative; z-index: 1;
+  }
+
+  .theme-btn {
+    position: fixed; top: 16px; right: 16px; z-index: 100;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 999px;
+    color: white; padding: 8px 18px; font-size: 13px; cursor: pointer;
+    font-family: inherit; transition: all .2s;
+  }
+  .theme-btn:hover { background: rgba(255,255,255,0.15); }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  section { margin-bottom: 40px; }
+  .sec-title {
+    font-size: 1.3rem; font-weight: 700;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sec-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(to right, var(--vib-border), transparent);
+  }
+  .sec-desc {
+    color: var(--vib-text2);
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+  }
+
+  .card {
+    background: var(--vib-card);
+    border: 1px solid var(--vib-border-light);
+    border-radius: var(--vib-radius-sm);
+    padding: 20px;
+    box-shadow: var(--vib-shadow);
+  }
+
+  .grid { display: grid; gap: 12px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .g5 { grid-template-columns: repeat(5, 1fr); }
+  .g6 { grid-template-columns: repeat(6, 1fr); }
+  .g8 { grid-template-columns: repeat(8, 1fr); }
+  .g10 { grid-template-columns: repeat(10, 1fr); }
+
+  @media (max-width: 768px) {
+    .g2, .g3, .g4, .g5, .g6, .g8, .g10 { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Swatches */
+  .swatch {
+    border-radius: var(--vib-radius-sm);
+    padding: 12px; min-height: 60px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    font-size: 0.7rem; font-family: 'Inter', monospace;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .swatch .label { font-weight: 600; font-size: 0.65rem; text-transform: uppercase; opacity: .7; }
+  .swatch .hex { font-size: 0.6rem; opacity: .5; }
+
+  /* Typography */
+  .typo-row { padding: 6px 0; }
+  .typo-label { font-size: 0.7rem; color: var(--vib-text2); font-family: 'Inter', monospace; }
+
+  /* Buttons */
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
+  .btn {
+    padding: 12px 24px;
+    border-radius: var(--vib-radius-xl);
+    font-family: inherit; font-size: 0.9rem;
+    font-weight: 600; border: none; cursor: pointer;
+    transition: all .15s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--vib-primary); color: white; }
+  .btn-primary:hover { background: var(--vib-primary-hover); }
+  .btn-gold { background: var(--vib-gold-gradient); color: #1A1A1A; }
+  .btn-gold:hover { box-shadow: var(--vib-shadow-gold); }
+  .btn-ghost { background: transparent; color: var(--vib-text2); border: 1px solid var(--vib-border); }
+  .btn-ghost:hover { background: var(--vib-card2); }
+  .btn-danger { background: var(--vib-red); color: white; }
+  .btn-sm { padding: 8px 16px; font-size: 0.8rem; border-radius: 20px; }
+  .btn-lg { padding: 14px 32px; font-size: 1rem; border-radius: 30px; }
+  .btn-block { width: 100%; justify-content: center; }
+
+  /* Status dots */
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot.green { background: var(--vib-green); box-shadow: 0 0 8px rgba(134,243,168,0.4); }
+  .dot.red { background: var(--vib-red); box-shadow: 0 0 8px rgba(233,48,85,0.4); }
+  .dot.gold { background: var(--vib-gold); }
+  .dot.gray { background: var(--vib-text3); }
+
+  /* Badge */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: var(--vib-radius-full);
+    font-size: 0.75rem; font-weight: 500;
+  }
+  .badge-primary { background: rgba(78,65,255,0.15); color: #7B6FFF; }
+  .badge-success { background: rgba(134,243,168,0.15); color: var(--vib-green); }
+  .badge-error { background: rgba(233,48,85,0.15); color: var(--vib-red); }
+  .badge-gold { background: rgba(243,206,134,0.15); color: var(--vib-gold); }
+  .badge-ghost { background: var(--vib-card2); color: var(--vib-text2); }
+
+  /* Bottom sheet sim */
+  .bottom-sheet {
+    background: var(--vib-card); border: 1px solid var(--vib-border-light);
+    border-radius: var(--vib-radius-lg) var(--vib-radius-lg) 0 0;
+    padding: 16px; max-width: 360px;
+  }
+  .bottom-sheet .handle {
+    width: 32px; height: 4px;
+    background: var(--vib-text3); border-radius: 999px;
+    margin: 0 auto 16px;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex;
+    background: var(--vib-bg); border: 1px solid var(--vib-border-light);
+    border-radius: var(--vib-radius-sm);
+    padding: 6px 0; max-width: 400px;
+  }
+  .tab-item {
+    flex: 1; text-align: center; padding: 6px 0;
+    font-size: 0.7rem; color: var(--vib-text3); cursor: default;
+  }
+  .tab-item.active { color: var(--vib-primary); }
+  .tab-item .tab-icon { font-size: 1.3rem; margin-bottom: 2px; }
+
+  /* Agent card */
+  .agent-card {
+    background: var(--vib-card); border: 1px solid var(--vib-border-light);
+    border-radius: var(--vib-radius-sm); padding: 16px;
+    max-width: 320px;
+  }
+  .agent-card .avatar {
+    width: 40px; height: 40px;
+    border-radius: var(--vib-radius-sm);
+    background: radial-gradient(#6245F7, #4E41FF);
+  }
+  .agent-card .badge-free {
+    font-size: 0.6rem; background: rgba(78,65,255,0.2);
+    color: #7B6FFF; padding: 2px 8px; border-radius: 999px;
+  }
+
+  /* Chat bubbles */
+  .chat-demo {
+    background: var(--vib-card); border: 1px solid var(--vib-border-light);
+    border-radius: var(--vib-radius-sm); max-width: 360px; overflow: hidden;
+  }
+  .chat-demo .chat-hd {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--vib-border-light);
+    font-size: 0.85rem; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-demo .chat-bd { padding: 12px 16px; }
+  .chat-demo .msg {
+    max-width: 80%; padding: 10px 14px;
+    border-radius: 16px; font-size: 0.8rem; margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .chat-demo .msg.user {
+    margin-left: auto; background: var(--vib-primary); color: white;
+    border-radius: 16px 16px 4px 16px;
+  }
+  .chat-demo .msg.agent {
+    background: var(--vib-card2); color: var(--vib-text);
+    border-radius: 16px 16px 16px 4px;
+  }
+  .chat-demo .chat-ft {
+    padding: 10px 16px;
+    border-top: 1px solid var(--vib-border-light);
+    display: flex; gap: 8px;
+  }
+  .chat-demo .chat-input {
+    flex: 1; padding: 10px 16px;
+    border: 1px solid var(--vib-border); border-radius: 999px;
+    background: var(--vib-card2);
+    font-size: 0.85rem; color: var(--vib-text);
+    outline: none;
+  }
+
+  /* Stats */
+  .stat-card {
+    background: var(--vib-card); border: 1px solid var(--vib-border-light);
+    border-radius: var(--vib-radius-sm); padding: 16px;
+  }
+  .stat-card .val {
+    font-size: 1.5rem; font-weight: 700;
+  }
+  .stat-card .up { color: var(--vib-green); }
+  .stat-card .down { color: var(--vib-red); }
+
+  .table-demo {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    font-size: 0.8rem;
+  }
+  .table-demo th {
+    padding: 10px 14px; text-align: left; font-weight: 600;
+    color: var(--vib-text2);
+    border-bottom: 1px solid var(--vib-border-light);
+  }
+  .table-demo td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--vib-border-light);
+  }
+
+  /* Noise BG simulation */
+  .noise-bg {
+    position: relative;
+    background: #0E0E0E;
+  }
+  .noise-bg::before {
+    content: ''; position: absolute; inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>VIB AI Design System</h1>
+  <p class="subtitle">AI Agent 游戏预测平台 · 基于 Figma 设计稿还原</p>
+  <span class="badge">🎯 Figma API 精确还原</span>
+</div>
+
+<button class="theme-btn" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">🌓 切换主题</button>
+
+<div class="container">
+
+<!-- 01 Brand Colors -->
+<section>
+  <div class="sec-title">🎨 品牌色板</div>
+  <p class="sec-desc">从 Figma API 提取的实际颜色值，按使用频率排序</p>
+
+  <div class="sec-title" style="font-size:1rem;margin-top:16px">主色 · Primary</div>
+  <div class="grid g8">
+    <div class="swatch" style="background:#4E41FF"><span class="label">Primary</span><span class="hex">#4E41FF</span></div>
+    <div class="swatch" style="background:#3A2EE8"><span class="label">Hover</span><span class="hex">#3A2EE8</span></div>
+    <div class="swatch" style="background:rgba(78,65,255,0.15);color:var(--vib-text)"><span class="label">Soft</span><span class="hex">15% opacity</span></div>
+  </div>
+
+  <div class="sec-title" style="font-size:1rem;margin-top:16px">金色系 · Gold Accent</div>
+  <div class="grid g8">
+    <div class="swatch" style="background:linear-gradient(135deg,#FFDE6C,#F7981D)"><span class="label">Gold Grad</span><span class="hex">#FFDE6C→#F7981D</span></div>
+    <div class="swatch" style="background:linear-gradient(135deg,#F88527,#FFDE6C)"><span class="label">Orange Grad</span><span class="hex">#F88527→#FFDE6C</span></div>
+    <div class="swatch" style="background:#F3CE86;color:#1A1A1A"><span class="label">Gold Solid</span><span class="hex">#F3CE86</span></div>
+    <div class="swatch" style="background:#FFDE6C;color:#1A1A1A"><span class="label">Gold Light</span><span class="hex">#FFDE6C</span></div>
+    <div class="swatch" style="background:#F7981D"><span class="label">Gold Dark</span><span class="hex">#F7981D</span></div>
+  </div>
+
+  <div class="sec-title" style="font-size:1rem;margin-top:16px">AI 色系 · AI Accent</div>
+  <div class="grid g8">
+    <div class="swatch" style="background:radial-gradient(#6245F7,#6345F7)"><span class="label">AI Purple</span><span class="hex">#6245F7</span></div>
+    <div class="swatch" style="background:radial-gradient(#72B1FF,#73B2FF)"><span class="label">AI Blue</span><span class="hex">#72B1FF</span></div>
+    <div class="swatch" style="background:#58FFA0;color:#1A1A1A"><span class="label">AI Green</span><span class="hex">#58FFA0</span></div>
+  </div>
+
+  <div class="sec-title" style="font-size:1rem;margin-top:16px">语义色 · Semantic</div>
+  <div class="grid g6">
+    <div class="swatch" style="background:#86F3A8;color:#1A1A1A"><span class="label">Success</span><span class="hex">#86F3A8</span></div>
+    <div class="swatch" style="background:#E93055"><span class="label">Error</span><span class="hex">#E93055</span></div>
+    <div class="swatch" style="background:#F3CE86;color:#1A1A1A"><span class="label">Warning</span><span class="hex">#F3CE86</span></div>
+    <div class="swatch" style="background:#72B1FF"><span class="label">Info</span><span class="hex">#72B1FF</span></div>
+    <div class="swatch" style="background:#2E8479"><span class="label">Green2</span><span class="hex">#2E8479</span></div>
+    <div class="swatch" style="background:#F38686"><span class="label">Red2</span><span class="hex">#F38686</span></div>
+  </div>
+
+  <div class="sec-title" style="font-size:1rem;margin-top:16px">中性色 · Neutrals</div>
+  <p class="sec-desc">深色模式背景层级</p>
+  <div class="grid g10">
+    <div class="swatch" style="background:#0E0E0E;border:1px solid #333"><span class="label">Bg Base</span><span class="hex">#0E0E0E</span></div>
+    <div class="swatch" style="background:#121212;border:1px solid #333"><span class="label">Bg Primary</span><span class="hex">#121212</span></div>
+    <div class="swatch" style="background:#1D1D1F;border:1px solid #333"><span class="label">Bg Card</span><span class="hex">#1D1D1F</span></div>
+    <div class="swatch" style="background:#1F1F1F;border:1px solid #333"><span class="label">Card Alt</span><span class="hex">#1F1F1F</span></div>
+    <div class="swatch" style="background:#262626;border:1px solid #333"><span class="label">Card Hover</span><span class="hex">#262626</span></div>
+    <div class="swatch" style="background:#2B2B2B;border:1px solid #333"><span class="label">Elevated</span><span class="hex">#2B2B2B</span></div>
+    <div class="swatch" style="background:#303030;border:1px solid #333"><span class="label">Hover</span><span class="hex">#303030</span></div>
+    <div class="swatch" style="background:#838383;color:#1A1A1A;border:1px solid #ccc"><span class="label">Text Sec</span><span class="hex">#838383</span></div>
+    <div class="swatch" style="background:#6E6E6E;color:#1A1A1A;border:1px solid #ccc"><span class="label">Text Ter</span><span class="hex">#6E6E6E</span></div>
+    <div class="swatch" style="background:#FFFFFF;color:#1A1A1A;border:1px solid #ccc"><span class="label">Text Pri</span><span class="hex">#FFFFFF</span></div>
+  </div>
+</section>
+
+<!-- 02 Typography -->
+<section>
+  <div class="sec-title">🔤 字体层级</div>
+  <p class="sec-desc">中文: HarmonyOS Sans SC · 英文: Inter · 数字tabular排版</p>
+  <div class="card">
+    <div class="typo-row"><span class="typo-label">Hero — 128px / 700w</span><div style="font-size:4rem;font-weight:700;line-height:1.1;background:var(--vib-gold-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Grok 8</div></div>
+    <div class="typo-row"><span class="typo-label">H1 — 36px / 700w</span><div style="font-size:2.25rem;font-weight:700">订阅 VIB AI</div></div>
+    <div class="typo-row"><span class="typo-label">H2 — 32px / 700w</span><div style="font-size:2rem;font-weight:700">今天想让我帮你做什么？</div></div>
+    <div class="typo-row"><span class="typo-label">H3 — 24px / 700w</span><div style="font-size:1.5rem;font-weight:700">历史操作分析报告</div></div>
+    <div class="typo-row"><span class="typo-label">H4 — 20px / 700w</span><div style="font-size:1.25rem;font-weight:700">Add Your New Agent</div></div>
+    <div class="typo-row"><span class="typo-label">Body — 16px / 400w</span><div>Can you tell me the weather in Shanghai today? I need to plan my outdoor activities.</div></div>
+    <div class="typo-row"><span class="typo-label">Small — 14px / 400w</span><div style="font-size:0.875rem;color:var(--vib-text2)">登录即表示你同意我们的《服务条款》和《隐私政策》</div></div>
+    <div class="typo-row"><span class="typo-label">Caption — 12px / 400w</span><div style="font-size:0.75rem;color:var(--vib-text2)">UID: 00008721 · 更新日期：02/04/2026</div></div>
+    <div class="typo-row"><span class="typo-label">Tiny — 10px / 400w</span><div style="font-size:0.625rem;color:var(--vib-text3)">cat /workspace/game-site/member  ·  beta tag</div></div>
+    <div class="typo-row"><span class="typo-label">Numeric — price display</span><div style="font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums" class="numeric">$100.00  <span style="color:var(--vib-green);font-size:0.9rem">+12.5%</span></div></div>
+  </div>
+</section>
+
+<!-- 03 Buttons -->
+<section>
+  <div class="sec-title">🔘 按钮 · 圆角 30px</div>
+  <div class="card">
+    <p class="sec-desc">Variants</p>
+    <div class="btn-group">
+      <button class="btn btn-primary">Primary</button>
+      <button class="btn btn-gold">Gold</button>
+      <button class="btn btn-ghost">Ghost</button>
+      <button class="btn btn-danger">Danger</button>
+    </div>
+    <p class="sec-desc">Sizes & Block</p>
+    <div class="btn-group">
+      <button class="btn btn-primary btn-sm">Small</button>
+      <button class="btn btn-primary">Default</button>
+      <button class="btn btn-primary btn-lg">Large</button>
+    </div>
+    <div style="margin-top:8px;max-width:360px">
+      <button class="btn btn-primary btn-block btn-lg">登录 / 注册</button>
+    </div>
+    <p class="sec-desc">States</p>
+    <div class="btn-group">
+      <button class="btn btn-primary" disabled style="opacity:0.4;cursor:not-allowed">Disabled</button>
+      <button class="btn btn-primary" style="position:relative;color:transparent;pointer-events:none">Loading <span style="position:absolute;width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite;margin:auto;inset:0"></span></button>
+    </div>
+  </div>
+</section>
+
+<!-- 04 Badges & Status -->
+<section>
+  <div class="sec-title">🏷️ 徽标 & 状态</div>
+  <div class="grid g2">
+    <div class="card">
+      <p class="sec-desc">Badges</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="badge badge-primary">Pro Agent</span>
+        <span class="badge badge-success">Online <span class="dot green"></span></span>
+        <span class="badge badge-error">离线</span>
+        <span class="badge badge-gold">VIP</span>
+        <span class="badge badge-ghost">beta</span>
+      </div>
+    </div>
+    <div class="card">
+      <p class="sec-desc">Status Indicators</p>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:0.85rem">
+        <span><span class="dot green"></span> DataBot — 在线</span>
+        <span><span class="dot gray"></span> CodeBot — 离线</span>
+        <span><span class="dot red"></span> MailBot — 错误</span>
+        <span><span class="dot gold"></span> DeployBot — 部署中</span>
+        <span style="color:var(--vib-gold)">⭐ 信号生效中 · 收益 +12.5%</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 Bot Tab Bar (Mobile) -->
+<section>
+  <div class="sec-title">📱 底部 Tab 栏 (Mobile H5)</div>
+  <p class="sec-desc">设计稿宽度 402px</p>
+  <div class="tab-bar">
+    <div class="tab-item active">
+      <div class="tab-icon">🏠</div>
+      <div>Home</div>
+    </div>
+    <div class="tab-item">
+      <div class="tab-icon">🤖</div>
+      <div>Agent</div>
+    </div>
+    <div class="tab-item">
+      <div class="tab-icon">💬</div>
+      <div>Chat</div>
+    </div>
+    <div class="tab-item">
+      <div class="tab-icon">📊</div>
+      <div>Data</div>
+    </div>
+    <div class="tab-item">
+      <div class="tab-icon">👤</div>
+      <div>Mine</div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 Agent Card -->
+<section>
+  <div class="sec-title">🃏 Agent 卡片</div>
+  <div class="grid g2">
+    <div class="agent-card">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="avatar"></div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:0.95rem;display:flex;align-items:center;gap:6px">
+            DataBot <span class="dot green"></span>
+          </div>
+          <div style="font-size:0.75rem;color:var(--vib-text2)">Assistant · v2.1.0</div>
+        </div>
+        <span class="badge badge-primary" style="font-size:0.6rem">Free</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--vib-text2);padding:8px 0;margin-top:8px;border-top:1px solid var(--vib-border-light)">
+        Analyzing Q3 metrics for the sales team
+      </div>
+      <div class="btn-group" style="margin-top:8px">
+        <button class="btn btn-primary btn-sm">对话</button>
+        <button class="btn btn-ghost btn-sm">详情</button>
+      </div>
+    </div>
+    <div class="agent-card">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="avatar" style="background:radial-gradient(#72B1FF,#4E41FF)"></div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:0.95rem;display:flex;align-items:center;gap:6px">
+            Grok Bot <span class="dot gold"></span>
+          </div>
+          <div style="font-size:0.75rem;color:var(--vib-text2)">Predictor · v3.0</div>
+        </div>
+        <span class="badge badge-gold" style="font-size:0.6rem">Pro</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--vib-text2);padding:8px 0;margin-top:8px;border-top:1px solid var(--vib-border-light)">
+        Game prediction accuracy: 94.6%
+      </div>
+      <div class="btn-group" style="margin-top:8px">
+        <button class="btn btn-gold btn-sm">预测</button>
+        <button class="btn btn-ghost btn-sm">详情</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 Chat -->
+<section>
+  <div class="sec-title">💬 对话界面</div>
+  <div class="chat-demo">
+    <div class="chat-hd">
+      <span class="dot green"></span>
+      DataBot · 对话中
+    </div>
+    <div class="chat-bd">
+      <div class="msg agent">👋 嗨！我是 DataBot，你的数据分析助手</div>
+      <div class="msg user">分析今天的游戏预测信号</div>
+      <div class="msg agent">
+        好的，已获取到 3 个活跃信号：<br>
+        🎯 PG Soft · 胜率 78%<br>
+        🎰 Fortune Dragon · 建议等待<br>
+        📊 累计收益 +$2,450
+      </div>
+    </div>
+    <div class="chat-ft">
+      <input class="chat-input" placeholder="Ask Anything..." readonly>
+      <button class="btn btn-primary btn-sm" style="border-radius:50%;width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center">➤</button>
+    </div>
+  </div>
+</section>
+
+<!-- 08 Stats / Data -->
+<section>
+  <div class="sec-title">📊 统计数据</div>
+  <div class="grid g4">
+    <div class="stat-card">
+      <div style="font-size:0.8rem;color:var(--vib-text2)">今日收益</div>
+      <div class="val up">+$2,450</div>
+      <div style="font-size:0.75rem;color:var(--vib-green)">↑ 12.5%</div>
+    </div>
+    <div class="stat-card">
+      <div style="font-size:0.8rem;color:var(--vib-text2)">预测准确率</div>
+      <div class="val" style="color:var(--vib-gold)">94.6%</div>
+      <div style="font-size:0.75rem;color:var(--vib-gold)">↑ 2.3%</div>
+    </div>
+    <div class="stat-card">
+      <div style="font-size:0.8rem;color:var(--vib-text2)">活跃信号</div>
+      <div class="val" style="color:var(--vib-blue)">12</div>
+      <div style="font-size:0.75rem;color:var(--vib-text2)">3 个即将过期</div>
+    </div>
+    <div class="stat-card">
+      <div style="font-size:0.8rem;color:var(--vib-text2)">累计收益</div>
+      <div class="val" style="color:var(--vib-gold)">$18,430</div>
+      <div style="font-size:0.75rem;color:var(--vib-text2)">本月 +$3,200</div>
+    </div>
+  </div>
+</section>
+
+<!-- 09 Data Table -->
+<section>
+  <div class="sec-title">📋 数据表格</div>
+  <div class="card" style="overflow-x:auto;padding:0">
+    <table class="table-demo">
+      <thead>
+        <tr>
+          <th>Game</th>
+          <th>Provider</th>
+          <th>Signal</th>
+          <th>Win Rate</th>
+          <th>Status</th>
+          <th>Payout</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Fortune Dragon</strong></td>
+          <td style="color:var(--vib-text2)">PG Soft</td>
+          <td style="color:var(--vib-green)">Buy</td>
+          <td>94.64%</td>
+          <td><span class="dot green"></span> Active</td>
+          <td style="color:var(--vib-gold)">262,868U</td>
+        </tr>
+        <tr>
+          <td><strong>Lucky Neko</strong></td>
+          <td style="color:var(--vib-text2)">PG Soft</td>
+          <td style="color:var(--vib-gold)">Hold</td>
+          <td>78.50%</td>
+          <td><span class="dot gold"></span> Pending</td>
+          <td style="color:var(--vib-text2)">—</td>
+        </tr>
+        <tr>
+          <td><strong>Mahjong Ways</strong></td>
+          <td style="color:var(--vib-text2)">PG Soft</td>
+          <td style="color:var(--vib-red)">Sell</td>
+          <td>32.10%</td>
+          <td><span class="dot red"></span> Expired</td>
+          <td style="color:var(--vib-red)">-1,200U</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 10 Key UI Patterns -->
+<section>
+  <div class="sec-title">🧩 关键 UI 模式 (Figma 还原)</div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="sec-desc" style="margin-bottom:8px">Bottom Sheet 底部弹窗</div>
+      <div class="bottom-sheet">
+        <div class="handle"></div>
+        <div style="font-weight:600;margin-bottom:12px">选择智能体</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--vib-card2);border-radius:12px">
+            <div style="width:32px;height:32px;border-radius:8px;background:radial-gradient(#6245F7,#4E41FF)"></div>
+            <div><div style="font-weight:500;font-size:0.85rem">DataBot</div><div style="font-size:0.7rem;color:var(--vib-text2)">数据分析</div></div>
+            <span class="badge badge-success" style="margin-left:auto">在线</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px">
+            <div style="width:32px;height:32px;border-radius:8px;background:radial-gradient(#72B1FF,#4E41FF)"></div>
+            <div><div style="font-weight:500;font-size:0.85rem">Grok Bot</div><div style="font-size:0.7rem;color:var(--vib-text2)">游戏预测</div></div>
+            <span class="badge badge-gold" style="margin-left:auto">Pro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-desc" style="margin-bottom:8px">Card · 噪点背景 + 金色渐变</div>
+      <div class="noise-bg" style="border-radius:var(--vib-radius-sm);padding:20px;overflow:hidden;border:1px solid var(--vib-border-light)">
+        <div style="position:relative;z-index:1">
+          <div style="font-size:0.7rem;color:var(--vib-text2);margin-bottom:4px">Grok 8 预测引擎</div>
+          <div style="font-size:1.5rem;font-weight:700;background:var(--vib-gold-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">+$2,450.00</div>
+          <div style="font-size:0.8rem;color:var(--vib-green);margin-top:4px">↑ 12.5% 今日收益</div>
+          <div class="btn-group" style="margin-top:12px">
+            <button class="btn btn-gold btn-sm">立即预测</button>
+            <button class="btn btn-ghost btn-sm" style="color:white">查看详情</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="sec-desc" style="margin-bottom:8px">Input · 输入框</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="email" placeholder="输入邮箱地址" style="flex:1;padding:12px 16px;border-radius:999px;border:1px solid var(--vib-border);background:var(--vib-card2);color:var(--vib-text);font-size:0.85rem;outline:none">
+          <button class="btn btn-primary">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 Design Info -->
+<section>
+  <div class="sec-title">📐 设计信息</div>
+  <div class="card">
+    <div class="grid g3" style="text-align:center">
+      <div>
+        <div style="font-size:2rem;font-weight:700;color:var(--vib-primary)">10</div>
+        <div style="font-size:0.8rem;color:var(--vib-text2)">页面 Section</div>
+      </div>
+      <div>
+        <div style="font-size:2rem;font-weight:700;color:var(--vib-gold)">402</div>
+        <div style="font-size:0.8rem;color:var(--vib-text2)">设计稿宽度 px</div>
+      </div>
+      <div>
+        <div style="font-size:2rem;font-weight:700;color:var(--vib-green)">104</div>
+        <div style="font-size:0.8rem;color:var(--vib-text2)">提取颜色值</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+</body>
+</html>

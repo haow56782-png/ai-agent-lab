@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(claude --version)",
+      "Bash(npm list *)",
+      "Read(//Users/linda/.claude/**)",
+      "Read(//Users/linda/.claude/plugins/**)",
+      "Bash(brew list *)",
+      "Bash(brew --version)",
+      "Bash(python3 -m json.tool)"
+    ]
+  }
+}

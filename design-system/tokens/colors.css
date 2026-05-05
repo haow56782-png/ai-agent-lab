@@ -1,0 +1,164 @@
+/* =====================================================
+   VIB AI Agent — Color Tokens (Figma 还原)
+   基于 Figma 设计稿 "AI Agent 游戏预测"
+   ===================================================== */
+
+:root {
+  /* ============================================================
+     原始色板 (Primitive Palette)
+     ============================================================ */
+
+  /* 品牌紫蓝 */
+  --vib-purple-blue:   #4E41FF;
+  --vib-purple-blue-2: #3A2EE8;
+  --vib-purple-muted:  #6345F7;
+
+  /* 金色强调 */
+  --vib-gold-light:  #FFDE6C;
+  --vib-gold:        #F3CE86;
+  --vib-gold-dark:   #F7981D;
+  --vib-orange:      #F88527;
+
+  /* AI 蓝 */
+  --vib-blue-light:  #D0E7FF;
+  --vib-blue:        #72B1FF;
+  --vib-blue-deep:   #73B2FF;
+  --vib-blue-green:  #58FFA0;
+
+  /* 绿色 */
+  --vib-green:  #86F3A8;
+  --vib-green2: #2E8479;
+
+  /* 红色 */
+  --vib-red:    #E93055;
+  --vib-red2:   #F38686;
+
+  /* 深色中性色 (dark theme) */
+  --vib-black:     #050505;
+  --vib-gray-95:   #0C0C0C;
+  --vib-gray-90:   #0E0E0E;
+  --vib-gray-88:   #121212;
+  --vib-gray-85:   #141414;
+  --vib-gray-83:   #1B1B1B;
+  --vib-gray-82:   #1C1C1C;
+  --vib-gray-81:   #1D1D1F;
+  --vib-gray-80:   #1F1F1F;
+  --vib-gray-78:   #202020;
+  --vib-gray-75:   #242425;
+  --vib-gray-74:   #24292E;
+  --vib-gray-73:   #262626;
+  --vib-gray-71:   #2B2B2B;
+  --vib-gray-70:   #303030;
+  --vib-gray-60:   #3C3C3C;
+  --vib-gray-50:   #505050;
+  --vib-gray-40:   #6E6E6E;
+  --vib-gray-35:   #7D7D7D;
+  --vib-gray-33:   #838383;
+  --vib-gray-30:   #858E91;
+  --vib-gray-25:   #949494;
+  --vib-gray-20:   #999999;
+  --vib-gray-15:   #A5A5A5;
+  --vib-gray-12:   #A8AEB1;
+  --vib-gray-10:   #BABCBF;
+  --vib-gray-5:    #D5D5D5;
+  --vib-gray-3:    #E4E8EF;
+  --vib-gray-2:    #F4F6F8;
+  --vib-gray-0:    #FFFFFF;
+
+  /* ============================================================
+     语义 Token (Semantic Tokens)
+     ============================================================ */
+
+  /* 品牌 */
+  --vib-brand-primary:        var(--vib-purple-blue);
+  --vib-brand-primary-hover:  var(--vib-purple-blue-2);
+  --vib-brand-primary-soft:   rgba(78, 65, 255, 0.1);
+  --vib-brand-primary-muted:  var(--vib-purple-muted);
+
+  --vib-brand-gradient:       linear-gradient(135deg, #4E41FF, #7366FF);
+  --vib-brand-gold:           var(--vib-gold);
+  --vib-brand-gold-gradient:  linear-gradient(135deg, #FFDE6C, #F7981D);
+  --vib-brand-orange-gradient: linear-gradient(135deg, #F88527, #FFDE6C);
+
+  /* 背景层级 */
+  --vib-bg-base:       var(--vib-gray-90);    /* 最底层背景 */
+  --vib-bg-primary:    var(--vib-gray-88);    /* 主背景 */
+  --vib-bg-secondary:  var(--vib-gray-81);    /* 次级背景 / 卡片 */
+  --vib-bg-card:       var(--vib-gray-80);    /* 卡片背景 */
+  --vib-bg-card-alt:   var(--vib-gray-73);    /* 卡片高亮/选中 */
+  --vib-bg-elevated:   var(--vib-gray-71);    /* 浮层面板 */
+  --vib-bg-hover:      var(--vib-gray-70);    /* 悬浮状态 */
+  --vib-bg-input:      var(--vib-gray-80);    /* 输入框背景 */
+  --vib-bg-overlay:    rgba(5, 5, 5, 0.7);      /* 遮罩层 */
+
+  /* 浅色模式覆盖 */
+  --vib-bg-base-light:       #F4F6F8;
+  --vib-bg-card-light:       #FFFFFF;
+
+  /* 文字 */
+  --vib-text-primary:    var(--vib-gray-0);
+  --vib-text-secondary:  var(--vib-gray-33);
+  --vib-text-tertiary:   var(--vib-gray-40);
+  --vib-text-muted:      var(--vib-gray-20);
+  --vib-text-link:       var(--vib-purple-blue);
+  --vib-text-on-brand:   #FFFFFF;
+
+  /* 边框 / 分割线 */
+  --vib-border:         var(--vib-gray-73);
+  --vib-border-light:   var(--vib-gray-75);
+  --vib-border-lighter: var(--vib-gray-82);
+  --vib-divider:        var(--vib-gray-74);
+
+  /* 语义状态 */
+  --vib-success:        var(--vib-green);
+  --vib-success-bg:     rgba(134, 243, 168, 0.1);
+  --vib-error:          var(--vib-red);
+  --vib-error-bg:       rgba(233, 48, 85, 0.1);
+  --vib-warning:        var(--vib-gold);
+  --vib-warning-bg:     rgba(243, 206, 134, 0.1);
+  --vib-info:           var(--vib-blue);
+  --vib-info-bg:        rgba(114, 177, 255, 0.1);
+  --vib-badge-success:  rgba(134, 243, 168, 0.15);
+  --vib-badge-error:    rgba(233, 48, 85, 0.15);
+
+  /* 阴影 */
+  --vib-shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.3);
+  --vib-shadow-md:   0 4px 16px rgba(0, 0, 0, 0.4);
+  --vib-shadow-lg:   0 8px 32px rgba(0, 0, 0, 0.5);
+  --vib-shadow-xl:   0 12px 48px rgba(0, 0, 0, 0.6);
+
+  /* 渐变阴影 */
+  --vib-shadow-gold:   0 4px 24px rgba(247, 152, 29, 0.25);
+  --vib-shadow-purple: 0 4px 24px rgba(78, 65, 255, 0.25);
+  --vib-shadow-green:  0 4px 24px rgba(134, 243, 168, 0.2);
+}
+
+/* ============================================================
+   浅色模式
+   ============================================================ */
+[data-theme="light"] {
+  --vib-bg-base:       var(--vib-gray-2);
+  --vib-bg-primary:    var(--vib-gray-0);
+  --vib-bg-secondary:  #FAFAFA;
+  --vib-bg-card:       var(--vib-gray-0);
+  --vib-bg-card-alt:   #F5F5F5;
+  --vib-bg-elevated:   #FFFFFF;
+  --vib-bg-hover:      #FAFAFA;
+  --vib-bg-input:      #F5F5F5;
+  --vib-bg-overlay:    rgba(0, 0, 0, 0.4);
+
+  --vib-text-primary:    var(--vib-gray-85);
+  --vib-text-secondary:  var(--vib-gray-40);
+  --vib-text-tertiary:   var(--vib-gray-20);
+  --vib-text-muted:      var(--vib-gray-15);
+
+  --vib-border:         var(--vib-gray-5);
+  --vib-border-light:   #E8E8E8;
+  --vib-border-lighter: #F0F0F0;
+  --vib-divider:        var(--vib-gray-3);
+
+  --vib-shadow-sm:   0 2px 8px rgba(0, 0, 0, 0.08);
+  --vib-shadow-md:   0 4px 16px rgba(0, 0, 0, 0.1);
+  --vib-shadow-lg:   0 8px 32px rgba(0, 0, 0, 0.12);
+  --vib-shadow-xl:   0 12px 48px rgba(0, 0, 0, 0.15);
+}

@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `ai-agent-lab` — **VIB AI Agent Platform**. AI-driven game prediction platform with intelligent agents.
 
+Architecture: **Claude (planner) → OpenClaw (orchestration) → DeepSeek (executor) → Node.js/TS (runtime)**
+
 ## Design System
 
 Figma-based design system lives in `design-system/`. The tokens were extracted directly from the Figma design file via API.
@@ -29,6 +31,24 @@ Figma-based design system lives in `design-system/`. The tokens were extracted d
 3. All button radii = 30px (`--vib-radius-xl`)
 4. Primary brand color: `#4E41FF`, gold accent: `#FFDE6C→#F7981D` gradient
 
+## Source Code
+
+| Directory | What |
+|-----------|------|
+| `src/` | Agent backend (entry, agent loop, LLM client, tools, workflow) |
+| `src/tools/` | Tool registry + built-in tools (design-system, game-prediction) |
+| `skills/` | OpenClaw skill definitions (design-token, figma-import, game-prediction) |
+| `prompts/` | Prompt templates (agent-system, planner, executor, domain) |
+| `tests/` | Vitest tests (LLM, agent, tools, workflow) |
+
+### Key Files
+
+- `src/index.ts` — Entry point (modes: repl / once / workflow / check)
+- `src/agent.ts` — Core ReAct agent loop
+- `src/llm.ts` — DeepSeek API client (OpenAI-compatible)
+- `src/tools/index.ts` — Tool registry and execution engine
+- `src/workflow.ts` — Plan → Execute → Review → Refine pipeline
+
 ## Figma Source
 
 - File: `AI Agent 游戏预测` (ShtkcPpmxmu6ThHTc2nn3s)
@@ -37,4 +57,17 @@ Figma-based design system lives in `design-system/`. The tokens were extracted d
 
 ## Commands
 
-To be filled when the build system is set up.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start interactive REPL |
+| `npm run dev once <prompt>` | Single prompt execution |
+| `npm run dev workflow <task>` | Plan → Execute → Review → Refine |
+| `npm run dev check` | Verify LLM connectivity |
+| `npm run build` | Compile TypeScript to dist/ |
+| `npm test` | Run all tests (vitest) |
+| `npm run typecheck` | TypeScript type checking |
+| `tsx skills/<name>.ts` | Run a skill directly |
+
+## Environment
+
+Copy `.env.example` to `.env` and fill in API keys. The `.env` file is gitignored.

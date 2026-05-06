@@ -146,6 +146,12 @@ async function evalMode(scenario: string) {
     console.log(`  P99:       ${result.p99Ms}ms`);
     return;
   }
+  if (scenario === "fixtures") {
+    const { runFixtureRegression, formatFixtureReport } = await import("../evals/fixtures/index.js");
+    const report = await runFixtureRegression();
+    console.log(formatFixtureReport(report));
+    return;
+  }
   const { runEval } = await import("../evals/runner.js");
   await runEval(scenario);
 }

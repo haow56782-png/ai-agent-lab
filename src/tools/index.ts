@@ -1,4 +1,6 @@
-import type { LLMMessage } from "../llm.js";
+import { logger } from "../logger.js";
+import { beginSpan, endSpan } from "../tracer.js";
+import { recordToolCall } from "../telemetry.js";
 
 export interface ToolDefinition {
   /** Tool name — used by LLM to invoke */
@@ -12,6 +14,11 @@ export interface ToolDefinition {
 export interface ToolContext {
   projectRoot: string;
   designSystemPath: string;
+  /** Injected file system interface — allows testability */
+  fs?: {
+    readFile(path: string): Promise<string>;
+  };
+  [key: string]: unknown;
 }
 
 export type ToolHandler = (
@@ -47,7 +54,31 @@ export async function executeToolCall(
   args: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<string> {
-  const entry = registry.get(name);
-  if (!entry) throw new Error(`Unknown tool: ${name}`);
-  return entry.handler(args, ctx);
+  const span = beginSpan(`tool.${name}`, { args });
+  const start = performance.now();
+
+  logger.debug("tool.call", { tool: name, args });
+
+  try {
+    const entry = registry.get(name);
+    if (!entry) throw new Error(`Unknown tool: ${name}`);
+
+    const result = await entry.handler(args, ctx);
+    const latencyMs = Math.round(performance.now() - start);
+
+    logger.debug("tool.success", { tool: name, latencyMs });
+    recordToolCall({ name, latencyMs, success: true });
+    endSpan(span, { latencyMs, success: true });
+
+    return result;
+  } catch (err) {
+    const latencyMs = Math.round(performance.now() - start);
+    const error = err instanceof Error ? err.message : String(err);
+
+    logger.error("tool.failed", { tool: name, error, latencyMs });
+    recordToolCall({ name, latencyMs, success: false, error });
+    endSpan(span, { latencyMs, success: false, error });
+
+    throw err;
+  }
 }

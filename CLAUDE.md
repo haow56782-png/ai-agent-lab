@@ -65,7 +65,11 @@ npm run dev eval all          # Run all scenarios
 npm run dev tasks             # List all registered tasks
 ```
 
-Scenarios: `prediction-basic`, `prediction-edge`, `ds-read`, `ds-generate`
+Scenarios: `prediction-basic`, `prediction-edge`, `ds-read`, `ds-generate`, `load-test`
+
+```bash
+npm run dev eval load-test      # Run 10 consecutive predictions with latency metrics
+```
 
 ## Source Code
 
@@ -80,9 +84,13 @@ Scenarios: `prediction-basic`, `prediction-edge`, `ds-read`, `ds-generate`
 
 ### Key Files
 
-- `src/index.ts` — Entry point (modes: repl / once / workflow / eval / tasks / check)
-- `src/agent.ts` — Core ReAct agent loop
-- `src/llm.ts` — DeepSeek API client (OpenAI-compatible)
+- `src/index.ts` — Entry point (modes: repl / once / workflow / eval / tasks / check / log / metrics / trace)
+- `src/agent.ts` — Core ReAct agent loop with tracing and logging
+- `src/llm.ts` — DeepSeek API client (retry + timeout + telemetry)
+- `src/config.ts` — Configuration manager (env > config.yaml > defaults)
+- `src/logger.ts` — Structured JSON logger to stderr
+- `src/tracer.ts` — Execution tracer with nested spans
+- `src/telemetry.ts` — LLM/tool call metrics collection
 - `src/tools/index.ts` — Tool registry and execution engine
 - `src/workflow.ts` — Plan → Execute → Review → Refine pipeline
 - `src/domain/prediction.ts` — Game prediction domain service
@@ -101,9 +109,12 @@ Scenarios: `prediction-basic`, `prediction-edge`, `ds-read`, `ds-generate`
 | `npm run dev` | Start interactive REPL |
 | `npm run dev once <prompt>` | Single prompt execution |
 | `npm run dev workflow <task>` | Plan → Execute → Review → Refine |
-| `npm run dev eval <scenario>` | Run evaluation scenario (or `all`) |
+| `npm run dev eval <scenario>` | Run evaluation scenario (`all` or `load-test`) |
 | `npm run dev tasks` | List all registered tasks |
 | `npm run dev check` | Verify LLM connectivity |
+| `npm run dev log <prompt>` | Run and view structured logs |
+| `npm run dev metrics` | Show session metrics |
+| `npm run dev trace` | Show execution trace tree |
 | `npm run build` | Compile TypeScript to dist/ |
 | `npm test` | Run all tests (vitest) |
 | `npm run typecheck` | TypeScript type checking |

@@ -69,13 +69,18 @@ ai-agent-lab/
 │   ├── scenarios/             #   评测场景
 │   │   ├── prediction-basic.ts
 │   │   ├── prediction-edge.ts
-│   │   └── design-system.ts
+│   │   ├── design-system.ts
+│   │   └── load-test.ts       #   负载测试
 │   └── reports/               #   评测报告
 │
 ├── src/                       # Agent 后端
-│   ├── index.ts               #   入口 (repl/once/workflow/eval/tasks/check)
-│   ├── agent.ts               #   Agent 核心 (ReAct 循环)
-│   ├── llm.ts                 #   LLM 客户端 (DeepSeek)
+│   ├── index.ts               #   入口 (repl/once/workflow/eval/tasks/check/log/metrics/trace)
+│   ├── agent.ts               #   Agent 核心 (ReAct 循环 + 追踪 + 日志)
+│   ├── llm.ts                 #   LLM 客户端 (DeepSeek + 重试 + 超时 + 监控)
+│   ├── config.ts              #   配置管理器 (env > config.yaml > defaults)
+│   ├── logger.ts              #   结构化 JSON 日志 (stderr)
+│   ├── tracer.ts              #   执行追踪 (span 嵌套)
+│   ├── telemetry.ts           #   指标收集 (LLM/Tool 调用统计)
 │   ├── domain/                #   领域逻辑
 │   │   ├── game.ts            #     Game 实体 + Enums
 │   │   ├── prediction.ts      #     预测服务
@@ -98,19 +103,21 @@ ai-agent-lab/
 │   ├── executor.md            #   执行阶段提示词
 │   └── game-prediction.md     #   游戏预测领域提示词
 │
-├── tests/                     # 测试 (24 tests)
+├── tests/                     # 测试 (36 tests)
 │   ├── capabilities/          #   能力验证测试
 │   │   ├── prediction.test.ts
 │   │   ├── design-system.test.ts
 │   │   └── workflow.test.ts
 │   ├── evals/                 #   评测框架测试
 │   │   └── runner.test.ts
+│   ├── observability.test.ts  #   可观测性层测试
 │   ├── llm.test.ts
 │   ├── agent.test.ts
 │   ├── tools.test.ts
 │   └── workflow.test.ts
 │
 ├── tutorial-screenshots/      # CLD 安装教程
+├── config.yaml                 # 默认配置 (可被 env 覆盖)
 ├── .env                       # API 密钥 (不提交)
 ├── .env.example               # 环境变量模板
 ├── package.json               # 依赖管理
@@ -125,11 +132,14 @@ ai-agent-lab/
 | `npm run dev` | Start interactive REPL |
 | `npm run dev once <prompt>` | Run one-shot prompt |
 | `npm run dev workflow <task>` | Plan→Execute→Review→Refine |
-| `npm run dev eval <scenario>` | Run evaluation scenario (`all` for all) |
+| `npm run dev eval <scenario>` | Run evaluation scenario (`all` for all, `load-test` for load test) |
 | `npm run dev tasks` | List registered tasks |
 | `npm run dev check` | Verify LLM connectivity |
+| `npm run dev log <prompt>` | Run prompt and view structured logs |
+| `npm run dev metrics` | Show session metrics (LLM calls, tool calls, latency) |
+| `npm run dev trace` | Show execution trace tree |
 | `npm run build` | Compile TypeScript to dist/ |
-| `npm test` | Run all tests (24 total) |
+| `npm test` | Run all tests (36 total) |
 | `npm run typecheck` | TypeScript type checking |
 
 ## Design System

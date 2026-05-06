@@ -1,5 +1,6 @@
 import { registerTool } from "./index.js";
-import { readFile } from "node:fs/promises";
+import type { ToolContext } from "./index.js";
+import { readFile as fsReadFile } from "node:fs/promises";
 import { join } from "node:path";
 
 interface ColorToken {
@@ -15,17 +16,25 @@ interface DesignToken {
   brand: string;
 }
 
-async function loadDesignTokens(root: string): Promise<DesignToken> {
+/** Default file system adapter — reads from disk directly */
+const defaultFs = {
+  readFile(path: string): Promise<string> {
+    return fsReadFile(path, "utf-8");
+  },
+};
+
+async function loadDesignTokens(root: string, fs: ToolContext["fs"]): Promise<DesignToken> {
+  const resolver = fs ?? defaultFs;
   const colorsPath = join(root, "design-system/tokens/colors.css");
   const typographyPath = join(root, "design-system/tokens/typography.css");
   const spacingPath = join(root, "design-system/tokens/spacing.css");
   const brandPath = join(root, "design-system/brand.md");
 
   const [colorsCSS, typographyCSS, spacingCSS, brand] = await Promise.all([
-    readFile(colorsPath, "utf-8").catch(() => ""),
-    readFile(typographyPath, "utf-8").catch(() => ""),
-    readFile(spacingPath, "utf-8").catch(() => ""),
-    readFile(brandPath, "utf-8").catch(() => ""),
+    resolver.readFile(colorsPath).catch(() => ""),
+    resolver.readFile(typographyPath).catch(() => ""),
+    resolver.readFile(spacingPath).catch(() => ""),
+    resolver.readFile(brandPath).catch(() => ""),
   ]);
 
   return {
@@ -78,7 +87,7 @@ registerTool(
     },
   },
   async (args, ctx) => {
-    const tokens = await loadDesignTokens(ctx.designSystemPath);
+    const tokens = await loadDesignTokens(ctx.designSystemPath, ctx.fs);
     const category = (args.category as string) ?? "all";
 
     const sections: string[] = [];

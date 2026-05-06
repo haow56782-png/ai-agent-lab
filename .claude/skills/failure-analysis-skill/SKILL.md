@@ -89,6 +89,18 @@ failure_modes:
     recoverable: true
     recovery: "补充捕获条件，确保 traceId 等必填字段已记录"
 
+fallback:
+  strategy: degrade
+  plan: "LLM 不可用时执行基于规则的模式匹配（errorCode → 预定义根因映射表）；5 Whys 无法收敛时标记为 MANUAL_REVIEW 而非返回空分析"
+
+handoff:
+  - to: "verification-gate"
+    when: "修复计划制定完成"
+    payload: "root_cause + fix_plan + verification_plan，供 verification gate 验证修复"
+  - to: "context-engineering"
+    when: "RCA 过程中发现上下文不足"
+    payload: "缺失的上下文条目（traceId, workflowId, failureState），请求补充"
+
 cost_tracking:
   estimatedTokens: 2000
   estimatedTimeMs: 5000
@@ -403,7 +415,22 @@ prevention_update:
   severity: "critical/major/minor"
 ```
 
-## 12. VIB Example
+## 12. Fallback Strategy
+
+| 场景 | 策略 | 行为 |
+|------|------|------|
+| LLM 不可用 | degrade | 使用 errorCode → 预定义根因映射表做模式匹配分析 |
+| 5 Whys 无法收敛 | degrade | 标记为 MANUAL_REVIEW，返回已知信息摘要 |
+| 预防规则冲突 | merge | 按 severity 排序，保留高优先级规则 |
+
+## 13. Handoff Protocol
+
+| 接收方 | 触发条件 | 传递内容 |
+|--------|---------|---------|
+| verification-gate | 修复计划制定完成 | root_cause + fix_plan + verification_plan |
+| context-engineering | RCA 过程中上下文不足 | 缺失的上下文条目（traceId, workflowId, failureState） |
+
+## 14. VIB Example
 
 ### 场景：绑定工作流卡死在 AUTH_FAILED
 

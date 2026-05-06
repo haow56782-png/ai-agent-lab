@@ -93,6 +93,18 @@ failure_modes:
     recoverable: true
     recovery: "执行上下文压缩或分层降级后继续"
 
+fallback:
+  strategy: degrade
+  plan: "LLM 不可用时使用本地规则引擎做基础上下文检查（仅验证 project_state 和文件存在性）；DeepSeek 不可用时回退到纯文件级 freshness check"
+
+handoff:
+  - to: "verification-gate"
+    when: "上下文检查完成，生成 context_summary"
+    payload: "context_summary + assumptions + risks，供 verification gate 验证上下文完整性"
+  - to: "failure-analysis"
+    when: "检测到上下文冲突且无法自动解析"
+    payload: "冲突的上下文条目、检测时间、受影响文件列表"
+
 cost_tracking:
   estimatedTokens: 1500
   estimatedTimeMs: 2000
@@ -451,7 +463,22 @@ risks:
 next_action: "{确定的下一步具体动作}"
 ```
 
-## 10. VIB Example
+## 10. Fallback Strategy
+
+| 场景 | 策略 | 行为 |
+|------|------|------|
+| LLM 不可用 | degrade | 使用本地规则引擎执行基础上下文检查（仅验证 project_state 和文件存在性） |
+| DeepSeek 不可用 | degrade | 回退到纯文件级 freshness check，不做语义分析 |
+| 上下文完全缺失 | abort | 标记为 CONTEXT_UNAVAILABLE，不继续执行 |
+
+## 11. Handoff Protocol
+
+| 接收方 | 触发条件 | 传递内容 |
+|--------|---------|---------|
+| verification-gate | 上下文检查完成 | context_summary + assumptions + risks |
+| failure-analysis | 上下文冲突无法自动解析 | 冲突条目、检测时间、受影响文件列表 |
+
+## 12. VIB Example
 
 ### 场景：修改绑定工作流确认弹窗
 

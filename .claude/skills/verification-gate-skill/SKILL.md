@@ -73,6 +73,18 @@ failure_modes:
     recoverable: true
     recovery: "逐个修复，从 severity 最高的开始"
 
+fallback:
+  strategy: abort
+  plan: "gate_list 为空时跳过验证（记录 warning）；critical gate 所需的工具不可用时标记对应 gate 为 unverified 而非阻塞整个流程"
+
+handoff:
+  - to: "failure-analysis"
+    when: "critical gate 失败且不可恢复"
+    payload: "unverified_items + evidence + 失败上下文"
+  - to: "context-engineering"
+    when: "验证所需的上下文缺失"
+    payload: "缺失的具体上下文列表，请求补充后重新验证"
+
 cost_tracking:
   estimatedTokens: 800
   estimatedTimeMs: 3000
@@ -372,7 +384,22 @@ required_next_checks:
   - "{后续需要执行的验证步骤}"
 ```
 
-## 11. VIB Example
+## 11. Fallback Strategy
+
+| 场景 | 策略 | 行为 |
+|------|------|------|
+| gate_list 为空 | skip | 跳过验证，记录 warning，标记为 NO_GATES_DEFINED |
+| 核心工具不可用 | degrade | 标记对应 gate 为 unverified，不阻塞整个流程 |
+| 验证超时 | abort | 已通过的 gate 记入 verified_items，超时的记入 unverified_items |
+
+## 12. Handoff Protocol
+
+| 接收方 | 触发条件 | 传递内容 |
+|--------|---------|---------|
+| failure-analysis | critical gate 失败不可恢复 | unverified_items + evidence + 失败上下文 |
+| context-engineering | 验证所需上下文缺失 | 缺失的具体上下文列表 |
+
+## 13. VIB Example
 
 ### 场景：验证绑定工作流的代码修改
 

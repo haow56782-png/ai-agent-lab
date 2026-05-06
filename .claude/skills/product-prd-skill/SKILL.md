@@ -85,6 +85,18 @@ failure_modes:
     recoverable: true
     recovery: "拆分 PRD 或多个版本，每份聚焦一个功能域"
 
+fallback:
+  strategy: degrade
+  plan: "LLM 不可用时使用 PRD 模板填充基础字段（feature_name, user_need, constraints），标记为 DRAFT 供人工完善；场景检测失败时默认输出 General 场景 PRD 而非报错"
+
+handoff:
+  - to: "verification-gate"
+    when: "PRD 生成完成"
+    payload: "engineering_prd + qa_plan，供 verification gate 验证 sections 完整性和验收标准可验证性"
+  - to: "failure-analysis"
+    when: "PRD 与现有领域模型冲突且无法自动解决"
+    payload: "DOMAIN_CONFLICT 错误码 + 冲突字段 + 现有模型定义"
+
 cost_tracking:
   estimatedTokens: 4000
   estimatedTimeMs: 15000
@@ -491,7 +503,22 @@ required_sections: ["field_rules", "event_tracking"]
 - {边界条件 2}
 ```
 
-## 12. VIB Example
+## 12. Fallback Strategy
+
+| 场景 | 策略 | 行为 |
+|------|------|------|
+| LLM 不可用 | degrade | 使用 PRD 模板填充基础字段，标记为 DRAFT |
+| 场景检测失败 | degrade | 默认输出 General 场景 PRD，标注"场景未匹配" |
+| 领域模型不可读 | abort | 标注 DOMAIN_CONFLICT，请求人工介入 |
+
+## 13. Handoff Protocol
+
+| 接收方 | 触发条件 | 传递内容 |
+|--------|---------|---------|
+| verification-gate | PRD 生成完成 | engineering_prd + qa_plan |
+| failure-analysis | PRD 与领域模型冲突 | DOMAIN_CONFLICT + 冲突字段 + 模型定义 |
+
+## 14. VIB Example
 
 ### 场景：三方账号自助解绑（Engineering PRD）
 

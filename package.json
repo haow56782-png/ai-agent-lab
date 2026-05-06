@@ -11,7 +11,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate:agent-os-skills": "node scripts/validate-agent-os-skills.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.9.0",

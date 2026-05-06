@@ -7,3 +7,7 @@ dist/
 coverage/
 .turbo/
 .claude/*.local.json
+.claude-flow/swarm/
+.claude-flow/tasks/
+.swarm/
+ruvector.db

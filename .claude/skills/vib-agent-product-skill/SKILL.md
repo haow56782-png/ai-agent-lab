@@ -1,10 +1,10 @@
 ---
-name: "VIB Agent Product Domain"
+name: "vib-agent-product-skill"
 description: "VIB AI Agent 产品领域技能，定义三方游戏账号绑定流程、授权数据边界、PRD 模板和状态机。使用场景：设计或修改账号绑定流程、定义新 PRD、审查授权安全边界。"
 category: project-domain
 ---
 
-# VIB Agent Product Domain Skill
+# vib-agent-product-skill — VIB Agent Product Domain
 
 ## 概述
 

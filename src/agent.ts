@@ -11,15 +11,18 @@ export interface AgentConfig {
   systemPrompt?: string;
   maxIterations?: number;
   sessionId?: string;
+  /** Injectable LLM client for testing. Falls back to createLLM() if omitted. */
+  llm?: ReturnType<typeof createLLM>;
 }
 
 export function createAgent(config: AgentConfig = {}) {
   const projectRoot = config.projectRoot ?? process.cwd();
   const maxIterations = config.maxIterations ?? getConfig<number>("agent.maxIterations");
-  const llm = createLLM();
+  const llm = config.llm ?? createLLM();
   const ctx = {
     projectRoot,
     designSystemPath: projectRoot,
+    toolTimeoutMs: getConfig<number>("llm.timeoutMs"),
   };
 
   if (config.sessionId) {
@@ -55,7 +58,15 @@ export function createAgent(config: AgentConfig = {}) {
       const iterSpan = beginSpan("agent.iteration", { iteration: i + 1 });
       logger.info("agent.iteration", { iteration: i + 1 });
 
-      const response = await llm.chat(messages);
+      let response: string;
+      try {
+        response = await llm.chat(messages);
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err);
+        logger.error("agent.llm_failed", { error, iteration: i + 1 });
+        endSpan(iterSpan, { resolved: false, error });
+        return `[Agent error: ${error}]`;
+      }
       messages.push({ role: "assistant", content: response });
 
       // Check for tool call pattern: {"tool":"...","args":{...}}
@@ -111,7 +122,16 @@ export function createAgent(config: AgentConfig = {}) {
     for (let i = 0; i < maxIterations; i++) {
       const iterSpan = beginSpan("agent.iteration", { iteration: i + 1 });
 
-      const response = await llm.chat(messages);
+      let response: string;
+      try {
+        response = await llm.chat(messages);
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err);
+        logger.error("agent.llm_failed", { error, iteration: i + 1 });
+        endSpan(iterSpan, { resolved: false, error });
+        yield `[Agent error: ${error}]`;
+        return;
+      }
       messages.push({ role: "assistant", content: response });
 
       const toolMatch = response.match(/\{"tool"\s*:\s*"([^"]+)"\s*,\s*"args"\s*:\s*(\{.*?\})\s*\}/s);

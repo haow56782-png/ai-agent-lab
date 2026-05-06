@@ -18,6 +18,8 @@ export interface ToolContext {
   fs?: {
     readFile(path: string): Promise<string>;
   };
+  /** Tool execution timeout in milliseconds (0 or undefined = no timeout). */
+  toolTimeoutMs?: number;
   [key: string]: unknown;
 }
 
@@ -49,6 +51,24 @@ export function renderToolInstructions(): string {
   );
 }
 
+/** Wrap a promise with a timeout. If the timeout fires, the promise is rejected. */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number | undefined,
+  name: string,
+): Promise<T> {
+  if (!ms || ms <= 0) return promise;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Tool "${name}" timed out after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function executeToolCall(
   name: string,
   args: Record<string, unknown>,
@@ -63,7 +83,7 @@ export async function executeToolCall(
     const entry = registry.get(name);
     if (!entry) throw new Error(`Unknown tool: ${name}`);
 
-    const result = await entry.handler(args, ctx);
+    const result = await withTimeout(entry.handler(args, ctx), ctx.toolTimeoutMs, name);
     const latencyMs = Math.round(performance.now() - start);
 
     logger.debug("tool.success", { tool: name, latencyMs });

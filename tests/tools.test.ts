@@ -47,6 +47,28 @@ describe("Tool Registry", () => {
     ).rejects.toThrow("Unknown tool: nonexistent");
   });
 
+  it("should timeout on slow tool execution", async () => {
+    registerTool(
+      {
+        name: "slow_op",
+        description: "Tool for timeout testing",
+        parameters: { type: "object", properties: {}, required: [] },
+      },
+      async () => {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return "done";
+      },
+    );
+
+    await expect(
+      executeToolCall(
+        "slow_op",
+        {},
+        { projectRoot: "/", designSystemPath: "/", toolTimeoutMs: 50 },
+      ),
+    ).rejects.toThrow(/timed out/i);
+  });
+
   it("renderToolInstructions should return string", async () => {
     const { renderToolInstructions } = await import("../src/tools/index.js");
     const instructions = renderToolInstructions();

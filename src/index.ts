@@ -7,10 +7,14 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
+import { createStateStore, type StateStore } from "./state/index.js";
 
 const LAST_RUN_DIR = join(tmpdir(), "vib-ai-agent");
 const LAST_TRACE_FILE = join(LAST_RUN_DIR, "last-trace.json");
 const LAST_METRICS_FILE = join(LAST_RUN_DIR, "last-metrics.json");
+
+const STATE_STORE_ENABLED = process.env.STATE_STORE_ENABLED === "true";
+let stateStore: StateStore | undefined;
 
 // Register all tools (side-effect imports)
 import "./tools/design-system.js";
@@ -19,7 +23,12 @@ import "./tools/game-prediction.js";
 const MODE = process.argv[2] ?? "repl";
 
 async function main() {
-  switch (MODE) {
+  if (STATE_STORE_ENABLED) {
+    stateStore = createStateStore();
+    await stateStore.init();
+  }
+  try {
+    switch (MODE) {
     case "repl":
       await replMode();
       break;
@@ -50,6 +59,11 @@ async function main() {
     default:
       console.log(`Usage: npm run dev [repl|once|workflow|eval|tasks|check|log|metrics|trace] [param...]`);
   }
+} finally {
+  if (stateStore) {
+    await stateStore.close();
+  }
+}
 }
 
 /** Interactive REPL */
@@ -67,6 +81,7 @@ async function replMode() {
     const trimmed = input.trim();
 
     if (trimmed === "exit" || trimmed === "quit") {
+      await persistToStateStore();
       await persistRunData();
       break;
     }
@@ -81,6 +96,7 @@ async function replMode() {
 
     const response = await agent.run(trimmed);
     console.log(`\n${response}`);
+    await persistToStateStore();
   }
 
   rl.close();
@@ -100,6 +116,55 @@ async function persistRunData() {
   }
 }
 
+/** Persist trace spans and metrics snapshot to StateStore (if enabled). */
+async function persistToStateStore(): Promise<void> {
+  if (!stateStore) return;
+  try {
+    const { getSpans, generateId } = await import("./tracer.js");
+    const { getSessionMetrics } = await import("./telemetry.js");
+
+    const spans = getSpans();
+    for (const span of spans) {
+      await stateStore.saveTraceSpan({
+        id: span.spanId,
+        traceId: span.traceId,
+        spanId: span.spanId,
+        parentSpanId: span.parentSpanId,
+        name: span.name,
+        startMs: span.startMs,
+        endMs: span.endMs,
+        durationMs: span.durationMs,
+        metadata:
+          span.metadata && Object.keys(span.metadata).length > 0
+            ? JSON.stringify(span.metadata)
+            : undefined,
+      });
+    }
+
+    const metrics = getSessionMetrics();
+    const lc = metrics.llmCalls;
+    if (lc.length > 0) {
+      const totalTokens = lc.reduce((s, r) => s + r.totalTokens, 0);
+      const successCount = lc.filter((r) => r.success).length;
+      const avgLatencyMs = Math.round(
+        lc.reduce((a, b) => a + b.latencyMs, 0) / lc.length,
+      );
+      await stateStore.saveMetricsSnapshot({
+        id: generateId(),
+        model: lc[lc.length - 1]!.model,
+        llmCalls: lc.length,
+        toolCalls: metrics.toolCalls.length,
+        totalTokens,
+        avgLatencyMs: isNaN(avgLatencyMs) ? undefined : avgLatencyMs,
+        successRate: successCount / lc.length,
+        snapshotAt: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.error("[state-store] persist failed:", err);
+  }
+}
+
 /** Single-shot mode: run one prompt and print result */
 async function onceMode(prompt: string) {
   if (!prompt) {
@@ -111,6 +176,7 @@ async function onceMode(prompt: string) {
     const response = await agent.run(prompt);
     console.log(response);
   } finally {
+    await persistToStateStore();
     await persistRunData();
   }
 }
@@ -129,6 +195,7 @@ async function workflowMode(task: string) {
     console.log(`\n## Refined\n${result.refined}`);
   }
   console.log(`\n[Stages: ${result.stages}]`);
+  await persistToStateStore();
   await persistRunData();
 }
 
@@ -207,21 +274,60 @@ async function loadLastMetrics(): Promise<string | null> {
 /** Metrics mode: display session metrics */
 async function metricsMode() {
   const { formatMetrics, getSessionMetrics } = await import("./telemetry.js");
+  const { formatTrace, getSpans } = await import("./tracer.js");
 
-  // Try in-memory first (REPL session), fall back to persisted data
+  // Try in-memory first (REPL session)
   const mem = getSessionMetrics();
   if (mem.llmCalls.length > 0 || mem.toolCalls.length > 0) {
     console.log(formatMetrics());
-    const { getSpans } = await import("./tracer.js");
     const spans = getSpans();
     if (spans.length > 0) {
-      const { formatTrace } = await import("./tracer.js");
       console.log();
       console.log(formatTrace());
     }
     return;
   }
 
+  // Try StateStore
+  if (stateStore) {
+    try {
+      const snapshots = await stateStore.listMetricsSnapshots(undefined, 1);
+      if (snapshots.length > 0) {
+        const s = snapshots[0]!;
+        console.log([
+          `── LLM Calls ──────────────────────`,
+          `  Count:          ${s.llmCalls}`,
+          `  Avg Latency:    ${s.avgLatencyMs != null ? `${s.avgLatencyMs}ms` : "—"}`,
+          `  Success Rate:   ${s.successRate != null ? `${Math.round(s.successRate * 100)}%` : "—"}`,
+          `  Total Tokens:   ${s.totalTokens.toLocaleString()}`,
+          `  Last Model:     ${s.model}`,
+          ``,
+          `── Tool Calls ─────────────────────`,
+          `  Count:          ${s.toolCalls}`,
+        ].join("\n"));
+
+        // Show trace from state store too
+        const records = await stateStore.queryRecentTraces(50);
+        if (records.length > 0) {
+          const displaySpans = records.map((r) => ({
+            name: r.name,
+            traceId: r.traceId,
+            spanId: r.spanId,
+            parentSpanId: r.parentSpanId,
+            startMs: r.startMs,
+            endMs: r.endMs,
+            durationMs: r.durationMs,
+            metadata: r.metadata ? JSON.parse(r.metadata) : {},
+          }));
+          console.log();
+          console.log(formatTrace(displaySpans));
+        }
+        return;
+      }
+    } catch {}
+  }
+
+  // Fallback to /tmp JSON
   const persisted = await loadLastMetrics();
   if (persisted) {
     console.log(persisted);
@@ -239,12 +345,34 @@ async function metricsMode() {
 async function traceMode() {
   const { formatTrace, getSpans } = await import("./tracer.js");
 
-  // Try in-memory first, fall back to persisted
+  // Try in-memory first (REPL session)
   if (getSpans().length > 0) {
     console.log(formatTrace());
     return;
   }
 
+  // Try StateStore
+  if (stateStore) {
+    try {
+      const records = await stateStore.queryRecentTraces(50);
+      if (records.length > 0) {
+        const spans = records.map((r) => ({
+          name: r.name,
+          traceId: r.traceId,
+          spanId: r.spanId,
+          parentSpanId: r.parentSpanId,
+          startMs: r.startMs,
+          endMs: r.endMs,
+          durationMs: r.durationMs,
+          metadata: r.metadata ? JSON.parse(r.metadata) : {},
+        }));
+        console.log(formatTrace(spans));
+        return;
+      }
+    } catch {}
+  }
+
+  // Fallback to /tmp JSON
   const persisted = await loadLastTrace();
   if (persisted) {
     console.log(persisted);

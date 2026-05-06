@@ -1,0 +1,36 @@
+# VIB AI Agent — CI
+#
+# Runs type checking and unit tests on every push and pull request.
+# Integration tests requiring DEEPSEEK_API_KEY are skipped automatically.
+#
+# Constraints:
+#   - No .env reading
+#   - No Claude MCP / Ruflo MCP / .claude dependencies
+#   - No secrets uploaded
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+        env:
+          CI: "true"

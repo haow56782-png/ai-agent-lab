@@ -7,8 +7,10 @@
  *   - Session summary
  *
  * Metrics are in-memory and reset on process restart.
- * Future: persist to evals/reports/ for trend analysis.
  */
+
+import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { dirname } from "node:path";
 
 export interface LLMCallRecord {
   model: string;
@@ -60,8 +62,8 @@ export function getSessionMetrics(id?: string): SessionMetrics {
   return sessions.get(id ?? currentSessionId) ?? { llmCalls: [], toolCalls: [] };
 }
 
-export function formatMetrics(id?: string): string {
-  const s = getSessionMetrics(id);
+export function formatMetrics(idOrSession?: string | SessionMetrics): string {
+  const s = typeof idOrSession === "object" ? idOrSession : getSessionMetrics(idOrSession);
   const lc = s.llmCalls;
   const tc = s.toolCalls;
 
@@ -106,4 +108,18 @@ export function formatMetrics(id?: string): string {
   }
 
   return lines.filter(Boolean).join("\n");
+}
+
+/** Persist session metrics to a JSON file */
+export async function saveMetrics(filePath: string): Promise<void> {
+  await mkdir(dirname(filePath), { recursive: true });
+  await writeFile(filePath, JSON.stringify(getSessionMetrics(), null, 2), "utf-8");
+}
+
+/** Load metrics from a JSON file */
+export async function loadMetrics(filePath: string): Promise<SessionMetrics | null> {
+  try {
+    const raw = await readFile(filePath, "utf-8");
+    return JSON.parse(raw) as SessionMetrics;
+  } catch { return null; }
 }

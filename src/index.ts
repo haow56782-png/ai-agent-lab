@@ -3,7 +3,7 @@ import { createAgent } from "./agent.js";
 import { createLLM } from "./llm.js";
 import { runWorkflow } from "./workflow.js";
 import { createInterface } from "node:readline/promises";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -89,12 +89,15 @@ async function replMode() {
 /** Persist current trace and metrics to disk for cross-process access */
 async function persistRunData() {
   try {
-    await mkdir(LAST_RUN_DIR, { recursive: true });
-    const { getSpans } = await import("./tracer.js");
-    const { getSessionMetrics } = await import("./telemetry.js");
-    await writeFile(LAST_TRACE_FILE, JSON.stringify(getSpans(), null, 2));
-    await writeFile(LAST_METRICS_FILE, JSON.stringify(getSessionMetrics(), null, 2));
-  } catch { /* best-effort */ }
+    const { saveTrace } = await import("./tracer.js");
+    const { saveMetrics } = await import("./telemetry.js");
+    await Promise.all([
+      saveTrace(LAST_TRACE_FILE),
+      saveMetrics(LAST_METRICS_FILE),
+    ]);
+  } catch (err) {
+    console.error("[persist] failed:", err);
+  }
 }
 
 /** Single-shot mode: run one prompt and print result */
@@ -104,9 +107,12 @@ async function onceMode(prompt: string) {
     process.exit(1);
   }
   const agent = createAgent();
-  const response = await agent.run(prompt);
-  console.log(response);
-  await persistRunData();
+  try {
+    const response = await agent.run(prompt);
+    console.log(response);
+  } finally {
+    await persistRunData();
+  }
 }
 
 /** Workflow mode: Plan → Execute → Review → Refine */
@@ -177,69 +183,18 @@ function logMode(n: number) {
 /** Load persisted trace data from last run */
 async function loadLastTrace(): Promise<string | null> {
   try {
-    const raw = await readFile(LAST_TRACE_FILE, "utf-8");
-    const spans = JSON.parse(raw);
-    if (!Array.isArray(spans) || spans.length === 0) return null;
-
-    // Build depth map in one pass: parent starts before child
-    const depthMap = new Map<string, number>();
-    for (const span of spans) {
-      depthMap.set(span.spanId, span.parentSpanId ? (depthMap.get(span.parentSpanId) ?? 0) + 1 : 0);
-    }
-
-    const lines = [`Trace: ${spans[0]?.traceId ?? "N/A"}`, ""];
-    for (const span of spans) {
-      const depth = depthMap.get(span.spanId) ?? 0;
-      const indent = "  ".repeat(depth);
-      const dur = span.durationMs != null ? `${span.durationMs}ms` : "running";
-      const meta = Object.keys(span.metadata ?? {}).length > 0
-        ? ` ${JSON.stringify(span.metadata)}` : "";
-      lines.push(`${indent}─ ${span.name} (${dur})${meta}`);
-    }
-    lines.push("", `Total: ${spans.length} spans`);
-    return lines.join("\n");
+    const { loadTrace } = await import("./tracer.js");
+    return await loadTrace(LAST_TRACE_FILE);
   } catch { return null; }
 }
 
 /** Load persisted metrics from last run */
 async function loadLastMetrics(): Promise<string | null> {
   try {
-    const raw = await readFile(LAST_METRICS_FILE, "utf-8");
-    const s = JSON.parse(raw);
-    const lc: any[] = s.llmCalls ?? [];
-    const tc: any[] = s.toolCalls ?? [];
-    if (lc.length === 0 && tc.length === 0) return null;
-
-    const avgLatency = (arr: Array<{ latencyMs: number }>) =>
-      arr.length > 0 ? `${Math.round(arr.reduce((a, b) => a + b.latencyMs, 0) / arr.length)}ms` : "—";
-
-    const successRate = (arr: Array<{ success: boolean }>) =>
-      arr.length > 0 ? `${Math.round((arr.filter((x) => x.success).length / arr.length) * 100)}%` : "—";
-
-    const totalTokens = lc.reduce((s: number, r: any) => s + (r.totalTokens ?? 0), 0);
-
-    const lines: string[] = [
-      `── LLM Calls ───────────────────────`,
-      `  Count:          ${lc.length}`,
-      `  Avg Latency:    ${avgLatency(lc)}`,
-      `  Success Rate:   ${successRate(lc)}`,
-      `  Total Tokens:   ${totalTokens.toLocaleString()}`,
-      lc.length > 0 ? `  Last Model:     ${lc[lc.length - 1].model}` : "",
-      ``,
-      `── Tool Calls ────────────────────────`,
-      `  Count:          ${tc.length}`,
-      `  Avg Latency:    ${avgLatency(tc)}`,
-      `  Success Rate:   ${successRate(tc)}`,
-    ];
-    const toolNames = [...new Set(tc.map((t: any) => t.name))];
-    if (toolNames.length > 0) {
-      lines.push(``, `── Per-Tool Breakdown ────────────────`);
-      for (const name of toolNames) {
-        const calls = tc.filter((t: any) => t.name === name);
-        lines.push(`  ${name}: ${calls.length} calls, ${avgLatency(calls)} avg, ${successRate(calls)} success`);
-      }
-    }
-    return lines.filter(Boolean).join("\n");
+    const { formatMetrics, loadMetrics } = await import("./telemetry.js");
+    const data = await loadMetrics(LAST_METRICS_FILE);
+    if (!data || (data.llmCalls.length === 0 && data.toolCalls.length === 0)) return null;
+    return formatMetrics(data);
   } catch { return null; }
 }
 

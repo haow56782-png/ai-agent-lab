@@ -13,6 +13,8 @@
 
 import { logger } from "./logger.js";
 import { randomBytes } from "node:crypto";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { dirname } from "node:path";
 
 export interface Span {
   name: string;
@@ -86,11 +88,13 @@ export function getSpans(): Span[] {
   return [...currentSpans];
 }
 
-export function formatTrace(): string {
-  if (currentSpans.length === 0) return "No spans recorded.";
+export function formatTrace(spans?: Span[]): string {
+  const data = spans ?? currentSpans;
+  if (data.length === 0) return "No spans recorded.";
 
-  const lines: string[] = [`Trace: ${currentTraceId ?? "N/A"}`, ""];
-  const sorted = [...currentSpans].sort((a, b) => a.startMs - b.startMs);
+  const traceId = data[0]?.traceId ?? "N/A";
+  const lines: string[] = [`Trace: ${traceId}`, ""];
+  const sorted = [...data].sort((a, b) => a.startMs - b.startMs);
 
   // Build depth map in one pass: parent starts before child, so
   // by the time we reach a span its parent depth is already known.
@@ -109,6 +113,22 @@ export function formatTrace(): string {
     lines.push(`${indent}─ ${span.name} (${dur})${meta}`);
   }
 
-  lines.push("", `Total: ${currentSpans.length} spans`);
+  lines.push("", `Total: ${data.length} spans`);
   return lines.join("\n");
+}
+
+/** Persist current spans to a JSON file */
+export async function saveTrace(filePath: string): Promise<void> {
+  await mkdir(dirname(filePath), { recursive: true });
+  await writeFile(filePath, JSON.stringify(currentSpans, null, 2), "utf-8");
+}
+
+/** Load spans from a JSON file and return formatted trace */
+export async function loadTrace(filePath: string): Promise<string | null> {
+  try {
+    const raw = await readFile(filePath, "utf-8");
+    const spans: Span[] = JSON.parse(raw);
+    if (!Array.isArray(spans) || spans.length === 0) return null;
+    return formatTrace(spans);
+  } catch { return null; }
 }

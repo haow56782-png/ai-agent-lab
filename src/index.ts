@@ -56,8 +56,11 @@ async function main() {
     case "trace":
       await traceMode();
       break;
+    case "vib-flow-demo":
+      await vibFlowDemoMode();
+      break;
     default:
-      console.log(`Usage: npm run dev [repl|once|workflow|eval|tasks|check|log|metrics|trace] [param...]`);
+      console.log(`Usage: npm run dev [repl|once|workflow|eval|tasks|check|log|metrics|trace|vib-flow-demo]`);
   }
 } finally {
   if (stateStore) {
@@ -418,6 +421,101 @@ async function checkMode() {
     console.error("❌ LLM connection failed:", err);
     process.exit(1);
   }
+}
+
+/** VIB Agent Runtime Flow Demo */
+async function vibFlowDemoMode() {
+  const { createInterface } = await import("node:readline/promises");
+  const { runBindingWorkflow } = await import("./binding/workflow.js");
+  const { createStateStore } = await import("./state/index.js");
+  const store = createStateStore();
+  await store.init();
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+  console.log(`\n╭──────────────────────────────────────────────────╮`);
+  console.log(`│   VIB Agent Runtime Flow Demo                   │`);
+  console.log(`│                                                  │`);
+  console.log(`│   Enter a game site URL to start binding, or     │`);
+  console.log(`│   type one of the demo presets below:            │`);
+  console.log(`│                                                  │`);
+  console.log(`│     demo:success       Happy path (PG Soft)      │`);
+  console.log(`│     demo:invalid       Invalid URL               │`);
+  console.log(`│     demo:unsupported   Unsupported site          │`);
+  console.log(`│     demo:auth-reject   Authorization rejected    │`);
+  console.log(`│     demo:fetch-fail    Account fetch failed      │`);
+  console.log(`│     demo:signal-fail   Signal generation failed  │`);
+  console.log(`│     quit               Exit                      │`);
+  console.log(`╰──────────────────────────────────────────────────╯\n`);
+
+  let running = true;
+  while (running) {
+    const input = await rl.question("❯ ");
+    const trimmed = input.trim();
+
+    if (trimmed === "quit" || trimmed === "exit") {
+      running = false;
+      continue;
+    }
+
+    if (!trimmed) continue;
+
+    // Map demo presets to failure modes and URLs
+    let url = trimmed;
+    let failureMode: string | undefined;
+
+    if (trimmed === "demo:success") {
+      url = "https://www.pgsoft.com/game";
+    } else if (trimmed === "demo:invalid") {
+      failureMode = "INVALID_URL";
+    } else if (trimmed === "demo:unsupported") {
+      failureMode = "UNSUPPORTED_SITE";
+    } else if (trimmed === "demo:auth-reject") {
+      failureMode = "AUTH_REJECTED";
+    } else if (trimmed === "demo:fetch-fail") {
+      failureMode = "ACCOUNT_FETCH_FAILED";
+    } else if (trimmed === "demo:signal-fail") {
+      failureMode = "SIGNAL_GENERATION_FAILED";
+    } else if (trimmed === "demo:") {
+      continue;
+    }
+
+    const result = await runBindingWorkflow(
+      {
+        url,
+        failureMode: failureMode as any,
+        confirmAuth: async () => {
+          const ans = await rl.question("    Authorize this application? (y/n): ");
+          return ans.trim().toLowerCase() === "y";
+        },
+        confirmBind: async () => {
+          const ans = await rl.question("    Confirm account binding? (y/n): ");
+          return ans.trim().toLowerCase() === "y";
+        },
+      },
+      store,
+    );
+
+    if (!result.success) {
+      console.log(`  💡 Tip: ${getFailureTip(result.session.failure!)}\n`);
+    }
+  }
+
+  rl.close();
+  await store.close();
+}
+
+function getFailureTip(failure: string): string {
+  const tips: Record<string, string> = {
+    INVALID_URL: "Make sure the URL includes http:// or https://",
+    UNSUPPORTED_SITE: "Try a site from: PG Soft, JILI, Spade Gaming",
+    AUTH_REJECTED: "Authorization is required to read game account data",
+    AUTH_FAILED: "The OAuth provider is unavailable — try again later",
+    ACCOUNT_FETCH_FAILED: "The game platform might be under maintenance",
+    BIND_FAILED: "The binding could not be saved — check storage",
+    SIGNAL_GENERATION_FAILED: "The AI model had insufficient data to generate a signal",
+  };
+  return tips[failure] ?? "Unknown error";
 }
 
 main().catch((err) => {

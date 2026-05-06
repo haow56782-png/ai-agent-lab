@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
+    "vib-flow-demo": "STATE_STORE_ENABLED=true tsx src/index.ts vib-flow-demo",
     "start": "node dist/index.js",
     "build": "tsc",
     "test": "vitest run",
@@ -13,10 +14,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "better-sqlite3": "^12.9.0",
     "dotenv": "^16.4.7",
     "openai": "^4.86.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.13.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",

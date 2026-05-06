@@ -471,10 +471,13 @@ async function vibFlowDemoMode() {
     } else if (trimmed === "demo:unsupported") {
       failureMode = "UNSUPPORTED_SITE";
     } else if (trimmed === "demo:auth-reject") {
+      url = "https://www.pgsoft.com/game";
       failureMode = "AUTH_REJECTED";
     } else if (trimmed === "demo:fetch-fail") {
+      url = "https://www.pgsoft.com/game";
       failureMode = "ACCOUNT_FETCH_FAILED";
     } else if (trimmed === "demo:signal-fail") {
+      url = "https://www.pgsoft.com/game";
       failureMode = "SIGNAL_GENERATION_FAILED";
     } else if (trimmed === "demo:") {
       continue;

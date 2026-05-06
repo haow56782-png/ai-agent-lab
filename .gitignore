@@ -13,3 +13,4 @@ coverage/
 .claude-flow/workflows/
 .swarm/
 ruvector.db
+vib-agent-state.db

@@ -1,6 +1,6 @@
 import { registerTool } from "./index.js";
 import type { ToolContext } from "./index.js";
-import { readFile as fsReadFile } from "node:fs/promises";
+import { NodeFsAdapter } from "./fs-adapter.js";
 import { join } from "node:path";
 
 interface ColorToken {
@@ -16,15 +16,8 @@ interface DesignToken {
   brand: string;
 }
 
-/** Default file system adapter — reads from disk directly */
-const defaultFs = {
-  readFile(path: string): Promise<string> {
-    return fsReadFile(path, "utf-8");
-  },
-};
-
 async function loadDesignTokens(root: string, fs: ToolContext["fs"]): Promise<DesignToken> {
-  const resolver = fs ?? defaultFs;
+  const resolver = fs ?? NodeFsAdapter;
   const colorsPath = join(root, "design-system/tokens/colors.css");
   const typographyPath = join(root, "design-system/tokens/typography.css");
   const spacingPath = join(root, "design-system/tokens/spacing.css");

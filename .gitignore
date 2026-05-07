@@ -5,6 +5,7 @@ dist/
 .DS_Store
 *.log
 coverage/
+evals/reports/run-*.json
 .turbo/
 .claude/*.local.json
 .claude-flow/swarm/

@@ -12,17 +12,23 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "dev:server": "tsx src/server/server.ts",
+    "test:server": "vitest run tests/server.test.ts",
     "validate:agent-os-skills": "node scripts/validate-agent-os-skills.mjs",
     "validate:agent-task-report": "node scripts/validate-agent-task-report.mjs evals/agent-os/fixtures/task-report.valid.md evals/agent-os/fixtures/task-report.invalid.md"
   },
   "dependencies": {
     "better-sqlite3": "^12.9.0",
     "dotenv": "^16.4.7",
+    "express": "^5.2.1",
     "openai": "^4.86.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.13.0",
+    "@types/supertest": "^7.2.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"

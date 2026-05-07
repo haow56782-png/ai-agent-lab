@@ -138,9 +138,38 @@ ai-agent-lab/
 | `npm run dev log <prompt>` | Run prompt and view structured logs |
 | `npm run dev metrics` | Show session metrics (LLM calls, tool calls, latency) |
 | `npm run dev trace` | Show execution trace tree |
+| `npm run dev:server` | Start API server (port 3000) |
 | `npm run build` | Compile TypeScript to dist/ |
-| `npm test` | Run all tests (36 total) |
+| `npm test` | Run all tests (1076+) |
 | `npm run typecheck` | TypeScript type checking |
+| `npm run test:server` | Run API server tests only |
+
+## API Server
+
+The API server exposes agent capabilities via HTTP. Start it with `npm run dev:server`.
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| POST | `/api/agent/analyze` | Submit URL for AI analysis |
+| GET | `/api/tasks/:taskId` | Poll task status |
+| GET | `/api/signals/:signalId` | Get signal details |
+| GET | `/api/reports/:reportId` | Get report details |
+
+### Idempotency & Billing Declaration
+
+| Endpoint | Idempotent | Charges Credits | Mechanism |
+|----------|-----------|----------------|-----------|
+| `POST /api/agent/analyze` | **No** | No | Each call creates a new taskId. Billing happens downstream. |
+| `GET /api/tasks/:id` | Yes | No | Read-only. |
+| `GET /api/signals/:id` | Yes | No | Read-only. |
+| Signal generation | — | Yes (see [#2](https://github.com/haow56782-png/ai-agent-lab/issues/2)) | State machine lock: ANALYZING → COMPLETED transition fires once. |
+| Report generation | — | Yes (see [#1](https://github.com/haow56782-png/ai-agent-lab/issues/1)) | COMPLETED transition lock (方案A). |
+| Credits insufficient | — | N/A (see [#3](https://github.com/haow56782-png/ai-agent-lab/issues/3)) | Task enters CREDITS_REQUIRED state, resume after top-up. |
+
+**Core rule**: `/analyze` is intentionally non-idempotent because it does not charge. Every charging point uses either a state-machine transition lock (fires at most once) or an idempotency-key pattern to prevent double-charge under network retry / PWA wake / double-click scenarios. See billing architecture notes in `src/server/services/task.service.ts` for details.
 
 ## Design System
 

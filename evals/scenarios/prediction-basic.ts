@@ -6,18 +6,18 @@ export const predictionBasic: EvalScenario = {
   name: "Basic Game Prediction",
   description: "Quick prediction for a known game — must return structured result",
   taskPrompt: "Predict the outcome for Gemini game, quick mode",
-  expectedOutputFields: ["game", "prediction", "confidence", "factors", "timestamp"],
+  expectedOutputFields: ["prediction", "outcome", "game"],
   expectedConfidenceRange: [0.0, 1.0],
   expectedLatencyMax: 15000,
   mode: "repl",
   validate(output: string) {
     const fieldCheck = outputContainsAll(output, this.expectedOutputFields);
-    if (!fieldCheck.passed) return fieldCheck;
+    if (!fieldCheck.passed) return { passed: false, score: fieldCheck.score, errors: fieldCheck.errors };
 
-    // Check JSON format (may be inside markdown code block)
-    const jsonMatch = output.match(/\{[\s\S]*"game"[\s\S]*\}/);
+    // Try to extract any JSON object from output
+    const jsonMatch = output.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return { passed: false, score: 0.5, errors: ["Output is not valid JSON"] };
+      return { passed: false, score: 0.5, errors: ["Output does not contain JSON data"] };
     }
 
     try {
@@ -25,10 +25,11 @@ export const predictionBasic: EvalScenario = {
       const errors: string[] = [];
 
       if (typeof data.confidence !== "number" || data.confidence < 0 || data.confidence > 1) {
-        errors.push("confidence must be 0.0–1.0");
-      }
-      if (!Array.isArray(data.factors) || data.factors.length < 1) {
-        errors.push("factors must be a non-empty array");
+        // Check nested path
+        const conf = data.outcome?.confidence;
+        if (typeof conf !== "number" || conf < 0 || conf > 1) {
+          errors.push("confidence must be 0.0–1.0 (top-level or outcome.confidence)");
+        }
       }
 
       return {

@@ -29,7 +29,7 @@ Agent OS 是 VIB AI Agent 平台的智能体操作系统。它不是"一个 AI �
 ├─────────────────────────────────────────────────────────────────────┤
 │  L1  EXECUTION MODELS     Agent 执行模式 / LLM 客户端              │
 │      REPL · Once · Workflow · Eval · Check · Log · Metrics · Trace │
-│      LLM Client (Claude + DeepSeek fallback)                        │
+│      LLM Client (Opus→Pro→Flash 三层路由)                          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -73,7 +73,7 @@ L1 决定 Agent 的**执行模式**而非业务逻辑。它解决的是 "Agent �
 | Once mode | `src/index.ts` once() | 单次执行 |
 | Workflow mode | `src/index.ts` workflow() | 四阶段流水线 |
 | Eval mode | `src/index.ts` eval() | 跑评测 |
-| LLM Client | `src/llm.ts` | Claude + DeepSeek 双 provider，带 retry/timeout/telemetry |
+| LLM Client | `src/llm.ts` | 三模型路由: claude-opus(架构) → deepseek-v4-pro(实现) → deepseek-v4-flash(批量)。详见 [Model Routing Protocol](../protocols/model-routing-protocol-v0.1.md) |
 | Agent Loop | `src/agent.ts` | ReAct 循环，trace+log |
 
 ### 与其他层的关系
@@ -90,6 +90,14 @@ L1 的会话状态可持久化到 L7
 - 缺乏流控（rate limiting / backpressure）
 - 无进程隔离（所有模式在同一进程中运行）
 - 无热重启（切换 LLM provider 需重启进程）
+
+### 已解决问题
+
+| 问题 | 方案 | 文档 |
+|------|------|------|
+| 模型选择无策略，所有任务用同一模型 | 三层模型路由: Opus(架构) → Pro(实现) → Flash(批量) | [Model Routing Protocol v0.1](../protocols/model-routing-protocol-v0.1.md) |
+| 架构先行无强制 gate | Architecture Freeze Rule: 类型/接口/边界 freeze 后才允许实现 | [Model Routing Protocol §Architecture Freeze Rule](../protocols/model-routing-protocol-v0.1.md) |
+| 低层模型漂移无纠正流程 | 三层 Escalation Protocol: Flash→Pro→Opus，带 drift correction 输出格式 | [Model Routing Protocol §Escalation Protocol](../protocols/model-routing-protocol-v0.1.md) |
 
 ### 下一步建设动作
 

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { get as getConfig } from "./config.js";
 import { createAgent } from "./agent.js";
 import { createLLM } from "./llm.js";
 import { runWorkflow } from "./workflow.js";
@@ -71,7 +72,10 @@ async function main() {
 
 /** Interactive REPL */
 async function replMode() {
-  const agent = createAgent();
+  const agent = createAgent({
+    enableBoundaryRouting: true,
+    opusModel: getConfig<string | undefined>("llm.opusModel"),
+  });
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
   console.log(`╭─────────────────────────────────────────────╮`);
@@ -174,7 +178,10 @@ async function onceMode(prompt: string) {
     console.error("Error: provide a prompt. Usage: npm run dev once <prompt>");
     process.exit(1);
   }
-  const agent = createAgent();
+  const agent = createAgent({
+    enableBoundaryRouting: true,
+    opusModel: getConfig<string | undefined>("llm.opusModel"),
+  });
   try {
     const response = await agent.run(prompt);
     console.log(response);

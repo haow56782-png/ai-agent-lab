@@ -5,6 +5,7 @@ import { logger } from "./logger.js";
 import { beginTrace, beginSpan, endSpan } from "./tracer.js";
 import { setSession } from "./telemetry.js";
 import { get as getConfig } from "./config.js";
+import { classifyTask, selectModel, boundaryRequiresOpus, BOUNDARY_ENFORCEMENT_MESSAGE } from "./boundary.js";
 
 export interface AgentConfig {
   projectRoot?: string;
@@ -13,12 +14,18 @@ export interface AgentConfig {
   sessionId?: string;
   /** Injectable LLM client for testing. Falls back to createLLM() if omitted. */
   llm?: ReturnType<typeof createLLM>;
+  /** Enable E0–E3 boundary-aware model selection in run(). */
+  enableBoundaryRouting?: boolean;
+  /** Opus model name for E2/E3 execution. Falls through to DeepSeek if unset. */
+  opusModel?: string;
 }
 
 export function createAgent(config: AgentConfig = {}) {
   const projectRoot = config.projectRoot ?? process.cwd();
   const maxIterations = config.maxIterations ?? getConfig<number>("agent.maxIterations");
   const llm = config.llm ?? createLLM();
+  const enableBoundaryRouting = config.enableBoundaryRouting ?? false;
+  const opusModel = config.opusModel ?? getConfig<string | undefined>("llm.opusModel");
   const ctx = {
     projectRoot,
     designSystemPath: projectRoot,
@@ -49,6 +56,33 @@ export function createAgent(config: AgentConfig = {}) {
     logger.setTraceId(traceId);
     logger.info("agent.run.start", { input: userInput, maxIterations });
 
+    // E0–E3 boundary classification and model selection
+    let effectiveModel: string | undefined;
+    if (enableBoundaryRouting) {
+      const bd = classifyTask(userInput);
+      const model = selectModel(bd.boundary, opusModel);
+      logger.info("agent.boundary", {
+        boundary: bd.boundary,
+        recommendedExecutor: bd.recommendedExecutor,
+        model,
+        requiresPlan: bd.requiresPlan,
+        requiresArbitration: bd.requiresArbitration,
+      });
+
+      if (boundaryRequiresOpus(bd.boundary) && !opusModel) {
+        logger.warn("agent.boundary.enforced", {
+          boundary: bd.boundary,
+          message: "E2/E3 blocked — no Opus model configured",
+        });
+        return BOUNDARY_ENFORCEMENT_MESSAGE;
+      }
+
+      // Only pass model override for non-default (E2/E3) boundaries
+      if (bd.boundary === "E2" || bd.boundary === "E3") {
+        effectiveModel = opusModel;
+      }
+    }
+
     const messages: LLMMessage[] = [
       { role: "system", content: defaultSystem },
       { role: "user", content: userInput },
@@ -60,7 +94,7 @@ export function createAgent(config: AgentConfig = {}) {
 
       let response: string;
       try {
-        response = await llm.chat(messages);
+        response = await llm.chat(messages, effectiveModel ? { model: effectiveModel } : undefined);
       } catch (err) {
         const error = err instanceof Error ? err.message : String(err);
         logger.error("agent.llm_failed", { error, iteration: i + 1 });
@@ -114,6 +148,28 @@ export function createAgent(config: AgentConfig = {}) {
     logger.setTraceId(traceId);
     logger.info("agent.stream.start", { input: userInput, maxIterations });
 
+    // E0–E3 boundary classification and model selection
+    let effectiveModel: string | undefined;
+    if (enableBoundaryRouting) {
+      const bd = classifyTask(userInput);
+      const model = selectModel(bd.boundary, opusModel);
+      logger.info("agent.stream.boundary", {
+        boundary: bd.boundary,
+        recommendedExecutor: bd.recommendedExecutor,
+        model,
+      });
+
+      if (boundaryRequiresOpus(bd.boundary) && !opusModel) {
+        yield BOUNDARY_ENFORCEMENT_MESSAGE;
+        return;
+      }
+
+      // Only pass model override for non-default (E2/E3) boundaries
+      if (bd.boundary === "E2" || bd.boundary === "E3") {
+        effectiveModel = opusModel;
+      }
+    }
+
     const messages: LLMMessage[] = [
       { role: "system", content: defaultSystem },
       { role: "user", content: userInput },
@@ -124,7 +180,7 @@ export function createAgent(config: AgentConfig = {}) {
 
       let response: string;
       try {
-        response = await llm.chat(messages);
+        response = await llm.chat(messages, effectiveModel ? { model: effectiveModel } : undefined);
       } catch (err) {
         const error = err instanceof Error ? err.message : String(err);
         logger.error("agent.llm_failed", { error, iteration: i + 1 });

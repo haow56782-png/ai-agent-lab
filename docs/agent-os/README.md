@@ -28,6 +28,7 @@
 | 文件 | 内容 |
 |------|------|
 | `protocols/agent-capability-protocol-v0.1.md` | 15-field YAML schema + 9 sub-protocols + 13 error codes + compatibility matrix |
+| `protocols/model-routing-protocol-v0.1.md` | 3-tier model routing, Architecture Freeze Rule, Escalation Protocol, Anti-Drift Checklist |
 
 ### 架构层
 
@@ -242,8 +243,8 @@ v0.1 ──── 协议 + P0 Skills + 业务闭环样板
 
           状态: ✅ 完成
 
-v0.2 ──── 接入 Ruflo Gate
-          目标: 将 Ruflo R1-R6 策略 gate 集成到工作流引擎
+v0.2 ──── 接入 Ruflo Gate + 模型路由策略
+          目标: 将 Ruflo R1-R6 策略 gate 集成到工作流引擎 + 三层模型路由协议
           具体:
             - R1 边界门禁: 任务进入前的 scope 检查
             - R2 风险评估: 变更影响范围自动评估
@@ -251,6 +252,9 @@ v0.2 ──── 接入 Ruflo Gate
             - R4 验证门禁: 与 Verification Gate Skill 联动
             - R5 回归测试: 变更后的全量 eval 回测
             - R6 审批流: 高风险变更的多级审批
+            - 三层模型路由: Opus(架构) → Pro(实现) → Flash(批量)
+            - Architecture Freeze Rule: freeze 前禁止实现
+            - Escalation Protocol: 漂移检测与升级纠正
 
 v0.3 ──── 接入 Claude Flow 多 Agent Runtime
           目标: 从单 Agent 执行升级到多 Agent 编排
@@ -269,10 +273,9 @@ v0.4 ──── 接入 Notion / Obsidian 记忆系统
             - State Store: Memory + Sqlite 双后端
             - 6 repositories: task/context/session/error/cache/metrics
 
-v0.5 ──── 接入成本调度与模型路由
-          目标: 智能选择执行模型与成本控制
+v0.5 ──── 成本调度优化
+          目标: 智能成本控制与缓存策略
           具体:
-            - 模型路由: 根据任务复杂度选择 Claude / DeepSeek
             - 成本预算: 每个工作流的 Credits 预算控制
             - 缓存策略: 重复任务命中缓存避免重复计算
             - 失败成本核算: 计入 failure analysis 的成本归因

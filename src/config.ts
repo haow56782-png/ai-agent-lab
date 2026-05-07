@@ -17,6 +17,7 @@ const DEFAULTS: Record<string, unknown> = {
   "llm.temperature": 0.7,
   "llm.maxTokens": 4096,
   "llm.model": "deepseek-chat",
+  "llm.opusModel": "",
   "llm.timeoutMs": 30000,
   "llm.retry.max": 3,
   "llm.retry.delayMs": 1000,

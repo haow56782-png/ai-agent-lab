@@ -67,6 +67,9 @@ jobs:
           node -e "const lock=require('./package-lock.json'); console.log('playwright', lock.packages['node_modules/playwright'].version);"
           system_profiler SPFontsDataType | grep -E "PingFang|Songti|Times New Roman|Arial" | head -40 || true
 
+      - name: Lint client
+        run: npm run lint
+
       - name: Typecheck client app
         run: npx tsc -p tsconfig.app.json --noEmit
 

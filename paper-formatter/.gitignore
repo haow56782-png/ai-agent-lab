@@ -1,5 +1,6 @@
 node_modules/
 dist/
+batch-results/
 services/client/test-results/
 services/client/playwright-report/
 .env

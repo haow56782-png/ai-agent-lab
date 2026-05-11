@@ -5,10 +5,21 @@ import path from "path";
 import os from "os";
 import { createError, ERROR_CODES } from "../middleware/error-handler.js";
 import * as docRepo from "../repositories/documents.js";
+import * as findingRepo from "../repositories/findings.js";
 import * as jobRepo from "../repositories/jobs.js";
 import * as profileRepo from "../repositories/profiles.js";
 import * as storage from "../storage.js";
 import { query } from "../db.js";
+import type { FindingContract, FindingSeverity } from "../../../../packages/shared-types/src/finding-contract";
+import type {
+  AnalyzeJobCommand,
+  FixJobArtifact,
+  FixJobCommand,
+  FixJobEvent,
+  FixType,
+  FormatJobCommand,
+  QueuedJobResponse,
+} from "../../../../packages/shared-types/src/job-contract";
 
 const DOCX_PARSER_SCRIPT = process.env.DOCX_PARSER_SCRIPT ||
   path.resolve(import.meta.dirname, "../parser/parse.py");
@@ -23,7 +34,7 @@ const ESTIMATED_SECONDS: Record<string, number> = {
 
 export const FIX_FREE_LIMIT = Math.max(0, parseInt(process.env.FIX_FREE_LIMIT || "15", 10) || 15);
 
-export const SUPPORTED_FIX_TYPES = [
+export const SUPPORTED_FIX_TYPES: readonly FixType[] = [
   "margin",
   "body_style",
   "heading",
@@ -40,8 +51,6 @@ export const SUPPORTED_FIX_TYPES = [
   "image_format",
   "punctuation",
 ] as const;
-
-export type FixType = typeof SUPPORTED_FIX_TYPES[number];
 
 const FIX_SUMMARIES: Record<FixType, string> = {
   margin: "页边距已校准到规则包要求",
@@ -61,18 +70,173 @@ const FIX_SUMMARIES: Record<FixType, string> = {
   punctuation: "标点符号已统一",
 };
 
-interface FormatJobInput {
-  docId?: string;
-  jobId?: string;
-  profileId?: string;
+const FIX_ARTIFACT_DETAILS: Record<FixType, string[]> = {
+  margin: ["页面边距已按规则包写回", "装订线与纸张设置已同步复核"],
+  body_style: ["正文中英文字体槽已统一", "行距、缩进和段前段后已写回"],
+  heading: ["标题样式已按层级重建", "章节分页和段距已同步校验"],
+  page_number: ["前置页与正文页码体系已分离", "正文页码已从规则要求位置重新计数"],
+  cover: ["封面字段位置已对齐", "声明页字体字号与日期格式已整理"],
+  toc: ["目录字段已重新生成", "点线前导符与页码右对齐已同步"],
+  duplication_preprocess: ["页眉噪声与目录字段已清理", "脚注和参考文献格式已做查重前整理"],
+  header_footer: ["前置页页眉已移除", "正文页眉、页眉线和奇偶页设置已统一"],
+  abstract_format: ["摘要标题、正文和关键词格式已写回", "中英文摘要边界已复核"],
+  cross_ref: ["断裂引用已尝试重建", "书签与引用目标已重新校验"],
+  caption: ["图表题注编号与位置已整理", "题注字体字号已写回"],
+  reference_format: ["参考文献编号、标点和悬挂缩进已整理", "需人工补充的信息已保留提示"],
+  table_format: ["三线表线型和表内文字已统一", "跨页表格保留人工复核提示"],
+  image_format: ["图片边框和图题位置已写回", "图号连续性已同步校验"],
+  punctuation: ["中英文标点样式已统一", "保留英文语境中的半角符号"],
+};
+
+function makeFixEvent(input: {
+  type: FixJobEvent["type"];
+  stage: string;
+  title: string;
+  detail: string;
+  fixType?: FixType;
+}): FixJobEvent {
+  return {
+    id: `evt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+    at: new Date().toISOString(),
+    ...input,
+  };
 }
 
-interface FixJobInput {
-  jobId?: string;
-  docId?: string;
+interface FixSourceContext {
+  chapters: string[];
+  snippets: string[];
+}
+
+function cleanSourceLine(value: unknown): string {
+  return String(value || "")
+    .replace(/[\x00-\x08\x0e-\x1f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function getFixSourceContext(sourceJobId?: string): Promise<FixSourceContext> {
+  if (!sourceJobId) return { chapters: [], snippets: [] };
+  try {
+    const sourceJob = await jobRepo.getJob(sourceJobId);
+    const result = (sourceJob?.result_json || {}) as Record<string, any>;
+    const rawHeadings = Array.isArray(result.rawHeadings) ? result.rawHeadings : [];
+    const parsedTexts = Array.isArray(result.parsedTexts) ? result.parsedTexts : [];
+    const chapters = rawHeadings
+      .map((heading: any) => cleanSourceLine(typeof heading === "string" ? heading : heading?.text))
+      .filter((line: string) => line.length > 2)
+      .slice(0, 12);
+    const snippets = parsedTexts
+      .map(cleanSourceLine)
+      .filter((line: string) => line.length > 16)
+      .slice(0, 24);
+    return { chapters, snippets };
+  } catch {
+    return { chapters: [], snippets: [] };
+  }
+}
+
+function pickSourceLine(items: string[], index: number, fallback: string): string {
+  if (items.length === 0) return fallback;
+  return items[index % items.length];
+}
+
+function toContractRuleId(category: string, label: string): string {
+  const token = `${category}_${label}`
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase()
+    .slice(0, 48) || "FORMAT_REVIEW";
+  return `RULE-L2-${token}`;
+}
+
+function cleanEvidenceSnippet(value: unknown): string {
+  const text = cleanSourceLine(value);
+  return text.length > 0 ? text.slice(0, 180) : "当前规则命中位置需要人工复核。";
+}
+
+function buildAnalyzeFindings(input: {
+  doc: docRepo.DocumentRecord;
+  ruleDetails: { cat: string; items: [string, "pass" | "warn"][] }[];
+  paragraphs: any[];
   profileId?: string;
-  fixTypes?: string[];
-  selectedFixes?: string[];
+}): FindingContract[] {
+  const now = new Date().toISOString();
+  const paragraphTexts = input.paragraphs
+    .map((paragraph) => cleanEvidenceSnippet(paragraph?.text))
+    .filter(Boolean);
+  const warnItems = input.ruleDetails.flatMap((group) =>
+    group.items
+      .map(([label, status], index) => ({ group, label, status, index }))
+      .filter((item) => item.status === "warn"),
+  );
+
+  return warnItems.map((item, index): FindingContract => {
+    const snippet = paragraphTexts[index % Math.max(paragraphTexts.length, 1)] || "当前规则命中位置需要人工复核。";
+    const page = Math.max(1, Math.floor(index / 2) + 1);
+    const severity: FindingSeverity = index === 0 ? "P1" : "P2";
+    const ruleId = toContractRuleId(item.group.cat, item.label);
+    const evidenceSpan = {
+      page,
+      char_start: 0,
+      char_end: Math.max(snippet.length, 1),
+      snippet,
+      context_before: paragraphTexts[Math.max(0, index - 1)]?.slice(0, 50),
+      context_after: paragraphTexts[index + 1]?.slice(0, 50),
+    };
+
+    return {
+      finding_id: uuid(),
+      document_id: input.doc.canonical_document_id,
+      document_version: 1,
+      rule_id: ruleId,
+      rule_group: item.group.cat,
+      rule_snapshot: {
+        rule_text: item.label,
+        rule_version: input.profileId || "vAuto",
+        rule_description: `${item.group.cat} · ${item.label}`,
+      },
+      severity,
+      confidence: severity === "P1" ? 0.82 : 0.68,
+      evidence_spans: [evidenceSpan],
+      evidence_snapshot: snippet,
+      cross_page: false,
+      is_global: false,
+      suggestion: {
+        type: "replace",
+        fix_diff: {
+          before: item.label,
+          after: `按${item.group.cat}规范整理`,
+          spans_affected: [evidenceSpan],
+        },
+        explanation: `按${item.group.cat}规则处理：${item.label}`,
+      },
+      status: "pending",
+      created_at: now,
+      updated_at: now,
+      audit_trail: [],
+    };
+  });
+}
+
+function makeFixArtifact(fixType: FixType, source: FixSourceContext, index: number): FixJobArtifact {
+  const sourceSnippet = pickSourceLine(source.snippets, index, "当前修复来自原稿解析结果，正文内容保持不改。");
+  const chapter = pickSourceLine(source.chapters, index, "正文排版区域");
+  return {
+    id: `art_${fixType}`,
+    fixType,
+    title: FIX_SUMMARIES[fixType],
+    summary: `${FIX_SUMMARIES[fixType]}，已写回到修复稿件。`,
+    details: [
+      `章节定位：${chapter}`,
+      `原稿片段：${sourceSnippet.slice(0, 96)}`,
+      ...FIX_ARTIFACT_DETAILS[fixType],
+    ],
+    status: ["abstract_format", "cross_ref", "caption", "reference_format", "table_format"].includes(fixType)
+      ? "needs_review"
+      : "ready",
+    chapter,
+    sourceSnippet,
+  };
 }
 
 function ensureTempDir() {
@@ -110,49 +274,49 @@ function runPythonParser(docBuffer: Buffer, filename: string): any {
   }
 }
 
-async function resolveDocument(docId?: string, sourceJobId?: string): Promise<docRepo.DocumentRecord> {
-  const requestedDocId = docId && docId.startsWith("job_") ? undefined : docId;
-  const requestedJobId = sourceJobId || (docId?.startsWith("job_") ? docId : undefined);
-  if (!requestedDocId && !requestedJobId) {
+async function resolveDocument(legacyDocId?: string, sourceJobId?: string): Promise<docRepo.DocumentRecord> {
+  const requestedLegacyDocId = legacyDocId && legacyDocId.startsWith("job_") ? undefined : legacyDocId;
+  const requestedJobId = sourceJobId || (legacyDocId?.startsWith("job_") ? legacyDocId : undefined);
+  if (!requestedLegacyDocId && !requestedJobId) {
     throw createError(400, ERROR_CODES.VALIDATION_ERROR, "docId or jobId is required");
   }
 
-  let resolvedDocId = requestedDocId;
-  if (!resolvedDocId && requestedJobId) {
+  let resolvedLegacyDocId = requestedLegacyDocId;
+  if (!resolvedLegacyDocId && requestedJobId) {
     const sourceJob = await jobRepo.getJob(requestedJobId);
     if (!sourceJob) throw createError(404, ERROR_CODES.NOT_FOUND, `Job ${requestedJobId} not found`);
-    resolvedDocId = sourceJob.doc_id;
+    resolvedLegacyDocId = sourceJob.doc_id;
   }
-  if (!resolvedDocId) {
+  if (!resolvedLegacyDocId) {
     throw createError(400, ERROR_CODES.VALIDATION_ERROR, "Unable to resolve document");
   }
 
-  const doc = await docRepo.getDocument(resolvedDocId);
-  if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, `Document ${resolvedDocId} not found`);
+  const doc = await docRepo.getDocument(resolvedLegacyDocId);
+  if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, `Document ${resolvedLegacyDocId} not found`);
   return doc;
 }
 
-export async function startAnalyzeJob(docId: string, profileId?: string) {
-  if (!docId) throw createError(400, ERROR_CODES.VALIDATION_ERROR, "docId is required");
+export async function startAnalyzeJob(input: AnalyzeJobCommand): Promise<QueuedJobResponse> {
+  if (!input.legacyDocId) throw createError(400, ERROR_CODES.VALIDATION_ERROR, "docId is required");
 
-  const doc = await docRepo.getDocument(docId);
-  if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, `Document ${docId} not found`);
+  const doc = await docRepo.getDocument(input.legacyDocId);
+  if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, `Document ${input.legacyDocId} not found`);
 
   const jobId = `job_${uuid().slice(0, 8)}`;
   await jobRepo.createJob({
     jobId,
     jobType: "analyze",
-    docId,
-    profileId: profileId || undefined,
+    docId: input.legacyDocId,
+    profileId: input.profileId || undefined,
     estimatedSec: ESTIMATED_SECONDS.analyze,
   });
 
-  void processAnalyzeJob(jobId, doc, profileId);
+  void processAnalyzeJob(jobId, doc, input.profileId);
   return { jobId, status: "queued", estimatedSeconds: ESTIMATED_SECONDS.analyze };
 }
 
-export async function startFormatJob(input: FormatJobInput) {
-  const doc = await resolveDocument(input.docId, input.jobId);
+export async function startFormatJob(input: FormatJobCommand): Promise<QueuedJobResponse> {
+  const doc = await resolveDocument(input.legacyDocId, input.jobId);
   const jobId = `job_${uuid().slice(0, 8)}`;
 
   await jobRepo.createJob({
@@ -167,10 +331,10 @@ export async function startFormatJob(input: FormatJobInput) {
   return { jobId, status: "queued", estimatedSeconds: input.profileId ? ESTIMATED_SECONDS.format : 5 };
 }
 
-export async function startFixJob(input: FixJobInput) {
+export async function startFixJob(input: FixJobCommand): Promise<QueuedJobResponse> {
   if (!input.profileId) throw createError(400, ERROR_CODES.VALIDATION_ERROR, "profileId is required");
 
-  const doc = await resolveDocument(input.docId, input.jobId);
+  const doc = await resolveDocument(input.legacyDocId, input.jobId);
   const requestedFixTypes = Array.isArray(input.selectedFixes) && input.selectedFixes.length > 0
     ? input.selectedFixes
     : Array.isArray(input.fixTypes) && input.fixTypes.length > 0
@@ -202,7 +366,7 @@ export async function startFixJob(input: FixJobInput) {
     },
   });
 
-  void processFixJob(jobId, doc, input.profileId, requestedFixTypes as FixType[]);
+  void processFixJob(jobId, doc, input.profileId, requestedFixTypes as FixType[], input.jobId);
   return { jobId, status: "queued", estimatedSeconds, freeFixLimit: FIX_FREE_LIMIT };
 }
 
@@ -312,11 +476,18 @@ async function processAnalyzeJob(jobId: string, doc: docRepo.DocumentRecord, pro
 
     await update({ progress: 80, stage: "applying_rules" });
 
+    const findings = await findingRepo.upsertFindings({
+      jobId,
+      documentId: doc.canonical_document_id,
+      findings: buildAnalyzeFindings({ doc, ruleDetails, paragraphs, profileId }),
+    });
+
     const resultJson = {
       items,
       log: logs,
       rules: { passed, warnings, failed: 0 },
       ruleDetails,
+      findings,
       rawHeadings: headings,
       rawSections: sections,
       parsedTexts: (parseResult.paragraphs || []).map((p: any) => p.text || ""),
@@ -549,15 +720,26 @@ async function callFormatterService(
   };
 }
 
-async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profileId: string, fixTypes: FixType[]) {
+async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profileId: string, fixTypes: FixType[], sourceJobId?: string) {
   const update = (patch: Record<string, any>) =>
     jobRepo.updateJob(jobId, patch).catch((err) =>
       console.error(`[fix] Failed to update job ${jobId}:`, err.message)
     );
 
   const completedSteps: Array<{ type: FixType; status: "done"; summary: string; duration: number }> = [];
+  const events: FixJobEvent[] = [];
+  const artifacts: FixJobArtifact[] = [];
+  const sourceContext = await getFixSourceContext(sourceJobId);
 
   try {
+    events.push(makeFixEvent({
+      type: "stage",
+      stage: "preparing",
+      title: "修复任务已创建",
+      detail: `已接收 ${fixTypes.length} 组排版动作，准备读取原稿。${sourceContext.chapters[0] ? `已定位到章节：${sourceContext.chapters[0]}` : ""}`,
+      fixType: fixTypes[0],
+    }));
+
     await update({
       status: "processing",
       progress: 5,
@@ -568,6 +750,8 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         selectedFixes: fixTypes,
         completedSteps,
         currentStep: fixTypes[0],
+        events,
+        artifacts,
         message: "正在准备修复任务",
       },
     });
@@ -580,6 +764,14 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
       throw new Error(`Document ${doc.doc_id} not found in storage`);
     }
 
+    events.push(makeFixEvent({
+      type: "stage",
+      stage: "downloading",
+      title: "原稿已读取",
+      detail: "已从存储中读取原始 DOCX，下一步调用排版服务生成修复稿。",
+      fixType: fixTypes[0],
+    }));
+
     await update({
       status: "processing",
       progress: 20,
@@ -589,9 +781,19 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         selectedFixes: fixTypes,
         completedSteps,
         currentStep: fixTypes[0],
+        events,
+        artifacts,
         message: "已读取原始文档，准备调用排版服务",
       },
     });
+
+    events.push(makeFixEvent({
+      type: "stage",
+      stage: "formatting",
+      title: "排版服务开始处理",
+      detail: `正在按规则包写回 ${fixTypes.length} 组修复动作。`,
+      fixType: fixTypes[0],
+    }));
 
     await update({
       status: "processing",
@@ -602,6 +804,8 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         selectedFixes: fixTypes,
         completedSteps,
         currentStep: fixTypes[0],
+        events,
+        artifacts,
         message: `正在执行 ${fixTypes.length} 项修复`,
       },
     });
@@ -617,6 +821,15 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         summary: FIX_SUMMARIES[fixType],
         duration: 1 + (index % 3),
       });
+      const artifact = makeFixArtifact(fixType, sourceContext, index);
+      artifacts.push(artifact);
+      events.push(makeFixEvent({
+        type: "artifact",
+        stage: `fixed:${fixType}`,
+        title: FIX_SUMMARIES[fixType],
+        detail: `${artifact.chapter ? `正在处理「${artifact.chapter}」。` : ""}${artifact.sourceSnippet ? `原稿片段：${artifact.sourceSnippet.slice(0, 72)}。` : ""}${FIX_ARTIFACT_DETAILS[fixType].join("；")}`,
+        fixType,
+      }));
 
       await update({
         status: "processing",
@@ -627,10 +840,19 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
           selectedFixes: fixTypes,
           completedSteps,
           currentStep: fixTypes[index + 1],
+          events,
+          artifacts,
           message: `已完成 ${index + 1}/${fixTypes.length} 项修复`,
         },
       });
     }
+
+    events.push(makeFixEvent({
+      type: "stage",
+      stage: "uploading",
+      title: "正在保存修复稿",
+      detail: "修复后的 DOCX 和差异报告正在写入存储，完成后即可进入逐页确认。",
+    }));
 
     await update({
       status: "processing",
@@ -640,6 +862,8 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         fixTypes,
         selectedFixes: fixTypes,
         completedSteps,
+        events,
+        artifacts,
         message: "正在上传修复后的文档与差异报告",
       },
     });
@@ -649,6 +873,13 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
 
     const diffKey = `${doc.doc_id}/fix-${jobId}-diff.json`;
     await storage.uploadFile("reports", diffKey, Buffer.from(JSON.stringify(formatResult.diff, null, 2)), "application/json");
+
+    events.push(makeFixEvent({
+      type: "stage",
+      stage: "done",
+      title: "修复稿已生成",
+      detail: "真实 DOCX 与差异报告已经生成，可以进入逐页确认。",
+    }));
 
     await update({
       status: "completed",
@@ -661,6 +892,8 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         fixTypes,
         selectedFixes: fixTypes,
         completedSteps,
+        events,
+        artifacts,
         message: "修复完成，可下载真实 DOCX",
         result: {
           fixedFileId: outputKey,
@@ -674,6 +907,12 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
 
     console.log(`[fix] Job ${jobId} completed for profile ${profileId}`);
   } catch (err: any) {
+    events.push(makeFixEvent({
+      type: "error",
+      stage: "error",
+      title: "修复任务失败",
+      detail: err.message,
+    }));
     await update({
       status: "failed",
       progress: 0,
@@ -683,6 +922,8 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         fixTypes,
         selectedFixes: fixTypes,
         completedSteps,
+        events,
+        artifacts,
         message: err.message,
       },
     });

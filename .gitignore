@@ -13,5 +13,6 @@ evals/reports/run-*.json
 .claude-flow/agents/
 .claude-flow/workflows/
 .swarm/
+.codex/
 ruvector.db
 vib-agent-state.db

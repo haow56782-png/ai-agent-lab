@@ -1,0 +1,10 @@
+{
+  "name": "docx-parser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "parse": "python3 src/parse.py",
+    "test": "python3 src/test_parse.py"
+  }
+}

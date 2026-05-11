@@ -21,18 +21,17 @@ It does not touch:
 | `paper-formatter/services/client/test-p0-1.mjs` | Manual Playwright probe | Early ad-hoc script for Step4 linkage checks. It depends on local `/tmp/test.docx`, localhost services, and old selectors. | inspect / defer | Later cleanup |
 | `paper-formatter/services/client/test-p0-2.mjs` | Manual Playwright probe | Early ad-hoc script for Step4 review action checks. Most behavior is now covered by formal Playwright specs. | inspect / defer | Later cleanup |
 | `paper-formatter/services/client/test-p1.mjs` | Manual Playwright probe | Early ad-hoc script for diff highlighting and badge semantics. It uses DOM style probing and old flow labels. | inspect / defer | Later cleanup |
-| `paper-formatter/services/client/remei-prompts/` | Product prompt pack | UX iteration prompts with product value; not a build artifact. | defer | Product docs batch |
-| `paper-formatter/services/client/remei-biz-prompts/` | Product/commercial prompt pack | Commercialization prompt pack with product planning value; not a build artifact. | defer | Product docs batch |
+| `paper-formatter/docs/product-prompts/remei-prompts/` | Product prompt pack | UX iteration prompts with product value; not a build artifact. Moved out of `services/client`. | commit | Product docs batch |
+| `paper-formatter/docs/product-prompts/remei-biz-prompts/` | Product/commercial prompt pack | Commercialization prompt pack with product planning value; not a build artifact. Moved out of `services/client`. | commit | Product docs batch |
 
 ## 3. Actions Taken
 
 - Added `services/client/test-results/` to `paper-formatter/.gitignore`.
 - Added `services/client/playwright-report/` to `paper-formatter/.gitignore`.
 - Did not delete or rewrite manual probe scripts.
-- Did not move prompt packs because their destination needs a product-docs decision.
+- Moved prompt packs to `paper-formatter/docs/product-prompts/` in the follow-up product prompt archive batch.
 
 ## 4. Suggested Follow-Up
 
 1. Decide whether `test-p0-1.mjs`, `test-p0-2.mjs`, and `test-p1.mjs` should be deleted after confirming their behavior is covered by `tests/step4-flow.spec.ts`.
-2. Move `remei-prompts/` and `remei-biz-prompts/` out of `services/client` if they should be preserved, preferably under a product docs or prompt archive directory.
-3. Keep generated Playwright artifacts ignored permanently.
+2. Keep generated Playwright artifacts ignored permanently.

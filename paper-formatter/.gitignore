@@ -6,6 +6,7 @@ services/client/playwright-report/
 .env
 *.local
 .DS_Store
+.vscode/
 *.log
 __pycache__/
 *.pyc

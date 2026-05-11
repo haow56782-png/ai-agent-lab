@@ -33,6 +33,7 @@ from docx.oxml import parse_xml
 import copy
 import hashlib
 import json
+import os
 from typing import Any
 
 
@@ -49,6 +50,16 @@ def _mm_to_cm(mm: float) -> float:
 
 def _pt(pt: float) -> Pt:
     return Pt(max(pt, 1))
+
+
+def _length_to_mm_text(length: Emu | None) -> str:
+    """Render a docx length as mm text without failing on missing values."""
+    if length is None:
+        return "N/A"
+    try:
+        return f"{length.mm:.0f}"
+    except Exception:
+        return "N/A"
 
 
 def _set_font(run, font_name: str | None, font_size_pt: float | None, bold: bool | None = None):
@@ -183,7 +194,18 @@ class DiffTracker:
 class DocxFormatter:
     """Apply thesis formatting rules to a DOCX document."""
 
+    OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
     def __init__(self, input_path: str, rules: dict | None = None):
+        # Detect old OLE2/.doc format (python-docx can't handle these)
+        if os.path.isfile(input_path):
+            with open(input_path, "rb") as _f:
+                _header = _f.read(8)
+            if _header == self.OLE2_MAGIC:
+                raise ValueError(
+                    "文件是旧版 .doc 格式（WPS 兼容模式），不支持直接排版。"
+                    "请用 WPS/Word 打开后另存为 .docx 格式再试。"
+                )
         self.doc = Document(input_path)
         self.rules = _parse_rules(rules)
         self.diff = DiffTracker()
@@ -225,7 +247,7 @@ class DocxFormatter:
             if i == 0:
                 self.diff.add(
                     i + 1, "page_margin",
-                    f"T:{old_top/914400*254:.0f} B:{old_bottom/914400*254:.0f} L:{old_left/914400*254:.0f} R:{old_right/914400*254:.0f} mm",
+                    f"T:{_length_to_mm_text(old_top)} B:{_length_to_mm_text(old_bottom)} L:{_length_to_mm_text(old_left)} R:{_length_to_mm_text(old_right)} mm",
                     f"T:{page['margin_top_mm']} B:{page['margin_bottom_mm']} L:{page['margin_left_mm']} R:{page['margin_right_mm']} mm",
                     "section",
                 )

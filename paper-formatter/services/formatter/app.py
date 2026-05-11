@@ -57,11 +57,13 @@ def format_document():
         except json.JSONDecodeError:
             return jsonify({"error": "Invalid rules JSON"}), 400
 
-    # Save uploaded file to temp
-    input_path = TEMP_DIR / f"input_{os.urandom(4).hex()}_{file.filename}"
+    # Save uploaded file to temp (sanitize filename: avoid Chinese chars in path)
+    ext = Path(file.filename).suffix if file.filename else ".docx"
+    safe_name = f"input_{os.urandom(4).hex()}{ext}"
+    input_path = TEMP_DIR / safe_name
     file.save(str(input_path))
 
-    output_path = TEMP_DIR / f"formatted_{os.urandom(4).hex()}_{file.filename}"
+    output_path = TEMP_DIR / f"formatted_{os.urandom(4).hex()}{ext}"
     diff_path = TEMP_DIR / f"diff_{os.urandom(4).hex()}.json"
 
     try:
@@ -149,8 +151,9 @@ def format_document_simple():
         except json.JSONDecodeError:
             return jsonify({"error": "Invalid rules JSON"}), 400
 
-    input_path = TEMP_DIR / f"input_{os.urandom(4).hex()}_{file.filename}"
-    output_path = TEMP_DIR / f"formatted_{os.urandom(4).hex()}_{file.filename}"
+    ext = Path(file.filename).suffix if file.filename else ".docx"
+    input_path = TEMP_DIR / f"input_{os.urandom(4).hex()}{ext}"
+    output_path = TEMP_DIR / f"formatted_{os.urandom(4).hex()}{ext}"
 
     file.save(str(input_path))
 
@@ -186,4 +189,5 @@ def get_default_rules():
 
 if __name__ == "__main__":
     port = int(os.environ.get("FORMATTER_PORT", sys.argv[sys.argv.index("--port") + 1] if "--port" in sys.argv else 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(host="0.0.0.0", port=port, debug=debug)

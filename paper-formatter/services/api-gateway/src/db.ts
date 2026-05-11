@@ -34,8 +34,11 @@ export async function query<T extends pg.QueryResultRow = any>(
 
 export async function ensureSchema(): Promise<void> {
   const sql = `
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
     CREATE TABLE IF NOT EXISTS documents (
       doc_id          VARCHAR(50) PRIMARY KEY,
+      canonical_document_id VARCHAR(100) NOT NULL DEFAULT uuid_generate_v4()::text,
       filename        VARCHAR(500) NOT NULL,
       size_bytes      BIGINT       NOT NULL,
       sha256          VARCHAR(64)  NOT NULL,
@@ -92,6 +95,40 @@ export async function ensureSchema(): Promise<void> {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_doc_profiles_unique ON document_profiles(doc_id, school_id);
 
+    CREATE TABLE IF NOT EXISTS findings (
+      finding_id      VARCHAR(100) PRIMARY KEY,
+      job_id          VARCHAR(50) REFERENCES jobs(job_id),
+      document_id     VARCHAR(50) NOT NULL,
+      document_version INT NOT NULL DEFAULT 1,
+      rule_id         VARCHAR(120) NOT NULL,
+      rule_group      VARCHAR(120),
+      severity        VARCHAR(2) NOT NULL,
+      status          VARCHAR(32) NOT NULL DEFAULT 'pending',
+      payload_json    JSONB NOT NULL,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_records (
+      audit_id        VARCHAR(100) PRIMARY KEY,
+      target_type     VARCHAR(32) NOT NULL,
+      target_id       VARCHAR(100) NOT NULL,
+      actor_id        VARCHAR(100) NOT NULL,
+      actor_role      VARCHAR(32) NOT NULL,
+      action          VARCHAR(40) NOT NULL,
+      from_state      VARCHAR(40),
+      to_state        VARCHAR(40),
+      snapshot_ref    VARCHAR(200),
+      metadata        JSONB,
+      timestamp       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_findings_document ON findings(document_id);
+    CREATE INDEX IF NOT EXISTS idx_findings_job ON findings(job_id);
+    CREATE INDEX IF NOT EXISTS idx_findings_status ON findings(status);
+    CREATE INDEX IF NOT EXISTS idx_findings_severity ON findings(severity);
+    CREATE INDEX IF NOT EXISTS idx_audit_target ON audit_records(target_type, target_id);
+
     CREATE TABLE IF NOT EXISTS share_reports (
       share_id        VARCHAR(50) PRIMARY KEY,
       file_id         VARCHAR(50) NOT NULL,
@@ -107,6 +144,18 @@ export async function ensureSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_jobs_doc    ON jobs(doc_id);
     CREATE INDEX IF NOT EXISTS idx_share_reports_doc ON share_reports(doc_id);
     CREATE INDEX IF NOT EXISTS idx_share_reports_job ON share_reports(source_job_id);
+
+    ALTER TABLE documents ADD COLUMN IF NOT EXISTS canonical_document_id VARCHAR(100);
+    UPDATE documents
+       SET canonical_document_id = uuid_generate_v4()::text
+     WHERE canonical_document_id IS NULL OR canonical_document_id = '';
+    ALTER TABLE documents ALTER COLUMN canonical_document_id SET NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_canonical_document_id ON documents(canonical_document_id);
+    UPDATE findings AS f
+       SET document_id = d.canonical_document_id,
+           payload_json = jsonb_set(f.payload_json, '{document_id}', to_jsonb(d.canonical_document_id))
+      FROM documents AS d
+     WHERE f.document_id = d.doc_id;
 
     -- Migration: ensure new columns on school_profiles (safe to re-run)
     ALTER TABLE school_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(200) NOT NULL DEFAULT '';

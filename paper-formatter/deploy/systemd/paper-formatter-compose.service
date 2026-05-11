@@ -1,0 +1,16 @@
+[Unit]
+Description=Paper Formatter production stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/paper-formatter
+ExecStart=/usr/bin/docker compose --env-file /opt/paper-formatter/.env.production -f /opt/paper-formatter/docker-compose.prod.yml up -d --build
+ExecStop=/usr/bin/docker compose --env-file /opt/paper-formatter/.env.production -f /opt/paper-formatter/docker-compose.prod.yml down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

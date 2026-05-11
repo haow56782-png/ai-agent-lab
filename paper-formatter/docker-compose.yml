@@ -2,8 +2,8 @@ services:
   # ── API Gateway ──
   api-gateway:
     build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
     ports:
       - "4000:4000"
     environment:
@@ -13,10 +13,14 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - FORMATTER_URL=http://formatter:5000
+      - FIX_FREE_LIMIT=15
+      - REDIS_URL=redis://redis:6379
     depends_on:
       postgres:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
 
@@ -62,6 +66,17 @@ services:
       - minio_data:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+services/client/test-results/
+services/client/playwright-report/
 .env
 *.local
 .DS_Store

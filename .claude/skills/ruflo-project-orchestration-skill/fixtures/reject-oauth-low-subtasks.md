@@ -93,13 +93,13 @@ last_updated: 2026-05-06
 - 门 3(可逆性): FAIL, 理由 — 生产环境 .env 覆写不可逆; OAuth 凭据发放后无法撤回
 - P0 禁区命中: E-2.3(用户授权) + E-1.2(不可逆数据)
 
-最终决策: 拒绝并降级到 Claude Code 直接处理
+最终决策: 拒绝并降级到 Codex 直接处理
 ```
 
 ### 拒绝后替代方案
 
 ```
-降级方案: Claude Code 直接处理（非 Ruflo 元编排）
+降级方案: Codex 直接处理（非 Ruflo 元编排）
 
 调整建议:
 1. 将 OAuth 集成拆分为独立任务，不走 Ruflo
@@ -116,7 +116,7 @@ last_updated: 2026-05-06
 此任务被拒绝进入 Ruflo 的原因如下:
 
 1. 规模不足: 3 个子任务未达到 Ruflo 最低门槛(≥4)，涉及工程层数 2 层未达到最低门槛(≥3)，
-   且无需角色分离。此类规模的任务由 Claude Code 直接处理效率更高，
+   且无需角色分离。此类规模的任务由 Codex 直接处理效率更高，
    Ruflo 的元编排开销在此规模下得不偿失。
 
 2. P0 禁区命中(E-2.3): 任务要求 agent "代为完成 OAuth 授权流程"，
@@ -130,7 +130,7 @@ last_updated: 2026-05-06
 
 4. 可逆性不达标: 生产环境配置写入和 OAuth 凭据发放均为不可逆操作。
 
-结论: 本任务不适合 Ruflo 编排。建议降级为 Claude Code 直接处理，
+结论: 本任务不适合 Ruflo 编排。建议降级为 Codex 直接处理，
 并将涉及禁区的步骤改为"引导用户手动操作"。
 ```
 
@@ -142,7 +142,7 @@ last_updated: 2026-05-06
 - [ ] E-2.3 触发 → abort + trace 留痕
 - [ ] E-1.2 次级触发 → 记录但由 E-2.3 主处置流程覆盖
 - [ ] 最终决策为 REJECT，不进入 Part C 拆 agent
-- [ ] 降级方案明确（Claude Code direct）
+- [ ] 降级方案明确（Codex direct）
 - [ ] 不修改任何 runtime 代码
 
 ---
@@ -158,7 +158,7 @@ TRACE ruflo-fixture-reject-001
   ├─ forbidden_zone: E-2.3 [P0] — "oauth", "authorize", "token" detected
   ├─ forbidden_zone: E-1.2 [P0] — production write detected
   ├─ disposal: abort_sub_agent → trace_logged → escalated_to_human
-  └─ final: REJECT → degraded to Claude Code direct
+  └─ final: REJECT → degraded to Codex direct
 ```
 
 ---

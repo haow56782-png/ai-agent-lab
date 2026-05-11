@@ -67,7 +67,8 @@ Additional `.agents` fixtures:
 
 Handle skill assets in this order:
 
-1. Decide canonical skill root: `.claude/skills`, `.agents/skills`, or both with documented purpose.
-2. For identical `.agents` copies, either remove them or document why both roots must exist.
-3. For divergent skill files, review one skill family at a time and commit only validated upgrades.
-4. Treat Ruflo fixtures as a separate methodology/evaluation fixture batch.
+1. Use `.claude/skills` as the canonical repository skill root.
+2. Treat `.agents/skills` as an import / runtime mirror until each divergent skill family is reconciled.
+3. For identical `.agents` copies, remove or ignore them after all divergent assets are promoted.
+4. For divergent skill files, review one skill family at a time and commit only validated upgrades.
+5. Promote Ruflo fixtures into `.claude/skills/ruflo-project-orchestration-skill/fixtures` as the first skill asset batch.

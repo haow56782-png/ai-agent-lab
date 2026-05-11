@@ -1,17 +1,160 @@
 ---
 name: ruflo-project-orchestration
+description: "Ruflo 项目级元 Agent 编排技能 — 定义什么任务用 Ruflo、怎么拆 agent、怎么验收、什么不能交给 Ruflo。专属准入与验收规约，适用于 Ruflo 框架的任务下发和编排。"
+category: methodology
 version: 1.1
+owner: wanghao
 maturity: draft
 methodology_id: M-08
 enforcement_default: P0
 trigger_mode: hybrid
-owner: wanghao
 last_updated: 2026-05-06
 changelog_v1.1:
   - "增加主拒绝原因优先级机制(P0_Forbidden > Gate > Asset > Quality)"
   - "工程层枚举固定化为 10 层,新增'层涉及'判定细则(read-only 不算涉及)"
   - "E-1.2 / E-2.8 拆分主辅命中关系(Secrets > 不可逆写)"
   - "Trace Sanitization 显式化为强制输出字段"
+
+inputs:
+  - name: task_description
+    type: string
+    required: true
+    description: "用户下发的任务描述"
+  - name: task_context
+    type: string
+    required: false
+    description: "任务的上下文信息（PRD、相关文档等）"
+
+outputs:
+  - name: admission_decision
+    type: object
+    description: "准入判定结果（门 1-3 PASS/FAIL + 最终决策）"
+    alwaysPresent: true
+  - name: agent_topology
+    type: object
+    description: "Sub-agent 拓扑和职责卡片"
+    alwaysPresent: false
+  - name: evaluation_result
+    type: object
+    description: "R1-R6 验收评分结果"
+    alwaysPresent: false
+  - name: trace_report
+    type: object
+    description: "执行 trace 日志"
+    alwaysPresent: false
+  - name: error
+    type: object
+    description: "错误信息（含规则命中上下文）"
+    alwaysPresent: false
+
+tools:
+  - name: read
+    purpose: "读取任务描述、相关文档和方法论资产"
+    required: true
+  - name: execute
+    purpose: "执行 sub-agent 编排和任务分配"
+    required: false
+  - name: write
+    purpose: "写入 proposal 到 staging 区"
+    required: false
+
+memory:
+  required:
+    - "methodology_registry (方法论资产 M-01~M-15 的注册表和成熟度)"
+    - "task_state (当前 Ruflo 任务的执行状态和 sub-agent 结果)"
+    - "forbidden_zone_cache (E.1/E.2 禁区规则缓存)"
+  ttl: "任务级别 — 任务完成后清除中间状态"
+
+workflow:
+  steps:
+    - "触发判定 — 检查 A.1 触发条件和 A.2 反触发条件"
+    - "准入决策 — 执行 B.1-B.5 三道门禁+优先级算法"
+    - "Agent 拆分 — 按 C.1-C.3 拆分 sub-agent 并填写职责卡片"
+    - "执行编排 — 按拓扑分配任务并监控执行"
+    - "验收评分 — 按 D.1-D.3 R1-R6 评分 + 硬性门槛检查"
+    - "Trace 输出 — 按 G.1-G.5 输出脱敏 trace 日志"
+  states:
+    - "INIT → TRIGGER_CHECKED → GATE_EVALUATING"
+    - "→ GATE_PASSED → AGENT_SPLITTING → TASK_EXECUTING"
+    - "→ EVALUATING → REPORT_GENERATED"
+    - "→ GATE_REJECTED → FALLBACK"
+    - "→ FORBIDDEN_ZONE_HIT → ABORTING"
+
+verification:
+  - id: "gate-trigger-matched"
+    description: "确认满足 A.1 触发条件且不命中 A.2 反触发"
+    type: existence
+    severity: critical
+  - id: "gate-scale-passed"
+    description: "确认 B.1 规模门槛三选一通过"
+    type: invariant
+    severity: critical
+  - id: "gate-reversible"
+    description: "确认 B.3 可逆性通过"
+    type: invariant
+    severity: critical
+  - id: "gate-forbidden-clear"
+    description: "确认未触发 E.1/E.2 禁区"
+    type: invariant
+    severity: critical
+  - id: "gate-trace-sanitized"
+    description: "确认 trace 已脱敏并包含 sanitization 块"
+    type: existence
+    severity: major
+
+failure_modes:
+  - when: "任务不满足任一规模门槛"
+    code: "SCALE_FAIL"
+    recoverable: true
+    recovery: "降级为普通 agent 或 Codex 直接处理"
+  - when: "任务不具备自主性需求"
+    code: "AUTONOMY_FAIL"
+    recoverable: true
+    recovery: "改用工作流编排器(n8n 类)"
+  - when: "存在不可逆操作"
+    code: "IRREVERSIBLE_FAIL"
+    recoverable: true
+    recovery: "拒绝执行并输出禁区证据"
+  - when: "触发 P0 禁区"
+    code: "FORBIDDEN_ZONE_HIT"
+    recoverable: false
+    recovery: "立即 abort 当前 sub-agent，升级到人类决策"
+  - when: "Sub-agent 数量超过上限"
+    code: "AGENT_OVERFLOW"
+    recoverable: true
+    recovery: "强制二级编排(meta-Ruflo + 子 Ruflo)"
+  - when: "验收评分 < 18 或硬性门槛不满足"
+    code: "EVAL_FAIL"
+    recoverable: true
+    recovery: "标记为 Fail 并返回重做清单"
+
+fallback:
+  strategy: degrade
+  plan: "规模不足降级为普通 agent；不可逆操作拒绝执行；禁区触发升级到人类决策；trace 服务不可用时跳过脱敏但记录警告"
+
+handoff:
+  - to: "verification-gate"
+    when: "准入判定完成或验收评分完成"
+    payload: "判定结果 + gate 配置"
+  - to: "failure-analysis"
+    when: "进入不可恢复错误状态或禁区触发"
+    payload: "错误上下文 + trace ID + 规则命中证据"
+  - to: "human"
+    when: "禁区触发需人类签字"
+    payload: "禁区规则 ID + 触发上下文 + 时间戳"
+
+cost_tracking:
+  estimatedTokens: 12000
+  estimatedTimeMs: 60000
+  recordFields:
+    - field: "gatesPassed"
+      description: "通过的准入门数"
+    - field: "subAgentsCreated"
+      description: "创建的 sub-agent 数"
+    - field: "rScores"
+      description: "R1-R6 各项评分"
+    - field: "redactionCount"
+      description: "trace 脱敏处数"
 ---
 
 # Ruflo Project Orchestration Skill
@@ -19,6 +162,166 @@ changelog_v1.1:
 > Ruflo = 项目级元 Agent(自主拆解执行)。本 skill 规定:**什么任务用 Ruflo、怎么拆 agent、怎么验收、什么不能交给 Ruflo**。
 
 本 skill 不是通用编排指南,是 Ruflo 专属准入与验收规约。其他 agent 框架(CrewAI / AutoGen / Dify)不适用本 skill。
+
+## 1. Purpose
+
+定义 Ruflo（项目级元 Agent）的专属准入与验收规约。Ruflo 能在运行时自主拆解任务、动态调整 sub-agent 编排。本 skill 涵盖触发规则、准入门禁、Agent 拆分规范、验收评分标准、禁区清单和 Trace 日志规范。
+
+## 2. References
+
+| 文档 | 说明 |
+|------|------|
+| 产品方法论 M-01 ~ M-05 | 产品设计方法论（Ruflo 只读） |
+| 知识工程方法论 M-11 ~ M-15 | 知识工程方法论（Ruflo 只读） |
+| 产品规范指南 | 核心 SOP 资产（Ruflo 只读） |
+| 10 维评审手册 | 产品评审标准 |
+
+## 3. Core Principles / Architecture
+
+1. **元 Agent 模式** — Ruflo 是项目级元 Agent，能在运行时自主拆解任务、动态调整 sub-agent 编排
+2. **三层门禁准入** — 规模门槛（B.1）+ 自主性需求（B.2）+ 可逆性（B.3），全部 PASS 才能进入
+3. **P0 禁区不可逾越** — 业务语义禁区（E.1）+ 工程动作禁区（E.2），触发即 abort
+4. **Proposal 权无 Merge 权** — 可提议修改但不能直接写入正式资产
+5. **双条件评分 R1-R6** — 内容存在（0-3）+ 证据有效（0-2），硬性门槛优先
+
+## 4. Workflow
+
+```
+INIT → TRIGGER_CHECK → GATE_EVALUATION → AGENT_SPLIT → EXECUTION → EVALUATION → REPORT
+  ↘ NO_TRIGGER      ↘ GATE_FAIL       ↘ OVERFLOW    ↘ ZONE_HIT   ↘ FAIL      ↘ TRACE
+```
+
+详见 Parts A-I 结构中的详细拆解。
+
+## 5. Data Boundaries
+
+**允许访问:** L0-P/L0-T（只读），L1/L2/L3（读取+提案），maturity=draft（读取+提案）
+
+**禁止访问:** maturity=verified/proven 的直接写入，核心 SOP 直接写入，主干方法论 M-01~M-15 直接写入
+
+**跨资产操作规则:** 见 Part F — 与既有方法论资产的接口。
+
+## 6. Failure Modes
+
+| code | 异常 | 可恢复 | 恢复路径 |
+|------|------|--------|----------|
+| `SCALE_FAIL` | 规模不足（B.1） | 是 | 降级普通 agent |
+| `AUTONOMY_FAIL` | 无自主性（B.2） | 是 | 改用工作流编排器 |
+| `IRREVERSIBLE_FAIL` | 不可逆（B.3） | 是 | 拒绝并输出证据 |
+| `FORBIDDEN_ZONE_HIT` | 禁区触发（E.x） | 否 | abort + 升级人类 |
+| `AGENT_OVERFLOW` | Agent 超限（C.2） | 是 | 二级编排 |
+| `EVAL_FAIL` | 验收 Fail（D.2/D.3） | 是 | 重做 |
+
+## 7. Inputs
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `task_description` | string | 是 | 用户下发的任务描述 |
+| `task_context` | string | 否 | PRD、相关文档等上下文 |
+
+## 8. Outputs
+
+| 输出 | 类型 | 说明 |
+|------|------|------|
+| `admission_decision` | object | 准入判定结果（门 1-3 + 最终决策） |
+| `agent_topology` | object | Sub-agent 拓扑和职责卡片 |
+| `evaluation_result` | object | R1-R6 验收评分 |
+| `trace_report` | object | 执行 trace 日志 |
+| `error` | object | 错误信息 |
+
+## 9. When to Use
+
+**加载条件:** 用户消息中出现 `Ruflo` / `ruflo` 字面量，或消息以 `/ruflo` / `用 Ruflo` / `让 Ruflo` / `Ruflo 来` / `交给 Ruflo` 开头。
+
+**不加载条件:** 闲聊提及但无任务意图、任务指向其他 agent 框架、仅讨论 Ruflo 架构。
+
+## 10. Verification
+
+- [ ] 触发条件命中且无反触发（A.1 + A.2）
+- [ ] 准入门 1-3 全部 PASS（B.1-B.3）
+- [ ] 工程层涉及证据完整（B.1.b）
+- [ ] Sub-agent 数量合规 [2, 7]（C.2）
+- [ ] 无禁区命中（E.1 + E.2）
+- [ ] Trace 脱敏合格（G.2-G.5）
+- [ ] 验收 R1-R6 绑定交付物（D.1）
+
+## 11. Forbidden Behaviors
+
+| 行为 | 后果 |
+|------|------|
+| 跳过准入直接拆任务 | 违反 A.3，加载后必须走 Part B 决策树 |
+| 在禁区操作（E.1/E.2） | P0 违规，整个任务标记为失败 |
+| 直接写入 verified/proven 资产 | 违反 F.1 读写权限矩阵 |
+| 不输出准入判定结构 | 违反 B.4 格式要求 |
+| Trace 不包含 sanitization 块 | 违反 G.5 强制输出字段 |
+
+## 12. Output Template
+
+```yaml
+admission_decision:
+  gate_1_scale: PASS / FAIL
+  gate_2_autonomy: PASS / FAIL
+  gate_3_reversibility: PASS / FAIL
+  final_decision: "进入 Ruflo | 拒绝并降级"
+  primary_rejection_reason: "<主因 ID>"
+  secondary_rejection_reasons: ["<次因 ID>"]
+
+agent_topology:
+  - agent_id: "<唯一标识>"
+    role: "planner | coder | reviewer | verifier | executor"
+    input_schema: {...}
+    output_schema: {...}
+    fallback: "retry | human | abort | degrade"
+
+evaluation:
+  R1_score: N/5
+  R2_score: N/5
+  R3_score: N/5
+  R4_score: N/5
+  R5_score: N/5
+  R6_score: N/5
+  total: N/30
+  verdict: "Fail | Weak Pass | Pass | Strong Pass"
+
+trace_sanitization:
+  applied: true / false
+  sanitization_level: P0 / P1 / P2
+  redacted_fields: [...]
+  redaction_count: N
+```
+
+## 13. VIB Example
+
+### 场景：用户请求 "用 Ruflo 重构认证模块"
+
+1. 触发检查：消息含 "用 Ruflo" → 命中 A.1.2
+2. 准入判定：
+   - 门 1 规模：涉及 4+ 子任务 → PASS（B.1.a）
+   - 门 2 自主性：需要运行时动态调整 → PASS
+   - 门 3 可逆性：全部可回滚 → PASS
+3. Agent 拆分：planner + coder + reviewer + verifier，5 字段卡片完整
+4. 执行：并行实现 + 串联审校
+5. 验收：R1-R6 评分
+6. Trace：脱敏后输出
+
+## 14. Fallback Strategy
+
+| 场景 | 策略 | 行为 |
+|------|------|------|
+| 准入门禁不通过 | degrade | 降级到普通 agent 或 Codex |
+| 禁区触发 | abort | 升级到人类决策，等待显式签字 |
+| Agent 超过 7 个 | degrade | 启用二级编排（meta-Ruflo + 子 Ruflo） |
+| trace 服务不可用 | degrade | 跳过脱敏但记录警告 |
+| 验收 Fail | retry | 返回重做清单 |
+
+## 15. Handoff Protocol
+
+| 接收方 | 触发条件 | 传递内容 |
+|--------|---------|---------|
+| verification-gate | 准入判定完成 | 判定结果 + gate 配置 |
+| failure-analysis | 禁区触发或不可恢复错误 | 错误上下文 + trace ID + 规则命中证据 |
+| human | 禁区触发需签字 | 禁区规则 ID + 触发上下文 + 时间戳 |
+| evaluation-review | 任务执行完成 | 交付物 + R1-R6 评分 |
 
 ---
 
@@ -42,7 +345,7 @@ changelog_v1.1:
 
 ### A.3 加载后行为
 
-加载本 skill 后,Claude **必须**在响应开头简短确认进入 Ruflo 模式,并按 Part B 决策树进行准入判定。**不允许跳过准入直接拆任务**。
+加载本 skill 后,Codex **必须**在响应开头简短确认进入 Ruflo 模式,并按 Part B 决策树进行准入判定。**不允许跳过准入直接拆任务**。
 
 ---
 
@@ -58,7 +361,7 @@ Ruflo 是项目级元 agent,准入门槛高于普通 agent。任务必须满足�
 - **B.1.b** 涉及 ≥3 个工程层(枚举见下表)
 - **B.1.c** 需要 `planner` / `coder` / `reviewer` / `verifier` 角色分离
 
-不满足任一 → **不进 Ruflo**,改用普通 agent 或 Claude Code 直接处理。
+不满足任一 → **不进 Ruflo**,改用普通 agent 或 Codex 直接处理。
 
 #### B.1.b 工程层固定枚举(10 层,封闭集合)
 
@@ -72,7 +375,7 @@ Ruflo 是项目级元 agent,准入门槛高于普通 agent。任务必须满足�
 | L-6 | tools | MCP 工具、外部 API 集成、tool calling 接入 |
 | L-7 | ci | 构建、测试、部署管线、自动化 release |
 | L-8 | docs | PRD、API 文档、用户手册、方法论文档 |
-| L-9 | skills | Claude / Ruflo skill 文件、prompt 资产 |
+| L-9 | skills | Codex / Ruflo skill 文件、prompt 资产 |
 | L-10 | orchestration | Sub-agent 拓扑、依赖编排、Ruflo 自身配置 |
 
 #### B.1.b "层涉及"判定细则(防止凑层)

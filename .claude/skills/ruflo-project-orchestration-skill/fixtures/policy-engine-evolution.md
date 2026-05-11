@@ -50,7 +50,7 @@ v1.1 的 Ruflo Skill 三段全有:
 
 而 prompt / skill / workflow **不具备这三段**:
 - **Prompt**:只有 instruction,无 enforcement,无 audit
-- **Skill**(在 Claude 体系内):有 instruction + 部分 audit,但**无 enforcement**(skill 只能"建议",不能强制 abort)
+- **Skill**(在 Codex 体系内):有 instruction + 部分 audit,但**无 enforcement**(skill 只能"建议",不能强制 abort)
 - **Workflow**:有执行控制,但**无 admission**(节点是预定义的,不做"是否可接受"判定)
 
 **Policy Engine = admission + enforcement + audit 三段全闭。**
@@ -157,7 +157,7 @@ Policy Engine 的规则可以**基于审计数据自我演化**:
 未来:Agent OS Policy Layer
   ├─ Ruflo Adapter
   ├─ CrewAI Adapter
-  ├─ Claude Code Adapter
+  ├─ Codex Adapter
   └─ MCP Tool Adapter
 统一管准入 / 执行 / 审计
 ```

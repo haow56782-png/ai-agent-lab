@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Icon, Btn } from '../components/Common';
-import { useApp, DEMO_DOC, getSchoolOptions } from '../components/AppFrame';
+import { createDocumentIdentity, useApp, DEMO_DOC, getSchoolOptions } from '../components/AppFrame';
 import { api } from '../api/client';
 
 interface Props {
@@ -26,6 +26,11 @@ export interface CheckHistoryItem {
 
 const HISTORY_KEY = 'remei_check_history';
 const MAX_HISTORY = 10;
+const UPLOAD_TRIGGER_BLOCK_SELECTOR = 'button, a, input, select, textarea, [data-no-upload-trigger]';
+
+function isUploadTriggerBlocked(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && Boolean(target.closest(UPLOAD_TRIGGER_BLOCK_SELECTOR));
+}
 
 function loadHistory(): CheckHistoryItem[] {
   try {
@@ -49,8 +54,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
   const { state, set } = useApp();
   const [drag, setDrag] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [history, setHistory] = useState<CheckHistoryItem[]>(loadHistory);
+  const [history] = useState<CheckHistoryItem[]>(loadHistory);
   const [showSchoolModal, setShowSchoolModal] = useState(false);
   const [uploadCountMap, setUploadCountMap] = useState<Record<string, number>>({});
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,20 +71,20 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
 
   // P2 5-2: Same-file detection — show toast if file was uploaded before
   useEffect(() => {
-    if (!state.doc?.name) return;
-    const match = history.find(h => h.fileName === state.doc.name);
+    const docName = state.doc?.name;
+    if (!docName) return;
+    const match = history.find(h => h.fileName === docName);
     if (match) {
       showToast(`检测到你之前上传过同名文档（${formatTime(match.timestamp)}），本次将进行新的检测。`);
     }
-  }, [state.doc?.name]);
+  }, [history, showToast, state.doc?.name]);
 
   const cancelUpload = useCallback(() => {
     abortRef.current?.();
     abortRef.current = null;
-    setUploading(false);
     set({ uploadStage: 'idle', uploadPct: 0 });
     showToast('已取消上传');
-  }, []);
+  }, [set, showToast]);
 
   const handleFile = useCallback(async (file: File) => {
     const ext = file.name.toLowerCase().split('.').pop();
@@ -101,20 +105,18 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
     }
 
     setUploadError(null);
-    setUploading(true);
     set({ rawFile: file, uploadStage: 'reading', uploadPct: 0 });
 
     const MIN_UPLOAD_MS = 600;
     const uploadStartedAt = Date.now();
 
     try {
-      const { promise, xhr, abort } = api.uploadDocument(file, (pct) => {
+      const { promise, abort } = api.uploadDocument(file, (pct) => {
         set({ uploadPct: pct });
       });
       abortRef.current = abort;
       const doc = await promise;
       abortRef.current = null;
-      setUploading(false);
 
       const elapsed = Date.now() - uploadStartedAt;
       if (elapsed < MIN_UPLOAD_MS) {
@@ -124,7 +126,10 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
 
       const sizeLabel = sizeMB >= 1 ? `${sizeMB.toFixed(1)} MB` : `${Math.round(sizeMB * 1024)} KB`;
       set({
-        docId: doc.docId,
+        documentIdentity: createDocumentIdentity({
+          legacyDocId: doc.docId,
+          canonicalDocumentId: doc.canonicalDocumentId,
+        }),
         doc: { name: file.name, size: sizeLabel, pages: 0 },
         uploadStage: 'done',
         uploadPct: 100,
@@ -133,30 +138,42 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
       setTimeout(() => set({ step: 2 }), 700);
     } catch (err: any) {
       abortRef.current = null;
-      setUploading(false);
       if (err.name === 'AbortError') return;
       setUploadError(err.message);
       set({ uploadStage: 'idle', uploadPct: 0 });
       showToast(`上传失败: ${err.message}`);
     }
-  }, []);
+  }, [set, showToast]);
 
   const startUpload = useCallback(() => {
+    if (state.uploadStage === 'reading') return;
     inputRef.current?.click();
-  }, []);
+  }, [state.uploadStage]);
+
+  const handleUploadZoneClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (isUploadTriggerBlocked(e.target)) return;
+    startUpload();
+  }, [startUpload]);
+
+  const handleUploadZoneKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isUploadTriggerBlocked(e.target)) return;
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    startUpload();
+  }, [startUpload]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDrag(false);
     const files = e.dataTransfer.files;
     if (files.length > 0) handleFile(files[0]);
-  }, []);
+  }, [handleFile]);
 
   const onFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) handleFile(files[0]);
     e.target.value = '';
-  }, []);
+  }, [handleFile]);
 
   const useDemo = useCallback(() => {
     set({ uploadStage: 'reading', uploadPct: 0, rawFile: null });
@@ -166,7 +183,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
       set({ uploadPct: Math.round(p) });
       if (p >= 100) {
         clearInterval(tick);
-        set({ doc: DEMO_DOC, uploadStage: 'done', docId: 'demo' });
+        set({ doc: DEMO_DOC, uploadStage: 'done', documentIdentity: createDocumentIdentity({ legacyDocId: 'demo' }) });
         showToast('已识别 .docx · 87 页 · 准备就绪');
         setTimeout(() => set({ step: 2 }), 700);
       }
@@ -181,18 +198,18 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
           margin: '0 0 12px', fontSize: 44, lineHeight: 1.1, letterSpacing: -.6,
           color: 'var(--ink-900)', fontWeight: 600,
         }}>
-          把已经写好的论文，<br/>排成<span style={{ fontStyle: 'italic', color: 'var(--brand-700)' }}>合格</span>的 Word 文档。
+          把你的论文，<br/>稳稳送到<span style={{ fontStyle: 'italic', color: 'var(--brand-700)' }}>可以安心交稿</span>的状态。
         </h1>
         <p style={{ fontSize: 14.5, color: 'var(--ink-500)', maxWidth: 540, marginBottom: 28, lineHeight: 1.6 }}>
-          上传 .docx 或 .pdf，系统只对排版层做变更，不改写一字论文内容。
-          输出新的 Word 文档、规则命中报告与差异预览。
+          上传 .docx 或 .pdf，我们只处理排版，不改一字正文。
+          你会拿到修正稿、规则命中报告和差异预览，带着更从容的底气走向毕业、上岸和下一段目标。
         </p>
         <div style={{
           marginBottom: 16, padding: '10px 12px', borderRadius: 4,
           background: 'var(--brand-50)', border: '1px solid rgba(59,92,130,.12)',
           fontSize: 12.5, color: 'var(--ink-600)', lineHeight: 1.55,
         }}>
-          <span style={{ color: 'var(--brand-700)', fontWeight: 600 }}>上传提示：</span>
+          <span style={{ color: 'var(--brand-700)', fontWeight: 600 }}>开始前提醒：</span>
           <span>{LEGACY_DOC_HINT}</span>
         </div>
 
@@ -205,15 +222,22 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
         />
 
         <div
+          data-testid="paper-upload-zone"
+          role="button"
+          tabIndex={0}
+          aria-label="选择或拖入论文文件"
+          onClick={handleUploadZoneClick}
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
           onDragLeave={() => setDrag(false)}
           onDrop={onDrop}
+          onKeyDown={handleUploadZoneKeyDown}
           style={{
             border: `1.5px dashed ${uploadError ? 'var(--sun-500)' : drag ? 'var(--brand-700)' : 'var(--ink-300)'}`,
             background: uploadError ? 'var(--sun-100)' : drag ? 'var(--brand-50)' : 'var(--paper-0)',
             borderRadius: 6, padding: '40px 32px',
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             gap: 12, position: 'relative',
+            cursor: 'pointer',
             transition: 'all .18s',
           }}
         >
@@ -228,7 +252,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
             <Icon name="upload" size={22} />
           </div>
           <div className="serif" style={{ fontSize: 20, fontWeight: 600, color: 'var(--ink-900)' }}>
-            {uploadError ? '上传失败，请重试' : drag ? '松开以上传文件' : '拖入文档，或点击选择'}
+            {uploadError ? '上传失败，请重新选择论文文件' : drag ? '松开后开始接住这篇论文' : '拖入论文，或点击选择文件'}
           </div>
           <div style={{ fontSize: 12.5, color: 'var(--ink-500)' }}>
             支持 <span className="mono">.docx</span> · <span className="mono">.pdf</span>（数字 / 扫描）· 单文件 ≤ 50 MB
@@ -246,10 +270,10 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
                 }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-500)' }}>
-                <span>正在上传 {state.rawFile?.name || '…'}</span>
+                <span>正在接收 {state.rawFile?.name || '…'}</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>{state.uploadPct}%</span>
-                  <button onClick={cancelUpload} style={{
+                  <button type="button" onClick={cancelUpload} style={{
                     background: 'var(--hair)', border: 'none', borderRadius: 3,
                     padding: '2px 8px', fontSize: 10, cursor: 'pointer',
                     fontFamily: 'var(--mono)', color: 'var(--ink-500)',
@@ -259,19 +283,19 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <Btn kind="primary" icon="upload" onClick={startUpload}>选择文件</Btn>
+              <Btn kind="primary" icon="upload" onClick={startUpload}>上传论文</Btn>
             </div>
           )}
 
           {/* P2 5-3: Trust text */}
           <div style={{ marginTop: 14, fontSize: 12, color: 'var(--ink-400)', display: 'flex', gap: 4 }}>
-            <span>已支持 <strong style={{ color: 'var(--brand-700)' }}>{getSchoolOptions().length}</strong> 所高校规范</span>
+            <span>已收录 <strong style={{ color: 'var(--brand-700)' }}>{getSchoolOptions().length}</strong> 所高校规范</span>
             <span>·</span>
-            <button onClick={() => setShowSchoolModal(true)} style={{
+            <button type="button" onClick={() => setShowSchoolModal(true)} style={{
               background: 'none', border: 'none', padding: 0,
               color: 'var(--brand-700)', cursor: 'pointer', fontSize: 12,
               fontFamily: 'var(--sans)', textDecoration: 'underline', textUnderlineOffset: 2,
-            }}>查看支持列表 →</button>
+            }}>看看有没有你的学校 →</button>
           </div>
 
           <div style={{
@@ -288,7 +312,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
             <span style={{ flex: 1 }}>{uploadError}</span>
-            <button onClick={startUpload}
+            <button type="button" onClick={startUpload}
               style={{
                 height: 24, padding: '0 10px', border: 'none', borderRadius: 3,
                 background: 'var(--rust-500)', color: '#fff', cursor: 'pointer',
@@ -299,7 +323,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
         )}
 
         <div style={{ marginTop: 18, display: 'flex', gap: 18, color: 'var(--ink-500)', fontSize: 12 }}>
-          {['正文零篡改', '默认输出新文档，不覆盖原稿', '不用于模型训练'].map(t => (
+          {['正文零改动', '默认生成新稿，不覆盖原稿', '你的论文不用于模型训练'].map(t => (
             <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Icon name="check" size={13} color="var(--leaf-700)" /> {t}
             </span>
@@ -307,11 +331,11 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
         </div>
 
         {state.uploadStage === 'idle' && (
-          <button onClick={useDemo} style={{
+          <button type="button" onClick={useDemo} style={{
             marginTop: 14, background: 'transparent', border: 'none', cursor: 'pointer',
             color: 'var(--brand-700)', fontSize: 12.5, fontFamily: 'var(--sans)',
             textDecoration: 'underline', textUnderlineOffset: 3,
-          }}>没有文档？用一份示例论文走完流程 →</button>
+          }}>还没准备好文件？先用示例论文走一遍完整流程 →</button>
         )}
       </div>
 
@@ -322,7 +346,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
       }}>
         {history.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div className="serif" style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink-900)' }}>最近检测</div>
+            <div className="serif" style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink-900)' }}>最近进度</div>
             <span className="mono" style={{ fontSize: 10, color: 'var(--ink-400)', letterSpacing: '.12em' }}>HISTORY</span>
           </div>
         )}
@@ -343,7 +367,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
               <div className="mono" style={{ fontSize: 10.5, color: 'var(--ink-500)', marginTop: 3 }}>{r.schoolName} · {formatTime(r.timestamp)}</div>
               <div style={{ fontSize: 11, color: r.summary.failed > 0 ? 'var(--rust-700)' : r.summary.reviewed > 0 ? 'var(--sun-700)' : 'var(--leaf-700)', marginTop: 3 }}>
                 {r.summary.failed > 0 ? '✗ ' : r.summary.reviewed > 0 ? '⚠ ' : '✓ '}
-                通过 {r.summary.passed} · {r.summary.reviewed > 0 ? `${r.summary.reviewed} 项需复核` : `${r.summary.total} 项全部通过`}
+                已通过 {r.summary.passed} 项 · {r.summary.reviewed > 0 ? `${r.summary.reviewed} 项待你复核` : `${r.summary.total} 项已全部过线`}
               </div>
             </div>
           </div>
@@ -359,12 +383,12 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
           animation: 'protoFade .15s ease',
         }} onClick={() => setShowSchoolModal(false)}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--paper-0)', borderRadius: 8, padding: '28px 32px',
+            background: 'var(--paper-0)', borderRadius: 6, padding: '28px 32px',
             boxShadow: 'var(--shadow-card)', maxWidth: 440, width: '90%',
             animation: 'protoFadeUp .2s ease',
           }}>
             <div className="serif" style={{ fontSize: 18, fontWeight: 600, color: 'var(--ink-900)', marginBottom: 18 }}>
-              已支持规范列表
+              已收录学校规范
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               {getSchoolOptions().map(s => (
@@ -397,11 +421,11 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
                 </div>
               ))}
             </div>
-            <button onClick={() => setShowSchoolModal(false)} style={{
+            <button type="button" onClick={() => setShowSchoolModal(false)} style={{
               marginTop: 18, width: '100%', height: 36, border: 'none', borderRadius: 4,
               background: 'var(--ink-900)', color: '#fff', cursor: 'pointer',
               fontFamily: 'var(--sans)', fontSize: 12.5, fontWeight: 500,
-            }}>关闭</button>
+            }}>我知道了</button>
           </div>
         </div>
       )}

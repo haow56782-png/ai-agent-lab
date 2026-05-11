@@ -1,4 +1,37 @@
+import type {
+  FixStatusResponse,
+  FixType,
+  PublicJobRecord as JobRecord,
+  QueuedJobResponse,
+} from '../../../../packages/shared-types/src/job-contract';
+import type {
+  FindingContract,
+  P1ExemptionRequest,
+  P1ExemptionResponse,
+} from '../../../../packages/shared-types/src/finding-contract';
+
 const API = '/api/v1';
+
+export type {
+  FindingContract,
+  P1ExemptionRequest,
+  P1ExemptionResponse,
+} from '../../../../packages/shared-types/src/finding-contract';
+
+export type {
+  FixJobArtifact,
+  FixJobEvent,
+  FixResult,
+  FixStatusResponse,
+  FixStepResult,
+  FixType,
+  JobError,
+  JobRuleDetail,
+  JobRuleHitItem as RuleHitItem,
+  JobRuleHitLocation as RuleHitLocation,
+  PublicJobRecord as JobRecord,
+  QueuedJobResponse,
+} from '../../../../packages/shared-types/src/job-contract';
 
 export interface ApiError {
   code: string;
@@ -17,44 +50,12 @@ export interface HealthResponse {
 
 export interface DocumentRecord {
   docId: string;
+  canonicalDocumentId?: string;
   filename: string;
   size: number;
   sha256: string;
   fileType: string;
   createdAt: string;
-}
-
-export interface RuleHitLocation {
-  pageIndex: number; // 0-based
-  bbox?: { x: number; y: number; w: number; h: number };
-}
-
-export interface RuleHitItem {
-  ruleId?: string;
-  label: string;
-  status: 'pass' | 'warn' | 'fail';
-  location?: RuleHitLocation;
-}
-
-export interface JobRecord {
-  jobId: string;
-  type?: string;
-  status: string;
-  progress: number;
-  stage?: string;
-  docId?: string;
-  profileId?: string;
-  result?: {
-    items?: { k: string; conf: number }[];
-    log?: string[];
-    rules?: { passed: number; warnings: number; failed: number };
-    ruleDetails?: { cat: string; items: (RuleHitItem | [string, 'pass' | 'warn'])[] }[];
-    [key: string]: unknown;
-  };
-  createdAt: string;
-  completedAt?: string;
-  estimatedSeconds?: number;
-  freeFixLimit?: number;
 }
 
 export interface SchoolProfile {
@@ -87,9 +88,6 @@ export interface DiffResult {
   summary: { pages: number; changeCount: number; contentChanges: number; formatChanges: number };
 }
 
-// ── 02 Fix Matrix types ──
-export type FixType = 'margin' | 'body_style' | 'heading' | 'page_number' | 'cover' | 'toc' | 'duplication_preprocess' | 'header_footer' | 'abstract_format' | 'cross_ref' | 'caption' | 'reference_format' | 'table_format' | 'image_format' | 'punctuation';
-
 export interface DuplicationRisk {
   id: string;
   type: 'manual_toc' | 'header_content' | 'reference_format' | 'footnote_format' | 'watermark_text';
@@ -100,32 +98,6 @@ export interface DuplicationRisk {
   severity: 'high' | 'medium' | 'low';
 }
 
-export interface FixStepResult {
-  type: FixType;
-  status: 'done' | 'skipped' | 'failed';
-  summary: string;
-  duration: number;
-}
-
-export interface FixStatusResponse {
-  status: 'running' | 'done' | 'failed';
-  completedSteps: FixStepResult[];
-  currentStep?: FixType;
-  progress: number;
-  stage?: string;
-  message?: string;
-  errorMessage?: string;
-  freeFixLimit?: number;
-  result?: FixResult;
-}
-
-export interface FixResult {
-  fixedFileId: string;
-  totalFixed: number;
-  newScore: number;
-  contentHash: string;
-  originalHash: string;
-}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {
@@ -205,16 +177,20 @@ export const api = {
     });
   },
 
-  createAnalyzeJob: (docId: string, profileId?: string | null): Promise<JobRecord> =>
+  createAnalyzeJob: (legacyDocId: string, profileId?: string | null): Promise<QueuedJobResponse> =>
     request('/jobs/analyze', {
       method: 'POST',
-      body: JSON.stringify({ docId, profileId }),
+      body: JSON.stringify({ docId: legacyDocId, profileId }),
     }),
 
-  createFormatJob: (payload: { docId?: string; jobId?: string; profileId: string }): Promise<JobRecord> =>
+  createFormatJob: (payload: { legacyDocId?: string; jobId?: string; profileId: string }): Promise<QueuedJobResponse> =>
     request('/jobs/format', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        docId: payload.legacyDocId,
+        jobId: payload.jobId,
+        profileId: payload.profileId,
+      }),
     }),
 
   getJob: (jobId: string): Promise<JobRecord> =>
@@ -222,6 +198,60 @@ export const api = {
 
   getDiff: (jobId: string): Promise<DiffResult> =>
     request(`/jobs/${jobId}/diff`),
+
+  syncFindings: (payload: { jobId?: string; canonicalDocumentId: string; findings: FindingContract[] }): Promise<{
+    upserted_count: number;
+    finding_ids: string[];
+  }> => request('/findings/sync', {
+    method: 'POST',
+    body: JSON.stringify({
+      job_id: payload.jobId,
+      document_id: payload.canonicalDocumentId,
+      findings: payload.findings,
+    }),
+  }),
+
+  listFindings: (filter: { canonicalDocumentId?: string; jobId?: string; status?: string; severity?: string; ruleId?: string; ruleGroup?: string }): Promise<FindingContract[]> => {
+    const params = new URLSearchParams();
+    if (filter.canonicalDocumentId) params.set('document_id', filter.canonicalDocumentId);
+    if (filter.jobId) params.set('job_id', filter.jobId);
+    if (filter.status) params.set('status', filter.status);
+    if (filter.severity) params.set('severity', filter.severity);
+    if (filter.ruleId) params.set('rule_id', filter.ruleId);
+    if (filter.ruleGroup) params.set('rule_group', filter.ruleGroup);
+    const query = params.toString();
+    return request(`/findings${query ? `?${query}` : ''}`);
+  },
+
+  acceptFinding: (findingId: string): Promise<FindingContract> =>
+    request(`/findings/${encodeURIComponent(findingId)}/accept`, {
+      method: 'POST',
+      body: JSON.stringify({ actor_id: 'local-author', actor_role: 'Author' }),
+    }),
+
+  rejectFinding: (findingId: string, reason?: string): Promise<FindingContract> =>
+    request(`/findings/${encodeURIComponent(findingId)}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ actor_id: 'local-author', actor_role: 'Author', reason }),
+    }),
+
+  selfEditFinding: (finding: FindingContract, newText: string): Promise<{
+    finding: FindingContract;
+    affected_finding_ids: string[];
+  }> => request(`/findings/${encodeURIComponent(finding.finding_id)}/self-edit`, {
+    method: 'POST',
+    body: JSON.stringify({
+      actor_id: 'local-author',
+      new_text: newText,
+      affected_spans: finding.evidence_spans,
+    }),
+  }),
+
+  exemptP1Findings: (payload: P1ExemptionRequest): Promise<P1ExemptionResponse> =>
+    request('/findings/exempt-p1', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 
   getDownload: (jobId: string): Promise<Blob> =>
     fetch(`${API}/jobs/${jobId}/download`).then(r => {
@@ -233,23 +263,28 @@ export const api = {
     `${API}/jobs/${jobId}/download${type ? `?type=${type}` : ''}`,
 
   // ── 02 Fix Matrix API ──
-  createFixJob: (payload: { docId?: string; jobId?: string; profileId: string; selectedFixes?: FixType[] }): Promise<JobRecord> =>
+  createFixJob: (payload: { legacyDocId?: string; jobId?: string; profileId: string; selectedFixes?: FixType[] }): Promise<QueuedJobResponse> =>
     request('/jobs/fix', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        docId: payload.legacyDocId,
+        jobId: payload.jobId,
+        profileId: payload.profileId,
+        selectedFixes: payload.selectedFixes,
+      }),
     }),
 
   getFixStatus: (jobId: string): Promise<FixStatusResponse> =>
     request(`/jobs/${jobId}/fix-status`),
 
   // ── 05 Share API ──
-  createShareReport: (fileId: string): Promise<{
+  createShareReport: (legacyDocId: string): Promise<{
     shareUrl: string;
     shareTitle: string;
     shareDesc: string;
     ogImageUrl: string;
     posterUrl?: string;
-  }> => request('/share/report', { method: 'POST', body: JSON.stringify({ fileId, checkResultId: fileId }) }),
+  }> => request('/share/report', { method: 'POST', body: JSON.stringify({ fileId: legacyDocId, checkResultId: legacyDocId }) }),
 
   getShareReport: (shareId: string): Promise<{
     score: number;
@@ -263,7 +298,7 @@ export const api = {
   }> => request(`/share/report/${shareId}`),
 
   // ── School Detection API ──
-  detectSchool: (docId: string): Promise<{
+  detectSchool: (legacyDocId: string): Promise<{
     detected: boolean;
     name: string | null;
     confidence: number;
@@ -271,17 +306,17 @@ export const api = {
     existingSchoolId: string | null;
   }> => request('/profiles/detect', {
     method: 'POST',
-    body: JSON.stringify({ docId }),
+    body: JSON.stringify({ docId: legacyDocId }),
   }),
 
-  autoCreateSchool: (name: string, docId: string): Promise<{
+  autoCreateSchool: (name: string, legacyDocId: string): Promise<{
     schoolId: string;
     name: string;
     version: string;
     isNew: boolean;
   }> => request('/profiles/auto-create', {
     method: 'POST',
-    body: JSON.stringify({ name, docId }),
+    body: JSON.stringify({ name, docId: legacyDocId }),
   }),
 
   listProfiles: (q?: string): Promise<{

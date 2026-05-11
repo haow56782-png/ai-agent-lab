@@ -17,7 +17,7 @@ const RulesModal: React.FC<RulesModalProps> = ({ onClose, school }) => {
   const groupedRules = getRulesByCategory();
 
   return (
-    <div
+    <div className="modal-backdrop"
       style={{
         position: 'fixed',
         inset: 0,
@@ -58,7 +58,7 @@ const RulesModal: React.FC<RulesModalProps> = ({ onClose, school }) => {
                 color: 'var(--ink-900)',
               }}
             >
-              完整规则集
+              这篇论文将遵循的完整规则
             </div>
 
             <div
@@ -71,7 +71,7 @@ const RulesModal: React.FC<RulesModalProps> = ({ onClose, school }) => {
             >
               {school
                 ? `${school.name} · ${school.faculty || ''} · ${school.version || 'vAuto'} · ${school.rules || 0} 条`
-                : '请先选择学校'}
+                : '请先选择学校规范'}
             </div>
           </div>
 
@@ -93,6 +93,17 @@ const RulesModal: React.FC<RulesModalProps> = ({ onClose, school }) => {
           >
             ✕
           </button>
+        </div>
+
+        <div style={{
+          padding: '10px 22px',
+          borderBottom: '1px solid var(--hair)',
+          fontSize: 12,
+          color: 'var(--ink-600)',
+          lineHeight: 1.55,
+          background: 'var(--paper-1)',
+        }}>
+          这不是一份抽象配置，而是系统接下来替你整理论文时真正会落下去的交稿标准。看得越清楚，交稿时越安心。
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '10px 0' }}>

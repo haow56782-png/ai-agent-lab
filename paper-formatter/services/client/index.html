@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>正稿 · 论文排版</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root">
+      <style>
+        #loading-init {
+          display: flex; align-items: center; justify-content: center;
+          height: 100vh; font-family: monospace; font-size: 14px;
+          color: #6B655B; background: #F4F0E6;
+          flex-direction: column; gap: 16px;
+        }
+        #loading-init .spinner {
+          width: 24px; height: 24px; border: 2px solid #DED5C0;
+          border-top-color: #1E3A5F; border-radius: 50%;
+          animation: loading-spin .7s linear infinite;
+        }
+        @keyframes loading-spin { to { transform: rotate(360deg); } }
+      </style>
+      <div id="loading-init">
+        <div class="spinner"></div>
+        <div>正在加载应用…</div>
+      </div>
+    </div>
+    <script>
+      // Catch module-loading errors (NOT caught by try-catch in main.tsx)
+      window.addEventListener('error', (e) => {
+        var target = e.target;
+        if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
+          e.preventDefault();
+          var src = target.src || target.href || '';
+          var root = document.getElementById('root');
+          if (root) {
+            root.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;padding:40px;font-family:monospace;color:#9C4421;background:#F4F0E6;text-align:center">'
+              + '<h2 style="margin:0;font-size:18px;font-weight:600">⨯ 模块加载失败</h2>'
+              + '<p style="margin:0;font-size:13px;color:#6B655B;max-width:500px">' + src.replace(location.origin, '') + '</p>'
+              + '<pre style="margin:0;font-size:11px;color:#8E867A;max-width:600px;white-space:pre-wrap">' + (e.message || '') + '</pre>'
+              + '<button onclick="location.reload()" style="margin-top:8px;padding:8px 16px;border:1px solid #B6AE9F;background:#FBFAF6;border-radius:4px;cursor:pointer;font-family:monospace;font-size:12px">重新加载</button>'
+              + '</div>';
+          }
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', (e) => {
+        var root = document.getElementById('root');
+        if (!root) return;
+        if (root.querySelector('#loading-init')) {
+          root.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;padding:40px;font-family:monospace;color:#9C4421;background:#F4F0E6;text-align:center">'
+            + '<h2 style="margin:0;font-size:18px;font-weight:600">⨯ 异步错误</h2>'
+            + '<pre style="margin:0;font-size:11px;color:#8E867A;max-width:600px;white-space:pre-wrap">' + (e.reason?.message || e.reason || 'Unknown') + '</pre>'
+            + '<button onclick="location.reload()" style="margin-top:8px;padding:8px 16px;border:1px solid #B6AE9F;background:#FBFAF6;border-radius:4px;cursor:pointer;font-family:monospace;font-size:12px">重新加载</button>'
+            + '</div>';
+        }
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

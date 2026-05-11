@@ -1,6 +1,6 @@
 import React from 'react';
-import { Icon, LogoMark } from './Common';
 import type { RuleHitItem } from '../api/client';
+import type { FindingContract } from '../api/client';
 
 export type { RuleHitItem };
 
@@ -9,6 +9,7 @@ export interface ParseResult {
   log: string[];
   rules: { passed: number; warnings: number; failed: number };
   ruleDetails: { cat: string; items: (RuleHitItem | [string, 'pass' | 'warn'])[] }[];
+  findings?: FindingContract[];
   parsedTexts?: string[];
   rawHeadings?: string[];
 }
@@ -35,11 +36,16 @@ export interface DetectedSchool {
   existingSchoolId: string | null;
 }
 
+export interface DocumentIdentity {
+  legacyDocId: string;
+  canonicalDocumentId: string | null;
+}
+
 export interface AppState {
   step: number;
   doc: { name: string; size: string; pages: number } | null;
   rawFile: File | null;
-  docId: string | null;
+  documentIdentity: DocumentIdentity | null;
   jobId: string | null;
   jobStatus: string | null;
   uploadPct: number;
@@ -70,7 +76,7 @@ export const initialState: AppState = {
   step: 1,
   doc: null,
   rawFile: null,
-  docId: null,
+  documentIdentity: null,
   jobId: null,
   jobStatus: null,
   uploadPct: 0,
@@ -89,6 +95,30 @@ export const initialState: AppState = {
   detectedSchool: null,
   detecting: false,
 };
+
+export function createDocumentIdentity(input: {
+  legacyDocId: string;
+  canonicalDocumentId?: string | null;
+}): DocumentIdentity {
+  return {
+    legacyDocId: input.legacyDocId,
+    canonicalDocumentId: input.canonicalDocumentId ?? null,
+  };
+}
+
+export function getLegacyDocumentId(state: Pick<AppState, 'documentIdentity'>): string | null {
+  return state.documentIdentity?.legacyDocId ?? null;
+}
+
+export function getCanonicalDocumentId(state: Pick<AppState, 'documentIdentity'>): string | null {
+  const identity = state.documentIdentity;
+  if (!identity) return null;
+  return identity.canonicalDocumentId || identity.legacyDocId;
+}
+
+export function isDemoDocument(state: Pick<AppState, 'documentIdentity'>): boolean {
+  return state.documentIdentity?.legacyDocId === 'demo';
+}
 
 export const DEMO_DOC = {
   name: '基于深度学习的图像超分辨率重建研究.docx',
@@ -212,227 +242,3 @@ export function useApp() {
   if (!ctx) throw new Error('useApp must be inside AppCtx.Provider');
   return ctx;
 }
-
-// ── Sidebar ────────────────────────────────────────────────
-export const Sidebar: React.FC<{ state: AppState }> = ({ state }) => {
-  const navItems = [
-    { k: 'workbench', label: '工作台', icon: 'home' },
-  ];
-  const pct = (state.step - 1) * 25 + (state.step === 3 ? state.parsePct * .25 : state.step === 5 ? 25 : 0);
-  const school = findSchoolById(state.schoolId);
-
-  return (
-    <aside style={{
-      background: 'var(--ink-900)', color: 'var(--paper-1)',
-      display: 'flex', flexDirection: 'column',
-      padding: '22px 16px 18px',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28, padding: '0 4px' }}>
-        <LogoMark />
-        <div>
-          <div className="serif" style={{ fontSize: 18, fontWeight: 600, lineHeight: 1, letterSpacing: -.2 }}>正稿</div>
-          <div className="mono" style={{ fontSize: 9, color: 'rgba(255,255,255,.4)', letterSpacing: '.16em', marginTop: 3 }}>ZHENGGAO</div>
-        </div>
-      </div>
-
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 22 }}>
-        {navItems.map(n => (
-          <div key={n.k} style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '8px 10px', borderRadius: 4,
-            background: n.k === 'workbench' ? 'rgba(255,255,255,.08)' : 'transparent',
-            color: n.k === 'workbench' ? 'var(--paper-0)' : 'rgba(255,255,255,.62)',
-            fontSize: 13.5, cursor: 'pointer',
-            fontWeight: n.k === 'workbench' ? 500 : 400,
-          }}>
-            <Icon name={n.icon} size={15} />
-            {n.label}
-          </div>
-        ))}
-      </nav>
-
-      {state.doc && (
-        <>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', letterSpacing: '.16em', textTransform: 'uppercase', marginBottom: 8, padding: '0 10px' }}>正在进行</div>
-          <div style={{
-            padding: '10px 10px', background: 'rgba(255,255,255,.05)', borderRadius: 4,
-            display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14,
-          }}>
-            <div style={{
-              fontSize: 12, color: 'var(--paper-0)', fontWeight: 500, lineHeight: 1.3,
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            }}>{state.doc.name}</div>
-            <div className="mono" style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>
-              {school ? school.name : '浏览模式 · 仅查看文档结构'}
-            </div>
-            <div style={{ marginTop: 6, height: 3, background: 'rgba(255,255,255,.1)', borderRadius: 2, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', width: `${pct}%`, background: 'var(--rust-500)',
-                transition: 'width .35s cubic-bezier(.2,.8,.2,1)',
-              }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 9.5, color: 'rgba(255,255,255,.5)' }}>
-              <span>第 {state.step} 步</span>
-              <span>{Math.round(pct)}%</span>
-            </div>
-          </div>
-        </>
-      )}
-
-      <div style={{ flex: 1 }} />
-
-      <div style={{
-        padding: '12px 12px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 4,
-        fontSize: 11, lineHeight: 1.5, color: 'rgba(255,255,255,.6)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--leaf-500)' }} />
-          <span className="mono" style={{ fontSize: 9.5, letterSpacing: '.14em', color: 'rgba(255,255,255,.65)' }}>USER PACT</span>
-        </div>
-        只改格式 · 不改内容 · 输出可回退
-      </div>
-    </aside>
-  );
-};
-
-// ── TopBar ─────────────────────────────────────────────────
-export const TopBar: React.FC<{
-  state: AppState;
-  onStep: (s: number) => void;
-  onReset: () => void;
-}> = ({ state, onStep, onReset }) => {
-  const steps = ['上传论文', '选择学校', '格式体检', '一键修复', '查看修改', '下载定稿'];
-  const reachable = (i: number) => {
-    if (i === 0) return true;
-    if (i === 1) return !!state.doc;
-    if (i === 2) return !!state.doc;
-    if (i === 3) return state.parseDone;
-    if (i === 4) return false; // Fix → Diff — only after fix complete (handled by Step4Fix)
-    if (i === 5) return state.exported;
-    return false;
-  };
-  const school = findSchoolById(state.schoolId);
-
-  // P2-1: Track step timestamps for timing labels
-  const stepEntryRef = React.useRef<Record<number, number>>({});
-  const [stepDurations, setStepDurations] = React.useState<Record<number, number>>({});
-
-  React.useEffect(() => {
-    const cur = state.step;
-    // Record entry time for current step if not already set
-    if (!stepEntryRef.current[cur]) {
-      stepEntryRef.current[cur] = Date.now();
-    }
-    // Log duration for previous step when step advances
-    const prevStep = cur > 1 ? cur - 1 : -1;
-    if (prevStep > 0 && stepEntryRef.current[prevStep]) {
-      const dur = Date.now() - stepEntryRef.current[prevStep];
-      if (!stepDurations[prevStep] || dur > 0) {
-        setStepDurations(prev => ({ ...prev, [prevStep]: dur }));
-      }
-    }
-  }, [state.step]);
-
-  // Capture duration when parse completes
-  React.useEffect(() => {
-    if (state.parseDone && stepEntryRef.current[3]) {
-      const dur = Date.now() - stepEntryRef.current[3];
-      setStepDurations(prev => prev[3] ? prev : { ...prev, [3]: Math.max(dur, 600) });
-    }
-  }, [state.parseDone]);
-
-  const fmtTime = (ms: number): string => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
-  };
-
-  return (
-    <header style={{
-      height: 56, padding: '0 28px',
-      display: 'flex', alignItems: 'center', gap: 22,
-      borderBottom: '1px solid var(--hair)',
-      background: 'var(--paper-0)',
-      flex: '0 0 auto',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '0 0 auto', minWidth: 0 }}>
-        <Icon name="file" size={16} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{
-            fontSize: 13, fontWeight: 500, color: 'var(--ink-900)', lineHeight: 1.1,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320,
-          }}>
-            {state.doc ? state.doc.name : '新建任务 — 选择文档开始'}
-          </div>
-          <div className="mono" style={{ fontSize: 10, color: 'var(--ink-500)', marginTop: 2 }}>
-            {school ? `${school.name} · ${school.faculty} · ${school.version}` : '浏览模式 · 仅查看文档结构，不修改格式'}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {steps.map((s, i) => {
-            const active = i === state.step - 1;
-            const done = i < state.step - 1;
-            const can = reachable(i);
-            const timing = done && stepDurations[i + 1] ? fmtTime(stepDurations[i + 1]) : null;
-            return (
-              <React.Fragment key={s}>
-                {i > 0 && <span style={{
-                  width: 16, height: 1,
-                  background: i <= state.step - 1 ? 'var(--ink-700)' : 'var(--hair-strong)',
-                  transition: 'background .25s',
-                }} />}
-                <button
-                  disabled={!can}
-                  onClick={() => can && onStep(i + 1)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    border: 'none', background: 'transparent', padding: '4px 6px', borderRadius: 4,
-                    cursor: can ? 'pointer' : 'not-allowed',
-                    opacity: can ? 1 : .55,
-                    fontFamily: 'var(--sans)',
-                  }}
-                >
-                  <span style={{
-                    width: 18, height: 18, borderRadius: 9,
-                    border: `1.4px solid ${active || done ? 'var(--ink-900)' : 'var(--ink-300)'}`,
-                    background: done ? 'var(--ink-900)' : active ? 'var(--brand-700)' : 'transparent',
-                    color: done || active ? 'var(--paper-0)' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 600, fontFamily: 'var(--mono)',
-                    transition: 'all .25s',
-                    animation: active ? 'protoPulse 2s ease-in-out infinite' : 'none',
-                  }}>{done ? '✓' : i + 1}</span>
-                  <span style={{
-                    fontSize: 12,
-                    color: active ? 'var(--ink-900)' : 'var(--ink-500)',
-                    fontWeight: active ? 600 : 400,
-                  }}>{s}</span>
-                  {timing && <span className="mono" style={{
-                    fontSize: 9, color: 'var(--ink-400)', marginLeft: 2, letterSpacing: '.04em',
-                  }}>{timing}</span>}
-                </button>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button onClick={onReset} style={{
-          height: 28, padding: '0 10px', borderRadius: 4,
-          border: '1px solid var(--hair-strong)', background: 'transparent',
-          fontSize: 11, color: 'var(--ink-500)', cursor: 'pointer',
-          fontFamily: 'var(--mono)', letterSpacing: '.06em',
-        }}>↺ RESET</button>
-        <div style={{
-          width: 32, height: 32, borderRadius: 16,
-          background: 'var(--brand-700)', color: 'var(--paper-0)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 600,
-        }}>陈</div>
-      </div>
-    </header>
-  );
-};

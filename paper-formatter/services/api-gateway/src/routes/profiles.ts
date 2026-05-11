@@ -3,6 +3,10 @@ import * as profileRepo from "../repositories/profiles.js";
 import * as docRepo from "../repositories/documents.js";
 import * as storage from "../storage.js";
 import { createError, ERROR_CODES } from "../middleware/error-handler.js";
+import {
+  parseAutoCreateSchoolCommand,
+  parseDetectSchoolCommand,
+} from "../dto/document-requests.js";
 import { query } from "../db.js";
 import { redisDel, redisGet, redisSetEx } from "../redis.js";
 import { v4 as uuid } from "uuid";
@@ -104,16 +108,15 @@ profileRoutes.get("/", async (_req, res, next) => {
 // ── Detect school from DOCX ──
 profileRoutes.post("/detect", async (req, res, next) => {
   try {
-    const { docId } = req.body;
-    if (!docId) throw createError(400, ERROR_CODES.VALIDATION_ERROR, "docId is required");
-    const cacheKey = `profiles:detect:${docId}`;
+    const command = parseDetectSchoolCommand(req.body);
+    const cacheKey = `profiles:detect:${command.legacyDocId}`;
     const cached = await redisGet(cacheKey);
     if (cached) {
       return res.json(JSON.parse(cached));
     }
 
     // Download file from MinIO
-    const doc = await docRepo.getDocument(docId);
+    const doc = await docRepo.getDocument(command.legacyDocId);
     if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, "Document not found");
 
     const storagePath = storage.getStoragePath("uploads", doc.doc_id, doc.filename);
@@ -165,15 +168,14 @@ profileRoutes.post("/detect", async (req, res, next) => {
 // ── Auto-create a new school profile ──
 profileRoutes.post("/auto-create", async (req, res, next) => {
   try {
-    const { name, docId } = req.body;
-    if (!name) throw createError(400, ERROR_CODES.VALIDATION_ERROR, "name is required");
+    const command = parseAutoCreateSchoolCommand(req.body);
 
     // Generate a unique school_id from the name
-    const hash = crypto.createHash("md5").update(name).digest("hex").slice(0, 8);
+    const hash = crypto.createHash("md5").update(command.name).digest("hex").slice(0, 8);
     const schoolId = `sch_${hash}`;
 
     // Check if already exists (race condition guard)
-    const existing = await profileRepo.findProfileByName(name);
+    const existing = await profileRepo.findProfileByName(command.name);
     if (existing) {
       return res.json({
         schoolId: existing.school_id,
@@ -185,24 +187,26 @@ profileRoutes.post("/auto-create", async (req, res, next) => {
 
     const profile = await profileRepo.createProfile({
       schoolId,
-      name,
+      name: command.name,
       version: "v1.0",
       effectiveFrom: new Date().toISOString().split("T")[0],
       sourceType: "detected",
     });
 
     // Associate this document with the profile
-    if (docId) {
+    if (command.legacyDocId) {
       await query(
         `INSERT INTO document_profiles (doc_id, school_id, profile_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-        [docId, schoolId, schoolId],
+        [command.legacyDocId, schoolId, schoolId],
       );
       await profileRepo.incrementUploadCount(schoolId);
     }
 
-    console.log(`[profiles] Auto-created school: ${name} (${schoolId})`);
+    console.log(`[profiles] Auto-created school: ${command.name} (${schoolId})`);
     await redisDel("profiles:list:all");
-    await redisDel(`profiles:detect:${docId}`);
+    if (command.legacyDocId) {
+      await redisDel(`profiles:detect:${command.legacyDocId}`);
+    }
 
     res.status(201).json({
       schoolId: profile.school_id,

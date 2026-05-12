@@ -161,19 +161,50 @@ def _parse_rules(rules: dict | None) -> dict:
 class DiffTracker:
     """Track formatting changes for the diff report."""
 
-    def __init__(self):
+    def __init__(self, finding_context: list[dict] | None = None):
         self.diffs: list[dict] = []
         self._page_count = 1
+        self.finding_context = finding_context or []
+
+    def _match_finding(self, element: str, position: str = "") -> dict | None:
+        if not self.finding_context:
+            return None
+        haystack = f"{element} {position}".lower()
+        token_map = {
+            "page_margin": ("margin", "页边距", "版芯", "正文"),
+            "body_font": ("body", "正文", "字体", "行距"),
+            "headings": ("heading", "标题", "题名", "章节"),
+            "page_number": ("page", "页码", "目录"),
+            "toc": ("toc", "目录", "页码"),
+        }
+        tokens = token_map.get(element, (element,))
+        for finding in self.finding_context:
+            text = " ".join(str(finding.get(key, "")) for key in ("rule_id", "rule_group", "rule_text", "rule_description")).lower()
+            if any(str(token).lower() in text or str(token).lower() in haystack for token in tokens):
+                return finding
+        return self.finding_context[0]
 
     def add(self, page: int, element: str, original: str, modified: str, position: str = ""):
-        self.diffs.append({
+        finding = self._match_finding(element, position)
+        action = "format-hint" if original == modified else "replace"
+        diff = {
             "page": page,
             "type": "style_change",
+            "action": action,
             "element": element,
             "original": original,
             "modified": modified,
+            "before": original,
+            "after": modified,
             "position": position,
-        })
+            "note": f"{element} 已按规则修正",
+        }
+        if finding and finding.get("finding_id"):
+            diff["finding_id"] = finding["finding_id"]
+            diff["related_finding_ids"] = [finding["finding_id"]]
+            diff["rule_id"] = finding.get("rule_id")
+            diff["rule_group"] = finding.get("rule_group")
+        self.diffs.append(diff)
 
     def set_page_count(self, n: int):
         self._page_count = n
@@ -196,7 +227,7 @@ class DocxFormatter:
 
     OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
-    def __init__(self, input_path: str, rules: dict | None = None):
+    def __init__(self, input_path: str, rules: dict | None = None, finding_context: list[dict] | None = None):
         # Detect old OLE2/.doc format (python-docx can't handle these)
         if os.path.isfile(input_path):
             with open(input_path, "rb") as _f:
@@ -208,7 +239,7 @@ class DocxFormatter:
                 )
         self.doc = Document(input_path)
         self.rules = _parse_rules(rules)
-        self.diff = DiffTracker()
+        self.diff = DiffTracker(finding_context)
         self._input_hash = self._hash_file(input_path)
         self._input_path = input_path
 
@@ -405,8 +436,10 @@ class DocxFormatter:
 
     def get_diff(self) -> dict:
         """Return the diff report."""
+        finding_diffs = [diff for diff in self.diff.diffs if diff.get("finding_id")]
         return {
             "diffs": self.diff.diffs,
+            "findingDiffs": finding_diffs,
             "summary": self.diff.summary(),
         }
 

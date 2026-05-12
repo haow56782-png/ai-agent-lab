@@ -94,6 +94,8 @@ function makeFixEvent(input: {
   title: string;
   detail: string;
   fixType?: FixType;
+  finding_id?: string;
+  related_finding_ids?: string[];
 }): FixJobEvent {
   return {
     id: `evt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
@@ -105,6 +107,7 @@ function makeFixEvent(input: {
 interface FixSourceContext {
   chapters: string[];
   snippets: string[];
+  findings: FindingContract[];
 }
 
 function cleanSourceLine(value: unknown): string {
@@ -114,8 +117,9 @@ function cleanSourceLine(value: unknown): string {
     .trim();
 }
 
-async function getFixSourceContext(sourceJobId?: string): Promise<FixSourceContext> {
-  if (!sourceJobId) return { chapters: [], snippets: [] };
+async function getFixSourceContext(sourceJobId: string | undefined, documentId: string): Promise<FixSourceContext> {
+  const findings = await findingRepo.listFindings({ document_id: documentId }).catch(() => []);
+  if (!sourceJobId) return { chapters: [], snippets: [], findings };
   try {
     const sourceJob = await jobRepo.getJob(sourceJobId);
     const result = (sourceJob?.result_json || {}) as Record<string, any>;
@@ -129,15 +133,58 @@ async function getFixSourceContext(sourceJobId?: string): Promise<FixSourceConte
       .map(cleanSourceLine)
       .filter((line: string) => line.length > 16)
       .slice(0, 24);
-    return { chapters, snippets };
+    return { chapters, snippets, findings };
   } catch {
-    return { chapters: [], snippets: [] };
+    return { chapters: [], snippets: [], findings };
   }
 }
 
 function pickSourceLine(items: string[], index: number, fallback: string): string {
   if (items.length === 0) return fallback;
   return items[index % items.length];
+}
+
+function pickFindingForFixType(fixType: FixType, source: FixSourceContext, index: number): FindingContract | null {
+  if (source.findings.length === 0) return null;
+  const tokens: Partial<Record<FixType, RegExp>> = {
+    margin: /页边距|版芯|margin|正文/i,
+    body_style: /正文|字体|行距|body/i,
+    heading: /标题|题名|章节|heading/i,
+    page_number: /页码|目录|page/i,
+    cover: /封面|声明|题名页|cover/i,
+    toc: /目录|页码|toc/i,
+    abstract_format: /摘要|关键词|abstract/i,
+    cross_ref: /交叉引用|引用|cross/i,
+    caption: /图表|题注|caption/i,
+    reference_format: /参考文献|著录|reference|DOI/i,
+    table_format: /表格|三线表|table/i,
+    image_format: /图片|图题|image/i,
+    punctuation: /标点|punctuation/i,
+  };
+  const matcher = tokens[fixType];
+  const matched = matcher
+    ? source.findings.find((finding) => matcher.test(`${finding.rule_group || ""} ${finding.rule_id} ${finding.rule_snapshot.rule_text} ${finding.rule_snapshot.rule_description || ""}`))
+    : null;
+  return matched ?? source.findings[index % source.findings.length] ?? null;
+}
+
+function pickFormatterFindingId(formatterDiff: any, fixType: FixType, index: number): string | undefined {
+  const diffs = Array.isArray(formatterDiff?.diffs) ? formatterDiff.diffs : [];
+  if (diffs.length === 0) return undefined;
+  const tokens: Partial<Record<FixType, RegExp>> = {
+    margin: /margin|page_margin|页边距|版芯/i,
+    body_style: /body|font|正文|字体/i,
+    heading: /heading|headings|标题|题名/i,
+    page_number: /page_number|页码/i,
+    toc: /toc|目录/i,
+  };
+  const matcher = tokens[fixType];
+  const matched = matcher
+    ? diffs.find((diff: any) => diff?.finding_id && matcher.test(`${diff.element || ""} ${diff.position || ""}`))
+    : null;
+  return matched?.finding_id
+    || diffs.find((diff: any) => diff?.finding_id)?.finding_id
+    || diffs[index % diffs.length]?.finding_id;
 }
 
 function toContractRuleId(category: string, label: string): string {
@@ -218,9 +265,14 @@ function buildAnalyzeFindings(input: {
   });
 }
 
-function makeFixArtifact(fixType: FixType, source: FixSourceContext, index: number): FixJobArtifact {
+function makeFixArtifact(fixType: FixType, source: FixSourceContext, index: number, formatterDiff?: any): FixJobArtifact {
   const sourceSnippet = pickSourceLine(source.snippets, index, "当前修复来自原稿解析结果，正文内容保持不改。");
   const chapter = pickSourceLine(source.chapters, index, "正文排版区域");
+  const formatterFindingId = pickFormatterFindingId(formatterDiff, fixType, index);
+  const finding = formatterFindingId
+    ? source.findings.find((item) => item.finding_id === formatterFindingId) ?? null
+    : pickFindingForFixType(fixType, source, index);
+  const findingId = formatterFindingId || finding?.finding_id;
   return {
     id: `art_${fixType}`,
     fixType,
@@ -236,6 +288,8 @@ function makeFixArtifact(fixType: FixType, source: FixSourceContext, index: numb
       : "ready",
     chapter,
     sourceSnippet,
+    finding_id: findingId,
+    related_finding_ids: findingId ? [findingId] : undefined,
   };
 }
 
@@ -683,10 +737,21 @@ async function callFormatterService(
   buffer: Buffer,
   filename: string,
   profileId: string,
+  findingContext: FindingContract[] = [],
 ): Promise<{ formatted: Buffer; diff: any }> {
   const formData = new FormData();
   formData.append("file", new Blob([new Uint8Array(buffer)]), filename);
   formData.append("profile_id", profileId);
+  if (findingContext.length > 0) {
+    formData.append("finding_context", JSON.stringify(findingContext.map((finding) => ({
+      finding_id: finding.finding_id,
+      rule_id: finding.rule_id,
+      rule_group: finding.rule_group,
+      rule_text: finding.rule_snapshot.rule_text,
+      rule_description: finding.rule_snapshot.rule_description,
+      evidence_snapshot: finding.evidence_snapshot,
+    }))));
+  }
 
   const response = await fetch(`${FORMATTER_URL}/format`, {
     method: "POST",
@@ -729,7 +794,7 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
   const completedSteps: Array<{ type: FixType; status: "done"; summary: string; duration: number }> = [];
   const events: FixJobEvent[] = [];
   const artifacts: FixJobArtifact[] = [];
-  const sourceContext = await getFixSourceContext(sourceJobId);
+  const sourceContext = await getFixSourceContext(sourceJobId, doc.canonical_document_id);
 
   try {
     events.push(makeFixEvent({
@@ -738,6 +803,8 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
       title: "修复任务已创建",
       detail: `已接收 ${fixTypes.length} 组排版动作，准备读取原稿。${sourceContext.chapters[0] ? `已定位到章节：${sourceContext.chapters[0]}` : ""}`,
       fixType: fixTypes[0],
+      finding_id: sourceContext.findings[0]?.finding_id,
+      related_finding_ids: sourceContext.findings.slice(0, 3).map((finding) => finding.finding_id),
     }));
 
     await update({
@@ -810,7 +877,7 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
       },
     });
 
-    const formatResult = await callFormatterService(buffer, doc.filename, profileId);
+    const formatResult = await callFormatterService(buffer, doc.filename, profileId, sourceContext.findings);
 
     let progressCursor = 45;
     for (const [index, fixType] of fixTypes.entries()) {
@@ -821,7 +888,7 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         summary: FIX_SUMMARIES[fixType],
         duration: 1 + (index % 3),
       });
-      const artifact = makeFixArtifact(fixType, sourceContext, index);
+      const artifact = makeFixArtifact(fixType, sourceContext, index, formatResult.diff);
       artifacts.push(artifact);
       events.push(makeFixEvent({
         type: "artifact",
@@ -829,6 +896,8 @@ async function processFixJob(jobId: string, doc: docRepo.DocumentRecord, profile
         title: FIX_SUMMARIES[fixType],
         detail: `${artifact.chapter ? `正在处理「${artifact.chapter}」。` : ""}${artifact.sourceSnippet ? `原稿片段：${artifact.sourceSnippet.slice(0, 72)}。` : ""}${FIX_ARTIFACT_DETAILS[fixType].join("；")}`,
         fixType,
+        finding_id: artifact.finding_id,
+        related_finding_ids: artifact.related_finding_ids,
       }));
 
       await update({

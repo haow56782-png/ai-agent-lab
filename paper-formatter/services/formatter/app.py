@@ -36,6 +36,16 @@ def health():
     return jsonify({"status": "ok", "service": "docx-formatter"})
 
 
+def _parse_json_form_field(name: str):
+    raw = request.form.get(name, None)
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid {name} JSON")
+
+
 @app.route("/format", methods=["POST"])
 def format_document():
     """Accept DOCX upload + rules, return formatted DOCX + diff JSON."""
@@ -47,15 +57,11 @@ def format_document():
         return jsonify({"error": "Only .docx files are supported"}), 400
 
     profile_id = request.form.get("profile_id", "default")
-    rules_json = request.form.get("rules", None)
-
-    # Parse rules
-    rules = None
-    if rules_json:
-        try:
-            rules = json.loads(rules_json)
-        except json.JSONDecodeError:
-            return jsonify({"error": "Invalid rules JSON"}), 400
+    try:
+        rules = _parse_json_form_field("rules")
+        finding_context = _parse_json_form_field("finding_context") or []
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     # Save uploaded file to temp (sanitize filename: avoid Chinese chars in path)
     ext = Path(file.filename).suffix if file.filename else ".docx"
@@ -68,7 +74,7 @@ def format_document():
 
     try:
         # Run formatter
-        formatter = DocxFormatter(str(input_path), rules)
+        formatter = DocxFormatter(str(input_path), rules, finding_context=finding_context)
         formatter.format()
         formatter.save(str(output_path))
         diff = formatter.get_diff()
@@ -144,12 +150,11 @@ def format_document_simple():
         return jsonify({"error": "Only .docx files are supported"}), 400
 
     rules_json = request.form.get("rules", None)
-    rules = None
-    if rules_json:
-        try:
-            rules = json.loads(rules_json)
-        except json.JSONDecodeError:
-            return jsonify({"error": "Invalid rules JSON"}), 400
+    try:
+        rules = _parse_json_form_field("rules")
+        finding_context = _parse_json_form_field("finding_context") or []
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     ext = Path(file.filename).suffix if file.filename else ".docx"
     input_path = TEMP_DIR / f"input_{os.urandom(4).hex()}{ext}"
@@ -158,7 +163,7 @@ def format_document_simple():
     file.save(str(input_path))
 
     try:
-        formatter = DocxFormatter(str(input_path), rules)
+        formatter = DocxFormatter(str(input_path), rules, finding_context=finding_context)
         formatter.format()
         formatter.save(str(output_path))
         diff = formatter.get_diff()

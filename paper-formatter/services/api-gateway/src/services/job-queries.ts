@@ -6,7 +6,7 @@ import * as docRepo from "../repositories/documents.js";
 import * as findingRepo from "../repositories/findings.js";
 import * as storage from "../storage.js";
 import { FIX_FREE_LIMIT } from "./job-orchestrator.js";
-import type { FixStatusResponse, PublicJobRecord, PublicJobResult } from "../../../../packages/shared-types/src/job-contract";
+import type { FindingDiffItem, FindingDiffResult, FixStatusResponse, PublicJobRecord, PublicJobResult } from "../../../../packages/shared-types/src/job-contract";
 import { canDownloadByFindings } from "../../../../packages/shared-types/src/finding-download-guard";
 
 function requireJob(job: JobRecord | null): JobRecord {
@@ -91,7 +91,7 @@ export async function getPublicDiff(jobId: string) {
   if (result.diffPath) {
     try {
       const diffBuffer = await storage.downloadFile("reports", result.diffPath);
-      return JSON.parse(diffBuffer.toString());
+      return normalizeFindingDiffResult(JSON.parse(diffBuffer.toString()));
     } catch {
       // Fall through to generated diff.
     }
@@ -100,12 +100,49 @@ export async function getPublicDiff(jobId: string) {
   const headings = result.rawHeadings?.map((h: any) => h.text) || [];
   const diffPages = Math.min(result.items?.[3]?.conf > 0.8 ? Math.max(headings.length, 3) : 5, 15);
 
-  return {
+  return normalizeFindingDiffResult({
     diffs: [
       { page: 1, type: "style_change", element: "heading", original: "手动加粗 16pt", modified: "ThesisH1 (黑体, 段前2行)", position: "1.1" },
       { page: 1, type: "page_number", element: "footer", original: "无页码", modified: "罗马数字 i", position: "前置页" },
     ],
     summary: { pages: diffPages, changeCount: 2, contentChanges: 0, formatChanges: 2 },
+  });
+}
+
+function normalizeFindingDiffResult(raw: any): FindingDiffResult {
+  const rawDiffs: any[] = Array.isArray(raw?.diffs) ? raw.diffs : [];
+  const diffs: FindingDiffItem[] = rawDiffs.map((diff: any, index: number): FindingDiffItem => {
+    const findingId = diff.finding_id || diff.related_finding_ids?.[0] || `legacy-diff-${diff.page || 1}-${diff.element || "format"}-${index}`;
+    return {
+      finding_id: findingId,
+      related_finding_ids: diff.related_finding_ids || (diff.finding_id ? [diff.finding_id] : undefined),
+      page: Math.max(1, Number(diff.page || 1)),
+      type: diff.type === "content_change" || diff.type === "annotation" || diff.type === "format_hint" ? diff.type : "style_change",
+      action: diff.action === "delete" || diff.action === "annotate" || diff.action === "format-hint" ? diff.action : "replace",
+      element: String(diff.element || "document"),
+      before: String(diff.before ?? diff.original ?? ""),
+      after: String(diff.after ?? diff.modified ?? ""),
+      position: String(diff.position || ""),
+      note: String(diff.note || diff.element || "格式差异"),
+      rule_id: diff.rule_id,
+      rule_group: diff.rule_group,
+    };
+  });
+  const normalizedById = new Map(diffs.map((diff) => [diff.finding_id, diff]));
+  const findingDiffs = Array.isArray(raw?.findingDiffs) && raw.findingDiffs.length > 0
+    ? raw.findingDiffs
+        .map((diff: any) => normalizedById.get(diff.finding_id || diff.related_finding_ids?.[0]))
+        .filter((diff: FindingDiffItem | undefined): diff is FindingDiffItem => !!diff)
+    : diffs.filter((diff) => !diff.finding_id.startsWith("legacy-diff-"));
+  return {
+    diffs,
+    findingDiffs,
+    summary: raw?.summary || {
+      pages: Math.max(1, ...diffs.map((diff) => diff.page)),
+      changeCount: diffs.length,
+      contentChanges: diffs.filter((diff) => diff.type === "content_change").length,
+      formatChanges: diffs.filter((diff) => diff.type !== "content_change").length,
+    },
   };
 }
 

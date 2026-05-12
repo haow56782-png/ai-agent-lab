@@ -122,6 +122,8 @@ export interface FixJobEvent {
   title: string;
   detail: string;
   fixType?: FixType;
+  finding_id?: string;
+  related_finding_ids?: string[];
 }
 
 export interface FixJobArtifact {
@@ -133,6 +135,8 @@ export interface FixJobArtifact {
   status: "ready" | "needs_review";
   chapter?: string;
   sourceSnippet?: string;
+  finding_id?: string;
+  related_finding_ids?: string[];
 }
 
 export interface FixResult {
@@ -141,6 +145,32 @@ export interface FixResult {
   newScore: number;
   contentHash: string;
   originalHash: string;
+}
+
+export interface FindingDiffItem {
+  finding_id: string;
+  related_finding_ids?: string[];
+  page: number;
+  type: "style_change" | "content_change" | "annotation" | "format_hint";
+  action: "delete" | "replace" | "annotate" | "format-hint";
+  element: string;
+  before: string;
+  after: string;
+  position: string;
+  note: string;
+  rule_id?: string;
+  rule_group?: string;
+}
+
+export interface FindingDiffResult {
+  diffs: FindingDiffItem[];
+  findingDiffs: FindingDiffItem[];
+  summary: {
+    pages: number;
+    changeCount: number;
+    contentChanges: number;
+    formatChanges: number;
+  };
 }
 
 export interface FixStatusResponse {

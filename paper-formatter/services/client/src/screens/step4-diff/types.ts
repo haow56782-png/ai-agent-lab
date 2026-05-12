@@ -1,6 +1,7 @@
-import type { RuleHitItem } from '../../api/client';
+import type { FindingDiffItem, RuleHitItem } from '../../api/client';
 
 export interface DiffItem {
+  findingId?: string;
   action: 'delete' | 'replace' | 'annotate' | 'format-hint';
   note: string;
   paraIndex: number;
@@ -8,6 +9,8 @@ export interface DiffItem {
   afterText?: string;
   hintTone?: 'school' | 'national';
 }
+
+export type { FindingDiffItem };
 
 export interface RuleGroup {
   cat: string;

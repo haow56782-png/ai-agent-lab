@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp, findSchoolById, getCanonicalDocumentId, getLegacyDocumentId } from '../components/AppFrame';
-import type { FindingContract, RuleHitItem } from '../api/client';
+import type { DiffResult, FindingContract, RuleHitItem } from '../api/client';
 import { api } from '../api/client';
 import { ExportOverlay } from '../components/ExportOverlay';
 import { ExportConfirmDialog } from '../components/ExportConfirmDialog';
@@ -8,9 +8,17 @@ import { Btn } from '../components/Common';
 import { Canvas } from '../components/review-workbench/Canvas';
 import { FindingPane } from '../components/review-workbench/FindingPane';
 import { RulePane } from '../components/review-workbench/RulePane';
-import { reviewActions, selectCurrentPage, useReviewStore, type Finding } from '../stores/reviewStore';
+import { reviewActions, useReviewStore, type Finding } from '../stores/reviewStore';
 import { createDiffTranslator } from './step4-diff/diffCopy';
-import { buildPaperPages, buildReviewItems, buildReviewItemsFromFindings, normalizeRuleGroups, pageDiffData } from './step4-diff/diffViewModel';
+import {
+  buildDiffItemsFromFindingDiffs,
+  buildPaperPages,
+  buildReviewItems,
+  buildReviewItemsFromFindingDiffs,
+  buildReviewItemsFromFindings,
+  normalizeRuleGroups,
+  pageDiffData,
+} from './step4-diff/diffViewModel';
 import { useDiffReviewController } from './step4-diff/useDiffReviewController';
 
 interface Props {
@@ -44,7 +52,7 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
   const focusFindingIdRef = useRef<string | null>(null);
   const findingsRef = useRef<Finding[]>([]);
 
-  const [diffData, setDiffData] = useState<{ pages: number } | null>(null);
+  const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [showExemptionConfirm, setShowExemptionConfirm] = useState(false);
   const [exemptionReason, setExemptionReason] = useState('');
@@ -62,11 +70,16 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
   const hasCanonicalFindings = canonicalFindings.length > 0;
   const rawRuleGroups = state.parseResults?.ruleDetails as Array<{ cat: string; items: Array<RuleHitItem | [string, 'pass' | 'warn' | 'fail']> }> | undefined;
   const ruleGroups = useMemo(() => normalizeRuleGroups(rawRuleGroups), [rawRuleGroups]);
+  const formatterFindingDiffs = useMemo(() => diffResult?.findingDiffs ?? [], [diffResult?.findingDiffs]);
+  const formatterDiffItems = useMemo(() => buildDiffItemsFromFindingDiffs(formatterFindingDiffs), [formatterFindingDiffs]);
+  const hasFormatterFindingDiffs = formatterFindingDiffs.length > 0;
   const rawReviewItems = useMemo(() => (
-    hasCanonicalFindings
+    hasFormatterFindingDiffs
+      ? buildReviewItemsFromFindingDiffs(formatterFindingDiffs, parsedTexts)
+      : hasCanonicalFindings
       ? buildReviewItemsFromFindings(canonicalFindings, parsedTexts)
       : buildReviewItems(ruleGroups, parsedTexts)
-  ), [canonicalFindings, hasCanonicalFindings, parsedTexts, ruleGroups]);
+  ), [canonicalFindings, formatterFindingDiffs, hasCanonicalFindings, hasFormatterFindingDiffs, parsedTexts, ruleGroups]);
   const reviewItems = useMemo(() => rawReviewItems.map((item) => {
     const sourceFinding = item.findingId
       ? canonicalFindings.find((finding) => finding.finding_id === item.findingId)
@@ -82,19 +95,21 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
   }), [canonicalDocumentId, canonicalFindings, rawReviewItems]);
   const allRules = useMemo(() => ruleGroups.flatMap((group) => group.items), [ruleGroups]);
   const focusFindingId = useReviewStore((reviewState) => reviewState.focusFindingId);
-  const currentFindingPage = useReviewStore(selectCurrentPage);
   const storeFindings = useReviewStore((reviewState) => reviewState.findings);
   const p1Exemption = useReviewStore((reviewState) => reviewState.p1Exemption);
 
   const maxDiffPage = Math.max(
     1,
     state.doc?.pages || 0,
-    diffData?.pages || 0,
+    diffResult?.summary?.pages || 0,
     ...reviewItems.map((item) => item.page),
-    ...Object.keys(pageDiffData).map(Number),
+    ...Object.keys(hasFormatterFindingDiffs ? formatterDiffItems : pageDiffData).map(Number),
   );
   const pageList = useMemo(() => Array.from({ length: maxDiffPage }, (_, index) => index + 1), [maxDiffPage]);
-  const paperPages = useMemo(() => buildPaperPages(pageList, parsedTexts, reviewItems), [pageList, parsedTexts, reviewItems]);
+  const paperPages = useMemo(
+    () => buildPaperPages(pageList, parsedTexts, reviewItems, hasFormatterFindingDiffs ? formatterDiffItems : {}),
+    [formatterDiffItems, hasFormatterFindingDiffs, pageList, parsedTexts, reviewItems],
+  );
 
   const findings = useMemo<Finding[]>(() => reviewItems.map((item, index) => {
     const sourceFinding = item.findingId
@@ -205,7 +220,7 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
   const effectivePassed = allRules.filter((rule) => rule.status === 'pass').length + acceptedCount;
   const paperTitle = state.doc?.name?.replace(/\.(docx|pdf)$/i, '') || '论文终稿';
   const paperHeader = school?.name ? `${school.name}本科毕业论文` : '本科毕业论文';
-  const bannerState: 'pending' | 'all-accepted' | 'partial-rejected' = diffData === null && !!state.jobId && state.jobId !== 'demo'
+  const bannerState: 'pending' | 'all-accepted' | 'partial-rejected' = diffResult === null && !!state.jobId && state.jobId !== 'demo'
     ? 'pending'
     : controller.completionAnnounced && pendingFindings.length === 0 && effectiveFindings.length > 0
     ? 'all-accepted'
@@ -259,13 +274,13 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
   }
 
   useEffect(() => {
-    if (!state.jobId || state.jobId === 'demo' || diffData) return;
+    if (!state.jobId || state.jobId === 'demo' || diffResult) return;
     api.getDiff(state.jobId)
-      .then((result) => setDiffData(result.summary))
+      .then(setDiffResult)
       .catch(() => {
         showToast('批改结果加载出了点问题，请稍后重试。');
       });
-  }, [diffData, showToast, state.jobId]);
+  }, [diffResult, showToast, state.jobId]);
 
   useEffect(() => {
     reviewActions.initializeHashSync();
@@ -365,23 +380,21 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
 
       if (event.key === 'PageDown') {
         event.preventDefault();
-        const nextPage = Math.min(pageList[pageList.length - 1], (currentFindingPage || activeFinding.pageNo) + 1);
-        const targetFinding = latestFindings.find((finding) => finding.pageNo >= nextPage);
+        const targetFinding = latestFindings[Math.min(latestFindings.length - 1, activeIndex + 1)];
         if (targetFinding) reviewActions.setFocus(targetFinding.finding_id, 'pane');
         return;
       }
 
       if (event.key === 'PageUp') {
         event.preventDefault();
-        const prevPage = Math.max(1, (currentFindingPage || activeFinding.pageNo) - 1);
-        const targetFinding = [...latestFindings].reverse().find((finding) => finding.pageNo <= prevPage);
+        const targetFinding = latestFindings[Math.max(0, activeIndex - 1)];
         if (targetFinding) reviewActions.setFocus(targetFinding.finding_id, 'pane');
       }
     };
 
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
-  }, [controller, currentFindingPage, isDownloadAllowed, openExport, pageList, pendingFindings.length, persistFindingDisposition]);
+  }, [controller, isDownloadAllowed, openExport, pendingFindings.length, persistFindingDisposition]);
 
   const doExport = async () => {
     set({ exporting: true });

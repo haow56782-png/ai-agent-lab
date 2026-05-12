@@ -1,4 +1,6 @@
 import type {
+  FindingDiffItem,
+  FindingDiffResult,
   FixStatusResponse,
   FixType,
   PublicJobRecord as JobRecord,
@@ -19,6 +21,8 @@ export type {
 } from '../../../../packages/shared-types/src/finding-contract';
 
 export type {
+  FindingDiffItem,
+  FindingDiffResult,
   FixJobArtifact,
   FixJobEvent,
   FixResult,
@@ -84,8 +88,9 @@ export interface ImportTemplateResult {
 }
 
 export interface DiffResult {
-  diffs: { page: number; type: string; element: string; original: string; modified: string; position: string }[];
-  summary: { pages: number; changeCount: number; contentChanges: number; formatChanges: number };
+  diffs: FindingDiffItem[];
+  findingDiffs?: FindingDiffItem[];
+  summary: FindingDiffResult['summary'];
 }
 
 export interface DuplicationRisk {

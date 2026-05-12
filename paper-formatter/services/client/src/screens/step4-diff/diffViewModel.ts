@@ -1,6 +1,6 @@
 import type { RuleHitItem } from '../../api/client';
 import type { FindingContract } from '../../api/client';
-import type { DiffItem, LegacyReviewItem, PaperPage, PaperReviewAnchor, ReviewItem, RuleGroup } from './types';
+import type { DiffItem, FindingDiffItem, LegacyReviewItem, PaperPage, PaperReviewAnchor, ReviewItem, RuleGroup } from './types';
 import { PARAS_PER_PAGE } from './types';
 
 export const pageDiffData: Record<number, DiffItem[]> = {
@@ -177,17 +177,54 @@ export function buildReviewItemsFromFindings(findings: FindingContract[], parsed
   });
 }
 
-export function buildPaperPages(pageList: number[], parsedTexts: string[], reviewItems: ReviewItem[]): PaperPage[] {
+export function buildReviewItemsFromFindingDiffs(findingDiffs: FindingDiffItem[], parsedTexts: string[]): ReviewItem[] {
+  return findingDiffs.map((diff, index) => ({
+    id: diff.finding_id,
+    findingId: diff.finding_id,
+    label: diff.note || diff.element || `差异 ${index + 1}`,
+    cat: diff.rule_group || diff.element || '正文',
+    page: Math.max(1, diff.page),
+    current: diff.before || diff.element || '当前格式',
+    target: diff.after || diff.note || '按规范整理',
+    chapter: inferChapter(Math.max(1, diff.page), parsedTexts),
+    status: 'warn',
+  }));
+}
+
+export function buildDiffItemsFromFindingDiffs(findingDiffs: FindingDiffItem[]): Record<number, DiffItem[]> {
+  const grouped: Record<number, DiffItem[]> = {};
+  findingDiffs.forEach((diff, index) => {
+    const page = Math.max(1, diff.page);
+    grouped[page] = grouped[page] || [];
+    grouped[page].push({
+      findingId: diff.finding_id,
+      action: diff.action,
+      note: diff.note,
+      paraIndex: index % 4,
+      beforeText: diff.before,
+      afterText: diff.after,
+      hintTone: diff.rule_id?.includes('GB') ? 'national' : 'school',
+    });
+  });
+  return grouped;
+}
+
+export function buildPaperPages(pageList: number[], parsedTexts: string[], reviewItems: ReviewItem[], formatterDiffs: Record<number, DiffItem[]> = {}): PaperPage[] {
   const paragraphPool = getParagraphPool(parsedTexts);
   return pageList.map((pageNumber) => ({
     pageNumber,
     ...(() => {
-      const diffs = pageDiffData[pageNumber] ?? [];
+      const diffs = formatterDiffs[pageNumber] ?? pageDiffData[pageNumber] ?? [];
       const reviewList = reviewItems.filter((item) => item.page === pageNumber);
       const reviewAnchors = reviewList.map((item, index): PaperReviewAnchor => ({
         findingId: item.findingId,
-        paragraphIndex: (diffs[index]?.paraIndex ?? Math.min(index, 7)),
-        diff: diffs[index]
+        paragraphIndex: (
+          diffs.find((diff) => diff.findingId === item.findingId)?.paraIndex
+          ?? diffs[index]?.paraIndex
+          ?? Math.min(index, 7)
+        ),
+        diff: diffs.find((diff) => diff.findingId === item.findingId)
+          ?? diffs[index]
           ?? diffs[Math.min(index, Math.max(diffs.length - 1, 0))]
           ?? null,
       }));

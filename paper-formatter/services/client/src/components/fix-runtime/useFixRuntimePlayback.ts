@@ -4,6 +4,7 @@ import type { FixAction } from '../../mock/fixActions';
 import type { PaperContent, PaperPage } from '../../mock/paperContent';
 import type { PenCursorState } from '../PenCursor';
 import type {
+  ActiveFixFinding,
   AnnotationLayout,
   FixRuntimeStore,
   LiveDocumentFrame,
@@ -17,6 +18,7 @@ import {
   getBlockByParagraphIndex,
   getPageChapter,
   getPageTextBlocks,
+  summarizeAction,
 } from './utils';
 import { useFixRuntimeActionPlayback } from './useFixRuntimeActionPlayback';
 import { useFixRuntimeAttentionEffects } from './useFixRuntimeAttentionEffects';
@@ -56,6 +58,8 @@ export function useFixRuntimePlayback({
   const progressRatio = clamp(runtimeStore.progressPct / 100, 0, 1);
   const targetAppliedCount = runtimeStore.status === 'completed'
     ? fixActions.length
+    : runtimeStore.status === 'running' && fixActions.length > 0
+    ? Math.max(1, Math.min(fixActions.length, Math.floor(progressRatio * fixActions.length)))
     : Math.min(fixActions.length, Math.floor(progressRatio * fixActions.length));
 
   const [appliedCount, setAppliedCount] = useState(0);
@@ -124,9 +128,13 @@ export function useFixRuntimePlayback({
     return next;
   }, [activeActionIds, selectedActionId]);
   const visibleActions = useMemo(
-    () => activeActionIds.length > 0 || selectedActionId
-      ? [...appliedActions, ...fixActions.filter(action => activeActionSet.has(action.id))]
-      : appliedActions,
+    () => {
+      const candidates = activeActionIds.length > 0 || selectedActionId
+        ? [...appliedActions, ...fixActions.filter(action => activeActionSet.has(action.id))]
+        : appliedActions;
+      const byId = new Map(candidates.map(action => [action.id, action]));
+      return Array.from(byId.values());
+    },
     [activeActionIds.length, activeActionSet, appliedActions, fixActions, selectedActionId]
   );
 
@@ -142,6 +150,18 @@ export function useFixRuntimePlayback({
   );
   const focalPage = focalAction ? pages[focalAction.locator.page - 1] || fallbackPage : currentPaperPage;
   const focalBlock = focalAction ? getBlockByParagraphIndex(focalPage, focalAction.locator.paragraphIndex) : null;
+  const activeFixFinding = useMemo<ActiveFixFinding | null>(() => {
+    if (!focalAction) return null;
+    const page = pages[focalAction.locator.page - 1] || fallbackPage;
+    const summary = summarizeAction(page, focalAction);
+    return {
+      id: focalAction.findingId,
+      label: focalAction.findingLabel,
+      chapter: summary.chapter,
+      page: focalAction.locator.page,
+      ruleLabel: summary.ruleLabel,
+    };
+  }, [fallbackPage, focalAction, pages]);
 
   const visibleRuleCards = useMemo<VisibleRuleCard[]>(() => {
     const refs = focalBlock?.ruleRefs || [];
@@ -354,12 +374,13 @@ export function useFixRuntimePlayback({
     if (row.page < 1 || row.page > pages.length) return;
     setSelectedActionId(row.id);
     setDisplayedPageIndex(row.page - 1);
-    setManualAutoScrollLocked(false);
+    setManualAutoScrollLocked(true);
   }, [pages.length]);
 
   return {
     displayedPageNumber,
     displayedChapter,
+    activeFixFinding,
     visualRuntimeStore,
     leftRules,
     hiddenRuleCount,

@@ -494,11 +494,17 @@ button:disabled {
 
 .fix-runtime-progress-meta {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
   font-size: 11px;
   color: var(--ink-500);
   white-space: nowrap;
+}
+
+.fix-runtime-finding-meta {
+  color: var(--brand-700);
+  font-weight: 700;
 }
 
 .fix-runtime-controls {
@@ -615,11 +621,12 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: 360px;
   transition: opacity .5s ease;
 }
 
 .fix-runtime-note-right .fix-runtime-note-stack {
-  padding-bottom: 96px;
+  padding-bottom: 560px;
 }
 
 .fix-runtime-note.is-page-flipping .fix-runtime-note-stack {
@@ -991,6 +998,13 @@ button:disabled {
   color: var(--brand-700);
   font-family: inherit;
   font-size: inherit;
+}
+
+.fix-runtime-action-finding {
+  margin-bottom: 6px;
+  color: var(--brand-700);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .fix-runtime-action-before {

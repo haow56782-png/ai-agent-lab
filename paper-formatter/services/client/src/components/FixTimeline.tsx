@@ -39,6 +39,7 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
         documentTitle={documentTitle}
         displayedPageNumber={playback.displayedPageNumber}
         displayedChapter={playback.displayedChapter}
+        activeFinding={playback.activeFixFinding}
         onPauseToggle={onPauseToggle}
         onSpeedChange={onSpeedChange}
         onJumpToComplete={onJumpToComplete}

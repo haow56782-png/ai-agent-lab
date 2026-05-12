@@ -14,6 +14,8 @@ export interface FixActionRule {
 
 export interface FixAction {
   id: string;
+  findingId: string;
+  findingLabel: string;
   type: 'insert' | 'delete' | 'replace' | 'annotate';
   locator: FixActionLocator;
   payload: string;
@@ -116,6 +118,13 @@ function getPayload(type: FixAction['type'], block: PaperBlock, index: number, r
   return text[index % Math.max(text.length, 1)] || '×';
 }
 
+function slugFindingRule(rule: FixActionRule): string {
+  return rule.name
+    .replace(/[^A-Za-z0-9\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 28) || 'format';
+}
+
 export function createMockFixActions({
   paperContent,
   schoolRuleName,
@@ -147,6 +156,8 @@ export function createMockFixActions({
 
     actions.push({
       id: `fix-action-${index + 1}`,
+      findingId: `fix-finding-p${blockMeta.page}-para${blockMeta.paragraphIndex}-${slugFindingRule(rule)}`,
+      findingLabel: `${rule.source}发现 · ${rule.name.split('·').at(-1)?.trim() || '格式规范'}`,
       type,
       locator: {
         page: blockMeta.page,

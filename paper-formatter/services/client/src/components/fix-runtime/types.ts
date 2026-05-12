@@ -15,6 +15,14 @@ export interface FixRuntimeStore {
   speed: 1 | 2 | 4;
 }
 
+export interface ActiveFixFinding {
+  id: string;
+  label: string;
+  chapter: string;
+  page: number;
+  ruleLabel: string;
+}
+
 export interface LiveDocumentFrame {
   chapter: string;
   focusAnchor: string;
@@ -40,6 +48,8 @@ export interface FixTimelineProps {
 
 export interface TimelineRow {
   id: string;
+  findingId: string;
+  findingLabel: string;
   timestamp: string;
   chapter: string;
   page: number;

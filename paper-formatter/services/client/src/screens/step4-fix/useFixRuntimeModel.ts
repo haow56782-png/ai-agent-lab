@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import type { AppState, SchoolOption } from '../../components/AppFrame';
+import { getCanonicalDocumentId, type AppState, type SchoolOption } from '../../components/AppFrame';
 import type { FixRuntimeStore, LiveDocumentFrame } from '../../components/fix-runtime/types';
 import { getActionDuration } from '../../components/fix-runtime/utils';
-import { createMockFixActions } from '../../mock/fixActions';
 import { createMockPaperContent } from '../../mock/paperContent';
 import { FIX_STEPS } from './constants';
+import { collectRuntimeFindings, createFixActionsFromFindings } from './findingFixActionAdapter';
 import type { FixStep } from './types';
 import { cleanDocLine, getPageChapterLabel } from './utils';
 
@@ -59,6 +59,7 @@ export function useFixRuntimeModel({
   const parsedTexts = state.parseResults?.parsedTexts ?? [];
   const headings = state.parseResults?.rawHeadings ?? [];
   const totalPages = Math.max(1, state.doc?.pages || 15);
+  const canonicalDocumentId = getCanonicalDocumentId(state) || 'demo-document';
 
   const paperContent = useMemo(() => createMockPaperContent({
     title: documentTitle,
@@ -68,11 +69,19 @@ export function useFixRuntimeModel({
     paragraphs: parsedTexts,
   }), [documentTitle, headings, parsedTexts, school?.name, totalPages]);
 
-  const fixActions = useMemo(() => createMockFixActions({
+  const runtimeFindings = useMemo(() => collectRuntimeFindings({
+    state,
+    school,
+    canonicalDocumentId,
+    parsedTexts,
+  }), [canonicalDocumentId, parsedTexts, school, state]);
+
+  const fixActions = useMemo(() => createFixActionsFromFindings({
+    findings: runtimeFindings,
     paperContent,
     schoolRuleName,
     baselineRuleName,
-  }), [baselineRuleName, paperContent, schoolRuleName]);
+  }), [baselineRuleName, paperContent, runtimeFindings, schoolRuleName]);
 
   const totalActionDurationMs = useMemo(() => (
     fixActions.reduce((sum, action) => sum + getActionDuration(action.type, 1), 0)
@@ -132,6 +141,7 @@ export function useFixRuntimeModel({
     doneCount: steps.filter((step) => step.status === 'done').length,
     fixActions,
     paperContent,
+    runtimeFindings,
     runtimeNarrative: fixMessage || '正在按学校规范和国标基线逐项修复论文排版。',
     runtimeStore,
     totalActionDurationMs,

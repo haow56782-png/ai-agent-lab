@@ -1,5 +1,5 @@
 import type { AppState, SchoolOption } from '../../components/AppFrame';
-import type { FixJobArtifact, FixJobEvent, FixType } from '../../api/client';
+import type { FindingContract, FixJobArtifact, FixJobEvent, FixType } from '../../api/client';
 import type { FixRuntimeStore, LiveDocumentFrame } from '../../components/fix-runtime/types';
 import type { FixAction } from '../../mock/fixActions';
 import type { PaperContent } from '../../mock/paperContent';
@@ -30,6 +30,7 @@ export interface UseFixFlowControllerResult {
   runtimeStore: FixRuntimeStore;
   paperContent: PaperContent;
   fixActions: FixAction[];
+  runtimeFindings: FindingContract[];
   fixEvents: FixJobEvent[];
   fixArtifacts: FixJobArtifact[];
   onPauseToggle: () => void;

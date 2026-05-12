@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FixRuntimeStore } from './types';
+import type { ActiveFixFinding, FixRuntimeStore } from './types';
 import { formatDuration } from './utils';
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
   documentTitle: string;
   displayedPageNumber: number;
   displayedChapter: string;
+  activeFinding: ActiveFixFinding | null;
   onPauseToggle: () => void;
   onSpeedChange: (speed: 1 | 2 | 4) => void;
   onJumpToComplete: () => void;
@@ -19,6 +20,7 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
   documentTitle,
   displayedPageNumber,
   displayedChapter,
+  activeFinding,
   onPauseToggle,
   onSpeedChange,
   onJumpToComplete,
@@ -48,8 +50,11 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
           <div className="fix-runtime-progress-bar" style={{ width: `${progress}%` }} />
         </div>
         <div className="fix-runtime-progress-meta">
+          <span className="fix-runtime-finding-meta" data-testid="fix-runtime-topbar-finding">
+            {activeFinding ? `当前发现 · ${activeFinding.label}` : '当前发现 · 等待修复队列'}
+          </span>
           <span data-testid="fix-runtime-topbar-page">
-            {progress}% · 第 {displayedPageNumber} 页 / 共 {runtimeStore.totalPages} 页 · {displayedChapter}
+            {progress}% · 证据位置 第 {displayedPageNumber} 页 / 共 {runtimeStore.totalPages} 页 · {displayedChapter}
           </span>
           <span data-testid="fix-runtime-topbar-remaining">
             剩余 {formatDuration(runtimeStore.estimatedRemainingMs)}

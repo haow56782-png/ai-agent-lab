@@ -1,8 +1,9 @@
 import { useCallback, useEffect, type Dispatch, type SetStateAction } from 'react';
 import { api } from '../../api/client';
-import type { FixJobArtifact, FixJobEvent, FixStatusResponse, FixType } from '../../api/client';
+import type { FindingContract, FixJobArtifact, FixJobEvent, FixStatusResponse, FixType } from '../../api/client';
 import { getLegacyDocumentId, type AppState } from '../../components/AppFrame';
 import { BROWSE_MODE_FIX_HINT, LEGACY_DOC_HINT } from './constants';
+import { attachFindingsToFixStatus } from './findingFixActionAdapter';
 import type { FixStep } from './types';
 
 interface Params {
@@ -15,6 +16,7 @@ interface Params {
   paid: boolean;
   doneCount: number;
   freeFixLimit: number;
+  runtimeFindings: FindingContract[];
   steps: FixStep[];
   setSteps: Dispatch<SetStateAction<FixStep[]>>;
   setFixing: Dispatch<SetStateAction<boolean>>;
@@ -42,6 +44,7 @@ export function useFixPolling({
   paid,
   doneCount,
   freeFixLimit,
+  runtimeFindings,
   steps,
   setSteps,
   setFixing,
@@ -60,26 +63,27 @@ export function useFixPolling({
 }: Params) {
   const legacyDocId = getLegacyDocumentId(state);
   const applyFixStatus = useCallback((status: FixStatusResponse) => {
+    const linkedStatus = attachFindingsToFixStatus(status, runtimeFindings);
     if (typeof status.freeFixLimit === 'number') {
       setFreeFixLimit(status.freeFixLimit);
     }
-    setFixMessage(status.message || null);
-    setFixEvents(status.events || []);
-    setFixArtifacts(status.artifacts || []);
-    const completedMap = new Map((status.completedSteps || []).map((step) => [step.type, step]));
+    setFixMessage(linkedStatus.message || null);
+    setFixEvents(linkedStatus.events || []);
+    setFixArtifacts(linkedStatus.artifacts || []);
+    const completedMap = new Map((linkedStatus.completedSteps || []).map((step) => [step.type, step]));
 
     setSteps((prev) => prev.map((step) => {
       const completed = completedMap.get(step.type);
       if (completed?.status === 'done') {
         return { ...step, status: 'done', summary: completed.summary };
       }
-      if (status.status === 'running' && status.currentStep === step.type) {
+      if (linkedStatus.status === 'running' && linkedStatus.currentStep === step.type) {
         return { ...step, status: 'fixing' };
       }
       if (step.status === 'done') return step;
       return { ...step, status: 'pending', summary: step.summary };
     }));
-  }, [setFixArtifacts, setFixEvents, setFixMessage, setFreeFixLimit, setSteps]);
+  }, [runtimeFindings, setFixArtifacts, setFixEvents, setFixMessage, setFreeFixLimit, setSteps]);
 
   const completeFix = useCallback((status: FixStatusResponse) => {
     applyFixStatus(status);

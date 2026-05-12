@@ -31,12 +31,15 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
   const jumpAndFrameCard = (row: TimelineRow, node: HTMLElement) => {
     setFocusedRowId(row.id);
     onJumpToAction(row);
-    window.requestAnimationFrame(() => {
+    const frameNode = () => {
       const feedNode = rightFeedRef.current;
       if (!feedNode) return;
-      const targetTop = Math.max(0, node.offsetTop - 96);
-      feedNode.scrollTo({ top: targetTop, behavior: 'smooth' });
-    });
+      const currentNode = feedNode.querySelector<HTMLElement>(`[data-testid="fix-runtime-action-card-${row.id}"]`) || node;
+      const targetTop = Math.max(0, currentNode.offsetTop - 96);
+      feedNode.scrollTo({ top: targetTop, behavior: 'auto' });
+    };
+    window.requestAnimationFrame(frameNode);
+    window.setTimeout(frameNode, 120);
   };
 
   return (
@@ -46,12 +49,13 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
       onScroll={onScroll}
       data-testid="fix-runtime-action-feed"
     >
-      <div className="fix-runtime-note-head" data-testid="fix-runtime-action-count">修复动作 {Math.min(appliedCount, fixActionsLength)}/{fixActionsLength || runtimeStore.totalItems}</div>
+      <div className="fix-runtime-note-head" data-testid="fix-runtime-action-count">发现项修复 {Math.min(appliedCount, fixActionsLength)}/{fixActionsLength || runtimeStore.totalItems}</div>
       <div className="fix-runtime-note-stack">
         {timelineRows.map((row) => (
           <article
             key={row.id}
             data-testid={`fix-runtime-action-card-${row.id}`}
+            data-finding-id={row.findingId}
             data-page-number={row.page}
             className={[
               'fix-runtime-action-card',
@@ -63,12 +67,13 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpAndFrameCard(row, e.currentTarget); } }}
             role="button"
             tabIndex={0}
-            aria-label={`跳转到 ${row.chapter}，动作：${row.before}`}
+            aria-label={`跳转到发现项 ${row.findingLabel}，动作：${row.before}`}
           >
             <div className="fix-runtime-action-meta">
               <span>{row.timestamp}</span>
-              <span className="fix-runtime-action-anchor">{row.chapter}</span>
+              <span className="fix-runtime-action-anchor">证据 · {row.chapter}</span>
             </div>
+            <div className="fix-runtime-action-finding">{row.findingLabel}</div>
             <div className="fix-runtime-action-before">
               <span className={row.status === 'live' ? 'fix-runtime-action-dot is-live' : row.status === 'needs-review' ? 'fix-runtime-action-dot is-needs-review' : 'fix-runtime-action-dot is-done'} />
               {row.before}

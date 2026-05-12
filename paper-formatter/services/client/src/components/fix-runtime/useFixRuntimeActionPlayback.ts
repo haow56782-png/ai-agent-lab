@@ -175,6 +175,8 @@ export function useFixRuntimeActionPlayback({
           const summary = summarizeAction(page, action);
           return {
             id: action.id,
+            findingId: action.findingId,
+            findingLabel: action.findingLabel,
             timestamp: formatTimestamp(Math.min(simulatedElapsedMs, action.timestamp)),
             chapter: summary.chapter,
             page: action.locator.page,
@@ -199,6 +201,10 @@ export function useFixRuntimeActionPlayback({
         const status: TimelineRow['status'] = index === 0 ? 'live' : 'done';
         return {
           id: `artifact-${artifact.id}`,
+          findingId: artifact.finding_id || artifact.related_finding_ids?.[0] || `artifact-finding-${artifact.id}`,
+          findingLabel: artifact.finding_id || artifact.related_finding_ids?.[0]
+            ? `服务端发现 · ${artifact.title}`
+            : artifact.chapter ? `服务端发现 · ${artifact.chapter}` : '服务端发现 · 修复产物',
           timestamp: formatTimestamp(Math.max(0, simulatedElapsedMs - (index * 1400))),
           chapter: artifact.chapter || visualRuntimeStore.currentChapter,
           page: visualRuntimeStore.currentPage,
@@ -220,6 +226,10 @@ export function useFixRuntimeActionPlayback({
         const status: TimelineRow['status'] = index === 0 ? 'live' : 'done';
         return {
           id: `event-${event.id}`,
+          findingId: event.finding_id || event.related_finding_ids?.[0] || `event-finding-${event.id}`,
+          findingLabel: event.finding_id || event.related_finding_ids?.[0]
+            ? `服务端发现 · ${event.title || event.stage}`
+            : event.stage ? `服务端发现 · ${event.stage}` : '服务端发现 · 阶段推进',
           timestamp: formatTimestamp(Math.max(0, simulatedElapsedMs - (index * 1200))),
           chapter: visualRuntimeStore.currentChapter,
           page: visualRuntimeStore.currentPage,

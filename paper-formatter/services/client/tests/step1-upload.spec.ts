@@ -32,6 +32,13 @@ async function resetFileInputClickCount(page: Page) {
 }
 
 test.describe('Step1 upload entry', () => {
+  test('does not render an empty history panel when there is no prior upload history', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.getByTestId('upload-history-panel')).toHaveCount(0);
+    await expect(page.getByTestId('paper-upload-zone')).toBeVisible();
+  });
+
   test('opens the file picker exactly once from each upload trigger', async ({ page }) => {
     await installFileInputClickCounter(page);
     await page.goto('/');

@@ -59,6 +59,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
   const [uploadCountMap, setUploadCountMap] = useState<Record<string, number>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
+  const hasHistory = history.length > 0;
 
   useEffect(() => {
     if (!showSchoolModal) return;
@@ -191,7 +192,14 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
   }, []);
 
   return (
-    <div style={{ flex: 1, padding: '40px 56px', overflow: 'auto', display: 'grid', gridTemplateColumns: '1fr 360px', gap: 40 }}>
+    <div style={{
+      flex: 1,
+      padding: '40px 56px',
+      overflow: 'auto',
+      display: 'grid',
+      gridTemplateColumns: hasHistory ? '1fr 360px' : 'minmax(0, 920px)',
+      gap: 40,
+    }}>
       <div>
         <div className="secdex" style={{ marginBottom: 14 }}>第一步 · UPLOAD</div>
         <h1 className="serif" style={{
@@ -339,40 +347,43 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
         )}
       </div>
 
-      <aside style={{
-        background: 'var(--paper-0)', borderRadius: 6,
-        border: '1px solid var(--hair)', padding: '20px 22px',
-        display: 'flex', flexDirection: 'column', alignSelf: 'start',
-      }}>
-        {history.length > 0 && (
+      {hasHistory && (
+        <aside
+          data-testid="upload-history-panel"
+          style={{
+            background: 'var(--paper-0)', borderRadius: 6,
+            border: '1px solid var(--hair)', padding: '20px 22px',
+            display: 'flex', flexDirection: 'column', alignSelf: 'start',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div className="serif" style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink-900)' }}>最近进度</div>
             <span className="mono" style={{ fontSize: 10, color: 'var(--ink-400)', letterSpacing: '.12em' }}>HISTORY</span>
           </div>
-        )}
-        {history.slice(0, MAX_HISTORY).map((r, i, a) => (
-          <div key={r.id} style={{
-            padding: '12px 0', borderBottom: i < a.length - 1 ? '1px solid var(--hair)' : 'none',
-            display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
-          }}>
-            <div style={{
-              width: 28, height: 34, background: 'var(--brand-50)',
-              color: 'var(--brand-700)',
-              fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: 2, flex: '0 0 auto',
-            }}>DOC</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, color: 'var(--ink-900)', fontWeight: 500, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.fileName}</div>
-              <div className="mono" style={{ fontSize: 10.5, color: 'var(--ink-500)', marginTop: 3 }}>{r.schoolName} · {formatTime(r.timestamp)}</div>
-              <div style={{ fontSize: 11, color: r.summary.failed > 0 ? 'var(--rust-700)' : r.summary.reviewed > 0 ? 'var(--sun-700)' : 'var(--leaf-700)', marginTop: 3 }}>
-                {r.summary.failed > 0 ? '✗ ' : r.summary.reviewed > 0 ? '⚠ ' : '✓ '}
-                已通过 {r.summary.passed} 项 · {r.summary.reviewed > 0 ? `${r.summary.reviewed} 项待你复核` : `${r.summary.total} 项已全部过线`}
+          {history.slice(0, MAX_HISTORY).map((r, i, a) => (
+            <div key={r.id} style={{
+              padding: '12px 0', borderBottom: i < a.length - 1 ? '1px solid var(--hair)' : 'none',
+              display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
+            }}>
+              <div style={{
+                width: 28, height: 34, background: 'var(--brand-50)',
+                color: 'var(--brand-700)',
+                fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 2, flex: '0 0 auto',
+              }}>DOC</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, color: 'var(--ink-900)', fontWeight: 500, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.fileName}</div>
+                <div className="mono" style={{ fontSize: 10.5, color: 'var(--ink-500)', marginTop: 3 }}>{r.schoolName} · {formatTime(r.timestamp)}</div>
+                <div style={{ fontSize: 11, color: r.summary.failed > 0 ? 'var(--rust-700)' : r.summary.reviewed > 0 ? 'var(--sun-700)' : 'var(--leaf-700)', marginTop: 3 }}>
+                  {r.summary.failed > 0 ? '✗ ' : r.summary.reviewed > 0 ? '⚠ ' : '✓ '}
+                  已通过 {r.summary.passed} 项 · {r.summary.reviewed > 0 ? `${r.summary.reviewed} 项待你复核` : `${r.summary.total} 项已全部过线`}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </aside>
+          ))}
+        </aside>
+      )}
 
       {/* P2 5-3: School list modal */}
       {showSchoolModal && (

@@ -95,21 +95,23 @@ test.describe('Step4 baseline behaviors', () => {
     await page.goto('/');
 
     const pageMeta = page.getByTestId('fix-runtime-topbar-page');
+    const findingMeta = page.getByTestId('fix-runtime-topbar-finding');
     const remainingMeta = page.getByTestId('fix-runtime-topbar-remaining');
     const actionCount = page.getByTestId('fix-runtime-action-count');
     const livePage = page.getByTestId('fix-runtime-live-page');
 
-    await expect(pageMeta).toContainText('第 1 页');
-    await expect(actionCount).toContainText('修复动作 0/42');
-    await expect(livePage).toHaveAttribute('data-page-number', '1');
+    await expect(pageMeta).toContainText('第 3 页');
+    await expect(findingMeta).toContainText('当前发现');
+    await expect(actionCount).toContainText('发现项修复 0/42');
+    await expect(livePage).toHaveAttribute('data-page-number', '3');
 
     const initialRemaining = await remainingMeta.textContent();
 
-    await expect.poll(async () => await actionCount.textContent(), { timeout: 5000 }).not.toBe('修复动作 0/42');
+    await expect.poll(async () => await actionCount.textContent(), { timeout: 5000 }).not.toBe('发现项修复 0/42');
     await expect.poll(async () => await remainingMeta.textContent(), { timeout: 5000 }).not.toBe(initialRemaining);
 
-    await expect(livePage).toHaveAttribute('data-page-number', '1');
-    await expect(pageMeta).toContainText('第 1 页');
+    await expect(livePage).toHaveAttribute('data-page-number', '3');
+    await expect(pageMeta).toContainText('第 3 页');
   });
 
   test('Step4Fix right action card click reframes the card upward and syncs the paper page', async ({ page }) => {
@@ -117,7 +119,7 @@ test.describe('Step4 baseline behaviors', () => {
     await page.goto('/');
 
     await page.getByRole('button', { name: '跳到完成' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('修复动作 42/42');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('发现项修复 42/42');
 
     const feed = page.getByTestId('fix-runtime-action-feed');
     const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');
@@ -133,8 +135,11 @@ test.describe('Step4 baseline behaviors', () => {
 
     const targetCard = page.getByTestId(targetTestId);
     const targetPage = await targetCard.getAttribute('data-page-number');
+    const targetFindingId = await targetCard.getAttribute('data-finding-id');
     await targetCard.click();
 
+    expect(targetFindingId).toMatch(canonicalFindingIdPattern);
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('当前发现');
     await expect(page.getByTestId('fix-runtime-live-page')).toHaveAttribute('data-page-number', targetPage || '1');
     await expect(targetCard).toHaveClass(/is-user-focus/);
     await expect.poll(async () => {
@@ -335,6 +340,14 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(progress).toHaveAttribute('aria-valuenow', '1');
 
     await page.keyboard.press('ArrowDown');
+    await expect(secondCard).toHaveClass(/is-focus/);
+    await expect(progress).toHaveAttribute('aria-valuenow', '2');
+
+    await page.keyboard.press('PageDown');
+    await expect(thirdCard).toHaveClass(/is-focus/);
+    await expect(progress).toHaveAttribute('aria-valuenow', '3');
+
+    await page.keyboard.press('PageUp');
     await expect(secondCard).toHaveClass(/is-focus/);
     await expect(progress).toHaveAttribute('aria-valuenow', '2');
 

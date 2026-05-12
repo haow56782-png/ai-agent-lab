@@ -15,13 +15,21 @@ export function useFindingObserver({ rootRef }: Options) {
   const ratioMapRef = useRef(new Map<string, number>());
   const nodeMapRef = useRef(new Map<string, Element>());
   const rafRef = useRef<number | null>(null);
+  const deferredFlushRef = useRef<number | null>(null);
   const sourceRef = useRef(scrollSource);
 
   sourceRef.current = scrollSource;
 
   const flushFocus = useCallback(() => {
     rafRef.current = null;
-    if (sourceRef.current && sourceRef.current !== 'canvas') return;
+    if (sourceRef.current && sourceRef.current !== 'canvas') {
+      if (deferredFlushRef.current !== null) window.clearTimeout(deferredFlushRef.current);
+      deferredFlushRef.current = window.setTimeout(() => {
+        deferredFlushRef.current = null;
+        flushFocus();
+      }, 180);
+      return;
+    }
 
     let bestId: string | null = null;
     let bestRatio = 0;
@@ -60,6 +68,7 @@ export function useFindingObserver({ rootRef }: Options) {
 
     return () => {
       if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current);
+      if (deferredFlushRef.current !== null) window.clearTimeout(deferredFlushRef.current);
       observer.disconnect();
       observerRef.current = null;
       ratioMapRef.current.clear();

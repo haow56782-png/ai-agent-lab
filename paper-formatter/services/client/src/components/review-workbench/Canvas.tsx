@@ -7,7 +7,7 @@ import type { DiffCopyShape } from '../../screens/step4-diff/diffCopy';
 import type { PaperPage } from '../../screens/step4-diff/types';
 import { A4_MARGIN_BOTTOM, A4_MARGIN_LEFT, A4_MARGIN_RIGHT, A4_MARGIN_TOP } from '../../screens/step4-diff/types';
 import { useFindingObserver } from '../../hooks/useFindingObserver';
-import { selectCurrentPage, useReviewStore, type Finding } from '../../stores/reviewStore';
+import { selectFocusedFindingPage, useReviewStore, type Finding } from '../../stores/reviewStore';
 
 interface Props {
   pages: PaperPage[];
@@ -32,7 +32,7 @@ export const Canvas: React.FC<Props> = ({
   const pageRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const focusFindingId = useReviewStore((state) => state.focusFindingId);
   const scrollSource = useReviewStore((state) => state.scrollSource);
-  const currentPage = useReviewStore(selectCurrentPage);
+  const focusedFindingPage = useReviewStore(selectFocusedFindingPage);
   const focusedFinding = useReviewStore((state) => state.findings.find((finding) => finding.finding_id === state.focusFindingId) ?? null);
   const { registerFindingAnchor } = useFindingObserver({ rootRef: viewportRef });
 
@@ -45,12 +45,12 @@ export const Canvas: React.FC<Props> = ({
   }, [findings]);
 
   useEffect(() => {
-    if (!currentPage || scrollSource === 'canvas') return;
+    if (!focusedFindingPage || scrollSource === 'canvas') return;
     const viewport = viewportRef.current;
-    const pageNode = pageRefs.current[currentPage];
+    const pageNode = pageRefs.current[focusedFindingPage];
     if (!viewport || !pageNode) return;
     viewport.scrollTo({ top: Math.max(0, pageNode.offsetTop - 4), behavior: 'auto' });
-  }, [currentPage, scrollSource]);
+  }, [focusedFindingPage, scrollSource]);
 
   if (pages.length === 0) {
     return (

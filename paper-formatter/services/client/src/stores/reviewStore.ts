@@ -132,14 +132,14 @@ class ReviewStore {
       if (this.state.scrollSource === 'canvas' && source !== 'canvas') {
         if (this.releaseTimer !== null) window.clearTimeout(this.releaseTimer);
       } else {
-      if (source !== 'canvas') {
-        if (this.pendingFocusRetryTimer !== null) window.clearTimeout(this.pendingFocusRetryTimer);
-        this.pendingFocusRetryTimer = window.setTimeout(() => {
-          this.pendingFocusRetryTimer = null;
-          this.setFocus(id, source);
-        }, 170);
-      }
-      return;
+        if (source !== 'canvas') {
+          if (this.pendingFocusRetryTimer !== null) window.clearTimeout(this.pendingFocusRetryTimer);
+          this.pendingFocusRetryTimer = window.setTimeout(() => {
+            this.pendingFocusRetryTimer = null;
+            this.setFocus(id, source);
+          }, 170);
+        }
+        return;
       }
     }
 
@@ -340,7 +340,7 @@ export function selectFocusedFinding(state: ReviewState) {
   return state.findings.find((finding) => finding.finding_id === state.focusFindingId) ?? null;
 }
 
-export function selectCurrentPage(state: ReviewState) {
+export function selectFocusedFindingPage(state: ReviewState) {
   return selectFocusedFinding(state)?.pageNo ?? null;
 }
 

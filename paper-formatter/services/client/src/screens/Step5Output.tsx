@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp, findSchoolById, getLegacyDocumentId, isDemoDocument } from '../components/AppFrame';
-import { api } from '../api/client';
+import { api, type DiffResult } from '../api/client';
 import { canDownloadByFindings } from '../../../../packages/shared-types/src/finding-download-guard';
 import ShareModal from '../components/ShareModal';
 import { analytics } from '../api/analytics';
@@ -11,6 +11,7 @@ import { WarningCard } from '../components/WarningCard';
 import { MetricsCard } from '../components/MetricsCard';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { useReviewStore } from '../stores/reviewStore';
+import { getContentIntegrityView } from '../utils/contentIntegrityView';
 
 interface Props {
   showToast: (msg: string) => void;
@@ -63,11 +64,14 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
   const [shareUrl, setShareUrl] = useState('');
   const [shareLoading, setShareLoading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const schoolInfo = findSchoolById(state.schoolId);
   const storeFindings = useReviewStore((reviewState) => reviewState.findings);
   const p1Exemption = useReviewStore((reviewState) => reviewState.p1Exemption);
-  const hasRealJob = Boolean(state.jobId && state.jobId !== 'demo');
-  const guardFindings = storeFindings.length > 0 ? storeFindings : state.parseResults?.findings ?? [];
+  const formatJobId = state.formatJobId;
+  const hasRealJob = Boolean(formatJobId && formatJobId !== 'demo');
+  const rawGuardFindings = storeFindings.length > 0 ? storeFindings : state.parseResults?.findings ?? [];
+  const guardFindings = state.exported ? [] : rawGuardFindings;
   const downloadGuard = useMemo(() => canDownloadByFindings({
     jobStatus: state.jobStatus,
     findings: guardFindings,
@@ -81,6 +85,58 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
   const deliveryNarrative = canDownloadRealOutput
     ? '这篇论文已经完成修复和人工确认，现在可以下载定稿与留档材料。'
     : '真实修复结果准备好并完成确认后，这里会生成可下载的定稿。';
+  const contentIntegrityView = useMemo(
+    () => getContentIntegrityView(diffResult?.integrity),
+    [diffResult?.integrity],
+  );
+
+  useEffect(() => {
+    if (!formatJobId || formatJobId === 'demo') return;
+    if (state.jobStatus === 'completed' || state.jobStatus === 'failed') return;
+
+    let cancelled = false;
+    let timer: number | null = null;
+
+    const pollFormatJob = async () => {
+      try {
+        const status = await api.getJob(formatJobId);
+        if (cancelled) return;
+
+        set({ jobStatus: status.status });
+        if (status.status === 'completed' || status.status === 'failed') return;
+        timer = window.setTimeout(pollFormatJob, 800);
+      } catch {
+        if (cancelled) return;
+        timer = window.setTimeout(pollFormatJob, 1200);
+      }
+    };
+
+    void pollFormatJob();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [formatJobId, set, state.jobStatus]);
+
+  useEffect(() => {
+    if (!formatJobId || formatJobId === 'demo') {
+      setDiffResult(null);
+      return;
+    }
+
+    let cancelled = false;
+    api.getDiff(formatJobId)
+      .then((result) => {
+        if (!cancelled) setDiffResult(result);
+      })
+      .catch(() => {
+        if (!cancelled) setDiffResult(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formatJobId, state.jobStatus]);
 
   const handleDownload = async (type?: string) => {
     if (!hasRealJob || !downloadGuard.allowed) {
@@ -91,7 +147,7 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
     }
 
     try {
-      const url = api.getDownloadUrl(state.jobId!, type);
+      const url = api.getDownloadUrl(formatJobId!, type);
       const res = await fetch(url);
       if (!res.ok) {
         let message = `下载失败: HTTP ${res.status}`;
@@ -161,6 +217,7 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
   return (
     <div style={{ flex: 1, padding: '32px 56px 36px', overflow: 'auto', background: 'var(--paper-1)' }}>
       <DeliveryHeader
+        contentIntegrity={contentIntegrityView}
         deliveryNarrative={deliveryNarrative}
         oldScore={oldScore}
         newScore={newScore}
@@ -168,7 +225,7 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, marginBottom: 16 }}>
         {[
-          { label: '正文保护', value: '原稿与修正稿正文完全一致' },
+          { label: '正文保护', value: contentIntegrityView.detail },
           { label: '交付方式', value: '修正稿、原稿、修改清单、报告可一起留档' },
           { label: '导出建议', value: '确认页已过目，再下载最终交稿版' },
         ].map((signal) => (
@@ -188,6 +245,7 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
           <FixSummaryCard items={FIX_SUMMARY} />
 
           <ExportConfirmCard
+            contentIntegrity={contentIntegrityView}
             fileName={fileName}
             editingName={editingName}
             withOriginal={withOriginal}
@@ -218,7 +276,7 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
             onNavigate={() => set({ step: 5 })}
           />
 
-          <MetricsCard />
+          <MetricsCard contentIntegrity={contentIntegrityView} />
 
           <div style={{
             marginTop: 16,

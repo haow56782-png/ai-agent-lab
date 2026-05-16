@@ -1,0 +1,183 @@
+@import './task-panel/summary.css';
+@import './task-panel/task-card.css';
+@import './task-panel/process-drawer.css';
+
+/* Fix runtime task panel shared layout styles */
+.fix-runtime-bottombar {
+  display: none;
+}
+
+.fix-runtime-bottom-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-700);
+}
+
+.fix-runtime-bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fix-runtime-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.fix-runtime-status-dot.status-running {
+  background: #3b82f6;
+  animation: protoPulse 1.2s ease-in-out infinite;
+}
+
+.fix-runtime-status-dot.status-paused {
+  background: #98a2b3;
+}
+
+.fix-runtime-status-dot.status-completed {
+  background: #2f8f57;
+}
+
+.fix-runtime-mini-paper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fix-runtime-mini-paper-sheet {
+  position: relative;
+  width: 28px;
+  height: 40px;
+  border-radius: 3px;
+  border: 1px solid rgba(21,23,27,.12);
+  background:
+    linear-gradient(rgba(21,23,27,.05) 1px, transparent 1px),
+    #fff;
+  background-size: 100% 6px;
+  box-shadow: 0 1px 8px rgba(21,23,27,.08);
+}
+
+.fix-runtime-mini-paper-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  margin-top: -3px;
+  border-radius: 999px;
+  background: #2a4d3a;
+}
+
+.fix-runtime-mini-paper-label {
+  font-size: 11px;
+  color: var(--ink-500);
+  white-space: nowrap;
+}
+
+.fix-runtime-scroll-top {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 20px;
+  background: linear-gradient(0deg, rgba(251,250,246,1) 50%, transparent);
+  z-index: 2;
+}
+
+.fix-runtime-scroll-top-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(21,23,27,.1);
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(8px);
+  color: var(--ink-500);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .2s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,.06);
+}
+
+.fix-runtime-scroll-top-btn:hover {
+  background: var(--ink-900);
+  color: var(--paper-0);
+  border-color: var(--ink-900);
+  box-shadow: 0 6px 20px rgba(0,0,0,.1);
+  transform: translateY(-2px);
+}
+
+.fix-runtime-scroll-top-btn:focus-visible {
+  outline: 2px solid var(--sun-500);
+  outline-offset: 3px;
+}
+
+.fix-runtime-diff-btn {
+  width: 100%;
+  height: 38px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(21,23,27,.12);
+  background: rgba(255,255,255,.72);
+  color: var(--ink-400);
+  font-family: var(--sans);
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+
+.fix-runtime-diff-btn.is-active {
+  background: var(--ink-900);
+  color: var(--paper-0);
+  border-color: var(--ink-900);
+  cursor: pointer;
+}
+
+.fix-runtime-diff-btn.is-active:hover {
+  filter: brightness(1.12);
+}
+
+.fix-runtime-diff-btn.is-pulsing {
+  animation: fixDiffPulse 1s ease-out 1;
+}
+
+.fix-runtime-note-right::-webkit-scrollbar {
+  width: 4px;
+}
+
+.fix-runtime-note-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fix-runtime-note-right::-webkit-scrollbar-thumb {
+  background: rgba(21,23,27,.12);
+  border-radius: 999px;
+}
+
+.fix-runtime-note-right::-webkit-scrollbar-thumb:hover {
+  background: rgba(21,23,27,.24);
+}
+
+.fix-diff-button {
+  padding: 0 16px;
+  border: 1px solid rgba(21,23,27,.12);
+  background: rgba(255,255,255,.72);
+  color: var(--ink-400);
+}
+
+.fix-diff-button.is-active {
+  border-color: var(--ink-900);
+  background: var(--ink-900);
+  color: var(--paper-0);
+}
+
+.fix-diff-button.is-pulsing {
+  animation: fixDiffPulse 1s ease-out 1;
+}

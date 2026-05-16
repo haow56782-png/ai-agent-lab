@@ -1,0 +1,214 @@
+school: CAFA
+ruleVersion: "2025"
+fixtureVersion: "v0.1"
+baselineStandard: GB/T 7713.1-2025
+rules:
+  - ruleId: CAFA-HEADING-001
+    ruleName: 标题层级
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 标题
+    condition: thesis heading paragraphs
+    expectedFormat: 标题层级清晰，一级、二级、三级标题不得断裂
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: RULE_CONFLICT
+    fixable: true
+    autoFixStrategy: numbering_update
+    evidence: heading style, numbering, paragraph position
+  - ruleId: CAFA-BODY-001
+    ruleName: 正文段落
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 正文
+    condition: body paragraph
+    expectedFormat: 宋体，小四，首行缩进 2 字符，行距符合学校模板
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: RULE_CONFLICT
+    fixable: true
+    autoFixStrategy: style_update
+    evidence: font, size, indent, line spacing
+  - ruleId: CAFA-FIGURE-001
+    ruleName: 图对象
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 图
+    condition: figure object
+    expectedFormat: 图对象不得覆盖正文，图与图题绑定
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: RULE_CONFLICT
+    fixable: true
+    autoFixStrategy: caption_reposition
+    evidence: object anchor, caption relation, bounding box
+  - ruleId: CAFA-FIG-CAPTION-001
+    ruleName: 图题位置
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 图题
+    condition: figure caption
+    expectedFormat: 图题位于图下方并与图对象绑定
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: CAPTION_POSITION_WARNING
+    fixable: true
+    autoFixStrategy: caption_reposition
+    evidence: figure anchor, caption paragraph index
+  - ruleId: CAFA-TABLE-001
+    ruleName: 表对象
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 表
+    condition: table object
+    expectedFormat: 表格结构完整，表头和列数稳定
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: TABLE_STRUCTURE_WARNING
+    fixable: true
+    autoFixStrategy: style_update
+    evidence: table rows, columns, tblLook
+  - ruleId: CAFA-TABLE-CAPTION-001
+    ruleName: 表题位置
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 表题
+    condition: table caption
+    expectedFormat: 表题位于表格上方并与表对象绑定
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: CAPTION_POSITION_WARNING
+    fixable: true
+    autoFixStrategy: caption_reposition
+    evidence: table anchor, caption paragraph index
+  - ruleId: CAFA-TABLE-CONTINUATION-001
+    ruleName: 续表识别
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 续表
+    condition: adjacent table pair
+    expectedFormat: 结构信号优先，文本信号辅助，冲突产出 warning
+    priority: 320
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: CONTINUATION_AMBIGUOUS
+    fixable: true
+    autoFixStrategy: table_continuation_merge
+    evidence: tblHeader, tblLook, columnCount, headerTextHash, adjacency, continuation caption
+  - ruleId: CAFA-REFERENCE-001
+    ruleName: 参考文献
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 参考文献
+    condition: reference entry
+    expectedFormat: 符合 GB/T 7714 著录倾向，编号、标点、DOI/URL 可追溯
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: REFERENCE_FORMAT_WARNING
+    fixable: true
+    autoFixStrategy: reference_format_update
+    evidence: raw entry, index, DOI, URL, punctuation
+  - ruleId: CAFA-HEADER-001
+    ruleName: 页眉
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 页眉
+    condition: section header
+    expectedFormat: 页眉包含学校或论文规定文本
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: HEADER_FOOTER_WARNING
+    fixable: true
+    autoFixStrategy: header_footer_update
+    evidence: section header text
+  - ruleId: CAFA-FOOTER-001
+    ruleName: 页脚
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 页脚
+    condition: section footer
+    expectedFormat: 页脚与页码位置符合规则
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: HEADER_FOOTER_WARNING
+    fixable: true
+    autoFixStrategy: header_footer_update
+    evidence: footer text, page number
+  - ruleId: CAFA-PAGE-NUMBER-001
+    ruleName: 页码
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 页码
+    condition: page number
+    expectedFormat: 页码连续，前置页和正文页码体系可区分
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: PAGE_NUMBER_WARNING
+    fixable: true
+    autoFixStrategy: header_footer_update
+    evidence: page field, section break
+  - ruleId: CAFA-TOC-001
+    ruleName: 目录
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 目录
+    condition: table of contents
+    expectedFormat: 目录条目与正文标题对应
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: TOC_WARNING
+    fixable: true
+    autoFixStrategy: numbering_update
+    evidence: toc entries, heading anchors
+  - ruleId: CAFA-ABSTRACT-001
+    ruleName: 摘要
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 摘要
+    condition: abstract section
+    expectedFormat: 中文摘要和英文摘要结构完整
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: ABSTRACT_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: abstract heading and paragraph span
+  - ruleId: CAFA-KEYWORD-001
+    ruleName: 关键词
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 关键词
+    condition: keyword paragraph
+    expectedFormat: 关键词数量和分隔符符合规则
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: KEYWORD_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: keyword paragraph text
+  - ruleId: CAFA-APPENDIX-001
+    ruleName: 附录
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 附录
+    condition: appendix section
+    expectedFormat: 附录编号和标题符合规则
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: APPENDIX_WARNING
+    fixable: true
+    autoFixStrategy: numbering_update
+    evidence: appendix heading
+  - ruleId: CAFA-ACK-001
+    ruleName: 致谢
+    ruleSource: CAFA
+    ruleLevel: school
+    targetObject: 致谢
+    condition: acknowledgement section
+    expectedFormat: 致谢章节位置和标题符合规则
+    priority: 300
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: ACKNOWLEDGEMENT_WARNING
+    fixable: true
+    autoFixStrategy: numbering_update
+    evidence: acknowledgement heading
+

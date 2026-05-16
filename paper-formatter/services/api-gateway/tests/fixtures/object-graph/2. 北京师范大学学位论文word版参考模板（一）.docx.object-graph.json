@@ -1,0 +1,1904 @@
+{
+  "schemaVersion": "object-graph.v0.1",
+  "documentId": "2_北京师范大学学位论文word版参考模板_一",
+  "documentVersion": "snapshot-v0.1",
+  "source": {
+    "parser": "docx-xml",
+    "docxPath": "2. 北京师范大学学位论文word版参考模板（一）.docx",
+    "generatedAt": "2026-05-13T00:00:00.000Z",
+    "probeEvidence": {
+      "tableCount": 10,
+      "drawingCount": 18,
+      "captionCandidateCount": 17
+    }
+  },
+  "nodes": [
+    {
+      "objectId": "figure:1:0",
+      "kind": "figure",
+      "page": 1,
+      "paragraphIndex": 1,
+      "flowOrder": 1,
+      "anchorParagraphIndex": 1,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "figure:1:1",
+      "kind": "figure",
+      "page": 1,
+      "paragraphIndex": 1,
+      "flowOrder": 1,
+      "anchorParagraphIndex": 1,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId9"
+    },
+    {
+      "objectId": "table:0",
+      "kind": "table",
+      "page": 7,
+      "paragraphIndex": 49,
+      "flowOrder": 49,
+      "startParagraphIndex": 49,
+      "endParagraphIndex": 49,
+      "rowCount": 1,
+      "columnCount": 1,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "3cm左右3cm左右论文题目姓名3cm左右3cm左右北京师范大学"
+      ],
+      "headerRowTextHash": "9ad1c4ce60f6ba78f7c103f644e5ebceccf13f57",
+      "schemaFingerprint": "1:9ad1c4ce60f6ba78f7c103f644e5ebceccf13f57"
+    },
+    {
+      "objectId": "figure:49:0",
+      "kind": "figure",
+      "page": 7,
+      "paragraphIndex": 49,
+      "flowOrder": 50,
+      "anchorParagraphIndex": 49,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "figure:77:0",
+      "kind": "figure",
+      "page": 10,
+      "paragraphIndex": 77,
+      "flowOrder": 78,
+      "anchorParagraphIndex": 77,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "figure:144:0",
+      "kind": "figure",
+      "page": 19,
+      "paragraphIndex": 144,
+      "flowOrder": 145,
+      "anchorParagraphIndex": 144,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "caption:figure:146",
+      "kind": "caption",
+      "page": 19,
+      "paragraphIndex": 146,
+      "flowOrder": 147,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图2 新建标签 PAGEREF _Toc147618932 \\h",
+      "styleName": "af",
+      "numberToken": "2",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:147",
+      "kind": "caption",
+      "page": 19,
+      "paragraphIndex": 147,
+      "flowOrder": 148,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图3 新建标签 PAGEREF _Toc147618933 \\h",
+      "styleName": "af",
+      "numberToken": "3",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:148",
+      "kind": "caption",
+      "page": 19,
+      "paragraphIndex": 148,
+      "flowOrder": 149,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图4 设置图标签格式 PAGEREF _Toc147618934 \\h",
+      "styleName": "af",
+      "numberToken": "4",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:149",
+      "kind": "caption",
+      "page": 19,
+      "paragraphIndex": 149,
+      "flowOrder": 150,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图5 北京师范大学 PAGEREF _Toc147618935 \\h",
+      "styleName": "af",
+      "numberToken": "5",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:150",
+      "kind": "caption",
+      "page": 19,
+      "paragraphIndex": 150,
+      "flowOrder": 151,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图6 图修改位置 PAGEREF _Toc147618936 \\h",
+      "styleName": "af",
+      "numberToken": "6",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:151",
+      "kind": "caption",
+      "page": 19,
+      "paragraphIndex": 151,
+      "flowOrder": 152,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图7 插入新图序 PAGEREF _Toc147618937 \\h",
+      "styleName": "af",
+      "numberToken": "7",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:152",
+      "kind": "caption",
+      "page": 20,
+      "paragraphIndex": 152,
+      "flowOrder": 153,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图8 添加新图序 PAGEREF _Toc147618938 \\h",
+      "styleName": "af",
+      "numberToken": "8",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:153",
+      "kind": "caption",
+      "page": 20,
+      "paragraphIndex": 153,
+      "flowOrder": 154,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图9 删除多余空格 PAGEREF _Toc147618939 \\h",
+      "styleName": "af",
+      "numberToken": "9",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:154",
+      "kind": "caption",
+      "page": 20,
+      "paragraphIndex": 154,
+      "flowOrder": 155,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图10 表修改位置 PAGEREF _Toc147618940 \\h",
+      "styleName": "af",
+      "numberToken": "10",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:155",
+      "kind": "caption",
+      "page": 20,
+      "paragraphIndex": 155,
+      "flowOrder": 156,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图11 点选插入新表序 PAGEREF _Toc147618941 \\h",
+      "styleName": "af",
+      "numberToken": "11",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:table:170",
+      "kind": "caption",
+      "page": 22,
+      "paragraphIndex": 170,
+      "flowOrder": 171,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "表2 MACROBUTTON AcceptAllChangesShown [请输入中文表题] PAGEREF _Toc147508247 \\h",
+      "styleName": "af",
+      "numberToken": "2",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:table:171",
+      "kind": "caption",
+      "page": 22,
+      "paragraphIndex": 171,
+      "flowOrder": 172,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "表3 续表表格示例 PAGEREF _Toc147508248 \\h",
+      "styleName": "af",
+      "numberToken": "3",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:table:172",
+      "kind": "caption",
+      "page": 22,
+      "paragraphIndex": 172,
+      "flowOrder": 173,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "表4 表格示例 PAGEREF _Toc147508249 \\h",
+      "styleName": "af",
+      "numberToken": "4",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:table:173",
+      "kind": "caption",
+      "page": 22,
+      "paragraphIndex": 173,
+      "flowOrder": 174,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "表5 表格示例 PAGEREF _Toc147508250 \\h",
+      "styleName": "af",
+      "numberToken": "5",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:table:174",
+      "kind": "caption",
+      "page": 22,
+      "paragraphIndex": 174,
+      "flowOrder": 175,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "表6 表格示例 PAGEREF _Toc147508251 \\h",
+      "styleName": "af",
+      "numberToken": "6",
+      "isContinuation": false
+    },
+    {
+      "objectId": "figure:225:0",
+      "kind": "figure",
+      "page": 29,
+      "paragraphIndex": 225,
+      "flowOrder": 226,
+      "anchorParagraphIndex": 225,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId33"
+    },
+    {
+      "objectId": "figure:228:0",
+      "kind": "figure",
+      "page": 29,
+      "paragraphIndex": 228,
+      "flowOrder": 229,
+      "anchorParagraphIndex": 228,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId34"
+    },
+    {
+      "objectId": "figure:231:0",
+      "kind": "figure",
+      "page": 29,
+      "paragraphIndex": 231,
+      "flowOrder": 232,
+      "anchorParagraphIndex": 231,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId35"
+    },
+    {
+      "objectId": "figure:234:0",
+      "kind": "figure",
+      "page": 30,
+      "paragraphIndex": 234,
+      "flowOrder": 235,
+      "anchorParagraphIndex": 234,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId36"
+    },
+    {
+      "objectId": "figure:239:0",
+      "kind": "figure",
+      "page": 30,
+      "paragraphIndex": 239,
+      "flowOrder": 240,
+      "anchorParagraphIndex": 239,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId37"
+    },
+    {
+      "objectId": "figure:242:0",
+      "kind": "figure",
+      "page": 31,
+      "paragraphIndex": 242,
+      "flowOrder": 243,
+      "anchorParagraphIndex": 242,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId38"
+    },
+    {
+      "objectId": "figure:245:0",
+      "kind": "figure",
+      "page": 31,
+      "paragraphIndex": 245,
+      "flowOrder": 246,
+      "anchorParagraphIndex": 245,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId39"
+    },
+    {
+      "objectId": "figure:248:0",
+      "kind": "figure",
+      "page": 32,
+      "paragraphIndex": 248,
+      "flowOrder": 249,
+      "anchorParagraphIndex": 248,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId40"
+    },
+    {
+      "objectId": "figure:251:0",
+      "kind": "figure",
+      "page": 32,
+      "paragraphIndex": 251,
+      "flowOrder": 252,
+      "anchorParagraphIndex": 251,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId41"
+    },
+    {
+      "objectId": "table:1",
+      "kind": "table",
+      "page": 33,
+      "paragraphIndex": 261,
+      "flowOrder": 262,
+      "startParagraphIndex": 261,
+      "endParagraphIndex": 261,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "××××",
+        "××××"
+      ],
+      "headerRowTextHash": "602bdece7ce7e4d1b19e4f31d17d5628e8af911f",
+      "schemaFingerprint": "2:602bdece7ce7e4d1b19e4f31d17d5628e8af911f"
+    },
+    {
+      "objectId": "caption:table:262",
+      "kind": "caption",
+      "page": 33,
+      "paragraphIndex": 262,
+      "flowOrder": 264,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "表1 MACROBUTTON AcceptAllChangesShown [请输入中文表题] （续表）",
+      "styleName": "afa",
+      "numberToken": "1",
+      "isContinuation": false
+    },
+    {
+      "objectId": "table:2",
+      "kind": "table",
+      "page": 33,
+      "paragraphIndex": 263,
+      "flowOrder": 265,
+      "startParagraphIndex": 263,
+      "endParagraphIndex": 263,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "××××",
+        "××××"
+      ],
+      "headerRowTextHash": "602bdece7ce7e4d1b19e4f31d17d5628e8af911f",
+      "schemaFingerprint": "2:602bdece7ce7e4d1b19e4f31d17d5628e8af911f"
+    },
+    {
+      "objectId": "figure:264:0",
+      "kind": "figure",
+      "page": 34,
+      "paragraphIndex": 264,
+      "flowOrder": 267,
+      "anchorParagraphIndex": 264,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId42"
+    },
+    {
+      "objectId": "figure:268:0",
+      "kind": "figure",
+      "page": 34,
+      "paragraphIndex": 268,
+      "flowOrder": 271,
+      "anchorParagraphIndex": 268,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId43"
+    },
+    {
+      "objectId": "figure:271:0",
+      "kind": "figure",
+      "page": 34,
+      "paragraphIndex": 271,
+      "flowOrder": 274,
+      "anchorParagraphIndex": 271,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId44"
+    },
+    {
+      "objectId": "table:3",
+      "kind": "table",
+      "page": 35,
+      "paragraphIndex": 277,
+      "flowOrder": 280,
+      "startParagraphIndex": 277,
+      "endParagraphIndex": 277,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "××××",
+        "××××"
+      ],
+      "headerRowTextHash": "602bdece7ce7e4d1b19e4f31d17d5628e8af911f",
+      "schemaFingerprint": "2:602bdece7ce7e4d1b19e4f31d17d5628e8af911f"
+    },
+    {
+      "objectId": "table:4",
+      "kind": "table",
+      "page": 35,
+      "paragraphIndex": 279,
+      "flowOrder": 283,
+      "startParagraphIndex": 279,
+      "endParagraphIndex": 279,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "日期",
+        "数量"
+      ],
+      "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7",
+      "schemaFingerprint": "2:7599564cd5a04f6e72fdac8870caa07e426472f7"
+    },
+    {
+      "objectId": "caption:table:279",
+      "kind": "caption",
+      "page": 35,
+      "paragraphIndex": 279,
+      "flowOrder": 284,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "表3 续表表格示例（续表）",
+      "styleName": "afa",
+      "numberToken": "3",
+      "isContinuation": false
+    },
+    {
+      "objectId": "table:5",
+      "kind": "table",
+      "page": 36,
+      "paragraphIndex": 280,
+      "flowOrder": 285,
+      "startParagraphIndex": 280,
+      "endParagraphIndex": 280,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "日期",
+        "数量"
+      ],
+      "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7",
+      "schemaFingerprint": "2:7599564cd5a04f6e72fdac8870caa07e426472f7"
+    },
+    {
+      "objectId": "table:6",
+      "kind": "table",
+      "page": 36,
+      "paragraphIndex": 282,
+      "flowOrder": 288,
+      "startParagraphIndex": 282,
+      "endParagraphIndex": 282,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "日期",
+        "数量"
+      ],
+      "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7",
+      "schemaFingerprint": "2:7599564cd5a04f6e72fdac8870caa07e426472f7"
+    },
+    {
+      "objectId": "table:7",
+      "kind": "table",
+      "page": 36,
+      "paragraphIndex": 284,
+      "flowOrder": 291,
+      "startParagraphIndex": 284,
+      "endParagraphIndex": 284,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "日期",
+        "数量"
+      ],
+      "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7",
+      "schemaFingerprint": "2:7599564cd5a04f6e72fdac8870caa07e426472f7"
+    },
+    {
+      "objectId": "table:8",
+      "kind": "table",
+      "page": 36,
+      "paragraphIndex": 286,
+      "flowOrder": 294,
+      "startParagraphIndex": 286,
+      "endParagraphIndex": 286,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "日期",
+        "数量"
+      ],
+      "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7",
+      "schemaFingerprint": "2:7599564cd5a04f6e72fdac8870caa07e426472f7"
+    },
+    {
+      "objectId": "figure:410:0",
+      "kind": "figure",
+      "page": 52,
+      "paragraphIndex": 410,
+      "flowOrder": 421,
+      "anchorParagraphIndex": 410,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "table:9",
+      "kind": "table",
+      "page": 68,
+      "paragraphIndex": 536,
+      "flowOrder": 547,
+      "startParagraphIndex": 536,
+      "endParagraphIndex": 536,
+      "rowCount": 6,
+      "columnCount": 5,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "",
+        "姓名",
+        "工作单位",
+        "职称",
+        "导师类型"
+      ],
+      "headerRowTextHash": "5aac5eabe303358830ccf934453a759665f693e9",
+      "schemaFingerprint": "5:5aac5eabe303358830ccf934453a759665f693e9"
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "figure:1:0@p1",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:1:0",
+      "anchorParagraphIndex": 1,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          1
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:1:1@p1",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:1:1",
+      "anchorParagraphIndex": 1,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          1
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId9"
+      }
+    },
+    {
+      "edgeId": "figure:49:0@p49",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:49:0",
+      "anchorParagraphIndex": 49,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          49
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:77:0@p77",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:77:0",
+      "anchorParagraphIndex": 77,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          77
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:144:0@p144",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:144:0",
+      "anchorParagraphIndex": 144,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          144
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:225:0@p225",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:225:0",
+      "anchorParagraphIndex": 225,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          225
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId33"
+      }
+    },
+    {
+      "edgeId": "figure:228:0@p228",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:228:0",
+      "anchorParagraphIndex": 228,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          228
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId34"
+      }
+    },
+    {
+      "edgeId": "figure:231:0@p231",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:231:0",
+      "anchorParagraphIndex": 231,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          231
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId35"
+      }
+    },
+    {
+      "edgeId": "figure:234:0@p234",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:234:0",
+      "anchorParagraphIndex": 234,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          234
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId36"
+      }
+    },
+    {
+      "edgeId": "figure:239:0@p239",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:239:0",
+      "anchorParagraphIndex": 239,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          239
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId37"
+      }
+    },
+    {
+      "edgeId": "figure:242:0@p242",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:242:0",
+      "anchorParagraphIndex": 242,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          242
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId38"
+      }
+    },
+    {
+      "edgeId": "figure:245:0@p245",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:245:0",
+      "anchorParagraphIndex": 245,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          245
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId39"
+      }
+    },
+    {
+      "edgeId": "figure:248:0@p248",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:248:0",
+      "anchorParagraphIndex": 248,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          248
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId40"
+      }
+    },
+    {
+      "edgeId": "figure:251:0@p251",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:251:0",
+      "anchorParagraphIndex": 251,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          251
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId41"
+      }
+    },
+    {
+      "edgeId": "figure:264:0@p264",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:264:0",
+      "anchorParagraphIndex": 264,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          264
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId42"
+      }
+    },
+    {
+      "edgeId": "figure:268:0@p268",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:268:0",
+      "anchorParagraphIndex": 268,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          268
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId43"
+      }
+    },
+    {
+      "edgeId": "figure:271:0@p271",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:271:0",
+      "anchorParagraphIndex": 271,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          271
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId44"
+      }
+    },
+    {
+      "edgeId": "figure:410:0@p410",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:410:0",
+      "anchorParagraphIndex": 410,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          410
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:146",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:146",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          146
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:147",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:147",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          147
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:148",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:148",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          148
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:149",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:149",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          149
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:150",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:150",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          150
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:151",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:151",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          151
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:152",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:152",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          152
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:153",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:153",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          153
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:154",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:154",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          154
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:144:0->caption:figure:155",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:144:0",
+      "toObjectId": "caption:figure:155",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          144,
+          155
+        ]
+      }
+    },
+    {
+      "edgeId": "table:1->caption:table:170",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:1",
+      "toObjectId": "caption:table:170",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          261,
+          170
+        ]
+      }
+    },
+    {
+      "edgeId": "table:1->caption:table:171",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:1",
+      "toObjectId": "caption:table:171",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          261,
+          171
+        ]
+      }
+    },
+    {
+      "edgeId": "table:1->caption:table:172",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:1",
+      "toObjectId": "caption:table:172",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          261,
+          172
+        ]
+      }
+    },
+    {
+      "edgeId": "table:1->caption:table:173",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:1",
+      "toObjectId": "caption:table:173",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          261,
+          173
+        ]
+      }
+    },
+    {
+      "edgeId": "table:1->caption:table:174",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:1",
+      "toObjectId": "caption:table:174",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          261,
+          174
+        ]
+      }
+    },
+    {
+      "edgeId": "table:2->caption:table:262",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:2",
+      "toObjectId": "caption:table:262",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          263,
+          262
+        ]
+      }
+    },
+    {
+      "edgeId": "table:5->caption:table:279",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:5",
+      "toObjectId": "caption:table:279",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          280,
+          279
+        ]
+      }
+    },
+    {
+      "edgeId": "table:2->table:1",
+      "edgeType": "continues",
+      "fromObjectId": "table:2",
+      "toObjectId": "table:1",
+      "confidence": 0.75,
+      "vote": {
+        "score": 2,
+        "signals": [
+          "schema_fingerprint_match"
+        ],
+        "decision": "edge_with_warning",
+        "warningCode": "continuation_ambiguous"
+      },
+      "evidence": {
+        "paragraphIndexes": [
+          261,
+          262
+        ],
+        "captionsBetween": [
+          "表1 MACROBUTTON AcceptAllChangesShown [请输入中文表题] （续表）"
+        ],
+        "firstRowText": [
+          "××××",
+          "××××"
+        ],
+        "headerRowTextHash": "602bdece7ce7e4d1b19e4f31d17d5628e8af911f"
+      }
+    },
+    {
+      "edgeId": "table:3->table:2",
+      "edgeType": "continues",
+      "fromObjectId": "table:3",
+      "toObjectId": "table:2",
+      "confidence": 0.8500000000000001,
+      "vote": {
+        "score": 3,
+        "signals": [
+          "schema_fingerprint_match",
+          "adjacent_no_caption"
+        ],
+        "decision": "edge"
+      },
+      "evidence": {
+        "paragraphIndexes": [
+          263,
+          264,
+          265,
+          266,
+          267,
+          268,
+          269,
+          270,
+          271,
+          272,
+          273,
+          274,
+          275,
+          276
+        ],
+        "captionsBetween": [],
+        "firstRowText": [
+          "××××",
+          "××××"
+        ],
+        "headerRowTextHash": "602bdece7ce7e4d1b19e4f31d17d5628e8af911f"
+      }
+    },
+    {
+      "edgeId": "table:5->table:4",
+      "edgeType": "continues",
+      "fromObjectId": "table:5",
+      "toObjectId": "table:4",
+      "confidence": 0.75,
+      "vote": {
+        "score": 2,
+        "signals": [
+          "schema_fingerprint_match"
+        ],
+        "decision": "edge_with_warning",
+        "warningCode": "continuation_ambiguous"
+      },
+      "evidence": {
+        "paragraphIndexes": [
+          279
+        ],
+        "captionsBetween": [
+          "表3 续表表格示例（续表）"
+        ],
+        "firstRowText": [
+          "日期",
+          "数量"
+        ],
+        "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7"
+      }
+    },
+    {
+      "edgeId": "table:6->table:5",
+      "edgeType": "continues",
+      "fromObjectId": "table:6",
+      "toObjectId": "table:5",
+      "confidence": 0.8500000000000001,
+      "vote": {
+        "score": 3,
+        "signals": [
+          "schema_fingerprint_match",
+          "adjacent_no_caption"
+        ],
+        "decision": "edge"
+      },
+      "evidence": {
+        "paragraphIndexes": [
+          280,
+          281
+        ],
+        "captionsBetween": [],
+        "firstRowText": [
+          "日期",
+          "数量"
+        ],
+        "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7"
+      }
+    },
+    {
+      "edgeId": "table:7->table:6",
+      "edgeType": "continues",
+      "fromObjectId": "table:7",
+      "toObjectId": "table:6",
+      "confidence": 0.8500000000000001,
+      "vote": {
+        "score": 3,
+        "signals": [
+          "schema_fingerprint_match",
+          "adjacent_no_caption"
+        ],
+        "decision": "edge"
+      },
+      "evidence": {
+        "paragraphIndexes": [
+          282,
+          283
+        ],
+        "captionsBetween": [],
+        "firstRowText": [
+          "日期",
+          "数量"
+        ],
+        "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7"
+      }
+    },
+    {
+      "edgeId": "table:8->table:7",
+      "edgeType": "continues",
+      "fromObjectId": "table:8",
+      "toObjectId": "table:7",
+      "confidence": 0.8500000000000001,
+      "vote": {
+        "score": 3,
+        "signals": [
+          "schema_fingerprint_match",
+          "adjacent_no_caption"
+        ],
+        "decision": "edge"
+      },
+      "evidence": {
+        "paragraphIndexes": [
+          284,
+          285
+        ],
+        "captionsBetween": [],
+        "firstRowText": [
+          "日期",
+          "数量"
+        ],
+        "headerRowTextHash": "7599564cd5a04f6e72fdac8870caa07e426472f7"
+      }
+    }
+  ],
+  "paragraphIndex": [
+    {
+      "paragraphIndex": 1,
+      "nodeIds": [
+        "figure:1:0",
+        "figure:1:1"
+      ],
+      "edgeIds": [
+        "figure:1:0@p1",
+        "figure:1:1@p1"
+      ]
+    },
+    {
+      "paragraphIndex": 49,
+      "nodeIds": [
+        "table:0",
+        "figure:49:0"
+      ],
+      "edgeIds": [
+        "figure:49:0@p49"
+      ]
+    },
+    {
+      "paragraphIndex": 77,
+      "nodeIds": [
+        "figure:77:0"
+      ],
+      "edgeIds": [
+        "figure:77:0@p77"
+      ]
+    },
+    {
+      "paragraphIndex": 144,
+      "nodeIds": [
+        "figure:144:0"
+      ],
+      "edgeIds": [
+        "figure:144:0@p144",
+        "figure:144:0->caption:figure:146",
+        "figure:144:0->caption:figure:147",
+        "figure:144:0->caption:figure:148",
+        "figure:144:0->caption:figure:149",
+        "figure:144:0->caption:figure:150",
+        "figure:144:0->caption:figure:151",
+        "figure:144:0->caption:figure:152",
+        "figure:144:0->caption:figure:153",
+        "figure:144:0->caption:figure:154",
+        "figure:144:0->caption:figure:155"
+      ]
+    },
+    {
+      "paragraphIndex": 146,
+      "nodeIds": [
+        "caption:figure:146"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:146"
+      ]
+    },
+    {
+      "paragraphIndex": 147,
+      "nodeIds": [
+        "caption:figure:147"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:147"
+      ]
+    },
+    {
+      "paragraphIndex": 148,
+      "nodeIds": [
+        "caption:figure:148"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:148"
+      ]
+    },
+    {
+      "paragraphIndex": 149,
+      "nodeIds": [
+        "caption:figure:149"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:149"
+      ]
+    },
+    {
+      "paragraphIndex": 150,
+      "nodeIds": [
+        "caption:figure:150"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:150"
+      ]
+    },
+    {
+      "paragraphIndex": 151,
+      "nodeIds": [
+        "caption:figure:151"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:151"
+      ]
+    },
+    {
+      "paragraphIndex": 152,
+      "nodeIds": [
+        "caption:figure:152"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:152"
+      ]
+    },
+    {
+      "paragraphIndex": 153,
+      "nodeIds": [
+        "caption:figure:153"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:153"
+      ]
+    },
+    {
+      "paragraphIndex": 154,
+      "nodeIds": [
+        "caption:figure:154"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:154"
+      ]
+    },
+    {
+      "paragraphIndex": 155,
+      "nodeIds": [
+        "caption:figure:155"
+      ],
+      "edgeIds": [
+        "figure:144:0->caption:figure:155"
+      ]
+    },
+    {
+      "paragraphIndex": 170,
+      "nodeIds": [
+        "caption:table:170"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:170"
+      ]
+    },
+    {
+      "paragraphIndex": 171,
+      "nodeIds": [
+        "caption:table:171"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:171"
+      ]
+    },
+    {
+      "paragraphIndex": 172,
+      "nodeIds": [
+        "caption:table:172"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:172"
+      ]
+    },
+    {
+      "paragraphIndex": 173,
+      "nodeIds": [
+        "caption:table:173"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:173"
+      ]
+    },
+    {
+      "paragraphIndex": 174,
+      "nodeIds": [
+        "caption:table:174"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:174"
+      ]
+    },
+    {
+      "paragraphIndex": 225,
+      "nodeIds": [
+        "figure:225:0"
+      ],
+      "edgeIds": [
+        "figure:225:0@p225"
+      ]
+    },
+    {
+      "paragraphIndex": 228,
+      "nodeIds": [
+        "figure:228:0"
+      ],
+      "edgeIds": [
+        "figure:228:0@p228"
+      ]
+    },
+    {
+      "paragraphIndex": 231,
+      "nodeIds": [
+        "figure:231:0"
+      ],
+      "edgeIds": [
+        "figure:231:0@p231"
+      ]
+    },
+    {
+      "paragraphIndex": 234,
+      "nodeIds": [
+        "figure:234:0"
+      ],
+      "edgeIds": [
+        "figure:234:0@p234"
+      ]
+    },
+    {
+      "paragraphIndex": 239,
+      "nodeIds": [
+        "figure:239:0"
+      ],
+      "edgeIds": [
+        "figure:239:0@p239"
+      ]
+    },
+    {
+      "paragraphIndex": 242,
+      "nodeIds": [
+        "figure:242:0"
+      ],
+      "edgeIds": [
+        "figure:242:0@p242"
+      ]
+    },
+    {
+      "paragraphIndex": 245,
+      "nodeIds": [
+        "figure:245:0"
+      ],
+      "edgeIds": [
+        "figure:245:0@p245"
+      ]
+    },
+    {
+      "paragraphIndex": 248,
+      "nodeIds": [
+        "figure:248:0"
+      ],
+      "edgeIds": [
+        "figure:248:0@p248"
+      ]
+    },
+    {
+      "paragraphIndex": 251,
+      "nodeIds": [
+        "figure:251:0"
+      ],
+      "edgeIds": [
+        "figure:251:0@p251"
+      ]
+    },
+    {
+      "paragraphIndex": 261,
+      "nodeIds": [
+        "table:1"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:170",
+        "table:1->caption:table:171",
+        "table:1->caption:table:172",
+        "table:1->caption:table:173",
+        "table:1->caption:table:174",
+        "table:2->table:1"
+      ]
+    },
+    {
+      "paragraphIndex": 262,
+      "nodeIds": [
+        "caption:table:262"
+      ],
+      "edgeIds": [
+        "table:2->caption:table:262",
+        "table:2->table:1"
+      ]
+    },
+    {
+      "paragraphIndex": 263,
+      "nodeIds": [
+        "table:2"
+      ],
+      "edgeIds": [
+        "table:2->caption:table:262",
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 264,
+      "nodeIds": [
+        "figure:264:0"
+      ],
+      "edgeIds": [
+        "figure:264:0@p264",
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 265,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 266,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 267,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 268,
+      "nodeIds": [
+        "figure:268:0"
+      ],
+      "edgeIds": [
+        "figure:268:0@p268",
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 269,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 270,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 271,
+      "nodeIds": [
+        "figure:271:0"
+      ],
+      "edgeIds": [
+        "figure:271:0@p271",
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 272,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 273,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 274,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 275,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 276,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:3->table:2"
+      ]
+    },
+    {
+      "paragraphIndex": 277,
+      "nodeIds": [
+        "table:3"
+      ],
+      "edgeIds": []
+    },
+    {
+      "paragraphIndex": 279,
+      "nodeIds": [
+        "table:4",
+        "caption:table:279"
+      ],
+      "edgeIds": [
+        "table:5->caption:table:279",
+        "table:5->table:4"
+      ]
+    },
+    {
+      "paragraphIndex": 280,
+      "nodeIds": [
+        "table:5"
+      ],
+      "edgeIds": [
+        "table:5->caption:table:279",
+        "table:6->table:5"
+      ]
+    },
+    {
+      "paragraphIndex": 281,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:6->table:5"
+      ]
+    },
+    {
+      "paragraphIndex": 282,
+      "nodeIds": [
+        "table:6"
+      ],
+      "edgeIds": [
+        "table:7->table:6"
+      ]
+    },
+    {
+      "paragraphIndex": 283,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:7->table:6"
+      ]
+    },
+    {
+      "paragraphIndex": 284,
+      "nodeIds": [
+        "table:7"
+      ],
+      "edgeIds": [
+        "table:8->table:7"
+      ]
+    },
+    {
+      "paragraphIndex": 285,
+      "nodeIds": [],
+      "edgeIds": [
+        "table:8->table:7"
+      ]
+    },
+    {
+      "paragraphIndex": 286,
+      "nodeIds": [
+        "table:8"
+      ],
+      "edgeIds": []
+    },
+    {
+      "paragraphIndex": 410,
+      "nodeIds": [
+        "figure:410:0"
+      ],
+      "edgeIds": [
+        "figure:410:0@p410"
+      ]
+    },
+    {
+      "paragraphIndex": 536,
+      "nodeIds": [
+        "table:9"
+      ],
+      "edgeIds": []
+    }
+  ],
+  "warnings": [
+    {
+      "code": "continuation_ambiguous",
+      "message": "Table continuation edge table:2->table:1 has score 2.",
+      "nodeIds": [
+        "table:2",
+        "table:1"
+      ],
+      "edgeIds": [
+        "table:2->table:1"
+      ],
+      "disposition": "warning"
+    },
+    {
+      "code": "continuation_ambiguous",
+      "message": "Table continuation edge table:5->table:4 has score 2.",
+      "nodeIds": [
+        "table:5",
+        "table:4"
+      ],
+      "edgeIds": [
+        "table:5->table:4"
+      ],
+      "disposition": "warning"
+    }
+  ]
+}

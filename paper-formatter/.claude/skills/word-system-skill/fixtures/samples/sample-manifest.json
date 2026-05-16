@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "purpose": "Word System regression sample registry. Real .docx binaries are stored here when available; expected JSON baselines are already versioned.",
+    "school": "CAFA",
+    "ruleVersion": "2025",
+    "baselineStandard": "GB/T 7713.1-2025"
+  },
+  "samples": [
+    {
+      "sampleName": "p0-basic-thesis.docx",
+      "subset": "P0",
+      "required": true,
+      "covers": [
+        "headings",
+        "paragraphs",
+        "headersFooters",
+        "toc"
+      ]
+    },
+    {
+      "sampleName": "p0-title-body-table.docx",
+      "subset": "P0",
+      "required": true,
+      "covers": [
+        "headings",
+        "paragraphs",
+        "tables",
+        "tableCaptions"
+      ]
+    },
+    {
+      "sampleName": "p0-figure-caption.docx",
+      "subset": "P0",
+      "required": true,
+      "covers": [
+        "figures",
+        "figureCaptions",
+        "captionBinding"
+      ]
+    },
+    {
+      "sampleName": "p0-continuation-table.docx",
+      "subset": "P0",
+      "required": true,
+      "covers": [
+        "tables",
+        "continuationTables",
+        "structuredWarnings"
+      ]
+    },
+    {
+      "sampleName": "p1-reference-gb.docx",
+      "subset": "P1",
+      "required": true,
+      "covers": [
+        "references",
+        "gb7714Tendency",
+        "doi",
+        "url"
+      ]
+    },
+    {
+      "sampleName": "p2-floating-image-watermark.docx",
+      "subset": "P2",
+      "required": true,
+      "covers": [
+        "floatingLayers",
+        "watermark",
+        "seal",
+        "complexObjectAnchor"
+      ]
+    },
+    {
+      "sampleName": "dhu-approved-2026-05-14.docx",
+      "subset": "P0",
+      "required": true,
+      "covers": [
+        "schoolRuleIntake",
+        "dhu",
+        "approvedDraft"
+      ]
+    }
+  ]
+}

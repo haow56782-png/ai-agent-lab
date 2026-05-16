@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WordSystemEvaluationReport",
+  "type": "object",
+  "required": [
+    "sampleName",
+    "subsetStats",
+    "precision",
+    "recall",
+    "accuracy",
+    "f1",
+    "warningValidRate",
+    "ruleHitRate",
+    "fixSuccessRate",
+    "manualOverrideRate",
+    "failedSamples",
+    "warningDetails",
+    "passedReleaseGate"
+  ],
+  "properties": {
+    "sampleName": { "type": "string" },
+    "subsetStats": { "type": "object" },
+    "precision": { "type": "number" },
+    "recall": { "type": "number" },
+    "accuracy": { "type": "number" },
+    "f1": { "type": "number" },
+    "warningValidRate": { "type": "number" },
+    "ruleHitRate": { "type": "number" },
+    "fixSuccessRate": { "type": "number" },
+    "manualOverrideRate": { "type": "number" },
+    "failedSamples": { "type": "array" },
+    "warningDetails": { "type": "array" },
+    "passedReleaseGate": { "type": "boolean" }
+  }
+}
+

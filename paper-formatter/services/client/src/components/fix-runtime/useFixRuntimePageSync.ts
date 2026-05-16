@@ -11,6 +11,7 @@ interface Params {
   fixActionsLength: number;
   targetAppliedCount: number;
   appliedCount: number;
+  allowBulkCatchUp: boolean;
   activeActionIdsLength: number;
   isPageFlipping: boolean;
   desiredPageIndex: number;
@@ -36,6 +37,7 @@ export function useFixRuntimePageSync({
   fixActionsLength,
   targetAppliedCount,
   appliedCount,
+  allowBulkCatchUp,
   activeActionIdsLength,
   isPageFlipping,
   desiredPageIndex,
@@ -66,6 +68,7 @@ export function useFixRuntimePageSync({
   }, [fixActionsLength, runtimeStatus, setActiveActionIds, setAppliedCount, setPenState]);
 
   useEffect(() => {
+    if (!allowBulkCatchUp) return;
     if (runtimeStatus !== 'running') return;
     if (activeActionIdsLength > 0 || isPageFlipping) return;
     if (targetAppliedCount <= appliedCount) return;
@@ -73,6 +76,7 @@ export function useFixRuntimePageSync({
     setAppliedCount(targetAppliedCount);
   }, [
     activeActionIdsLength,
+    allowBulkCatchUp,
     appliedCount,
     isPageFlipping,
     runtimeStatus,

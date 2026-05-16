@@ -178,3 +178,7 @@ export function summarizeAction(page: PaperPage, action: FixAction): TimelineRow
     type: action.type,
   };
 }
+
+export function getFindingCardTitle(label: string): string {
+  return label.replace(/^P\d+\s*发现\s*·\s*/u, '').trim() || label;
+}

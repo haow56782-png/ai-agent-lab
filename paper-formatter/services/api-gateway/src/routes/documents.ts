@@ -5,12 +5,13 @@ import crypto from "crypto";
 import { v4 as uuid } from "uuid";
 import * as docRepo from "../repositories/documents.js";
 import * as storage from "../storage.js";
+import { normalizeDocumentFilename } from "../utils/document-filename.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
   fileFilter: (_req, file, cb) => {
-    const ext = file.originalname.toLowerCase().split(".").pop();
+    const ext = normalizeDocumentFilename(file.originalname).toLowerCase().split(".").pop();
     if (ext === "docx" || ext === "pdf") {
       cb(null, true);
     } else {
@@ -24,6 +25,7 @@ export const documentRoutes = Router();
 documentRoutes.post("/", upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) throw createError(400, ERROR_CODES.VALIDATION_ERROR, "file is required");
+    const normalizedFilename = normalizeDocumentFilename(req.file.originalname);
 
     // Reject OLE2 files (old .doc format) even if extension says .docx
     const OLE2_MAGIC = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
@@ -38,17 +40,17 @@ documentRoutes.post("/", upload.single("file"), async (req, res, next) => {
     const sha256 = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
     const docId = `doc_${uuid().slice(0, 8)}`;
     const canonicalDocumentId = uuid();
-    const ext = req.file.originalname.toLowerCase().split(".").pop() as string;
+    const ext = normalizedFilename.toLowerCase().split(".").pop() as string;
 
     // Store file in MinIO
-    const storagePath = storage.getStoragePath("uploads", docId, req.file.originalname);
+    const storagePath = storage.getStoragePath("uploads", docId, normalizedFilename);
     await storage.uploadFile("uploads", storagePath, req.file.buffer);
 
     // Create DB record
     const record = await docRepo.createDocument({
       docId,
       canonicalDocumentId,
-      filename: req.file.originalname,
+      filename: normalizedFilename,
       size_bytes: req.file.size,
       sha256,
       file_type: ext,
@@ -57,7 +59,7 @@ documentRoutes.post("/", upload.single("file"), async (req, res, next) => {
     res.status(201).json({
       docId: record.doc_id,
       canonicalDocumentId: record.canonical_document_id,
-      filename: record.filename,
+      filename: normalizeDocumentFilename(record.filename),
       size: record.size_bytes,
       sha256: record.sha256,
       fileType: record.file_type,
@@ -76,7 +78,7 @@ documentRoutes.get("/:docId", async (req, res, next) => {
     res.json({
       docId: record.doc_id,
       canonicalDocumentId: record.canonical_document_id,
-      filename: record.filename,
+      filename: normalizeDocumentFilename(record.filename),
       size: record.size_bytes,
       sha256: record.sha256,
       fileType: record.file_type,

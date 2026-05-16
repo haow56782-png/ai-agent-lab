@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WordSystemWarning",
+  "type": "object",
+  "required": ["warningId", "warningCode", "severity", "message", "source", "evidence", "recoveryAction"],
+  "properties": {
+    "warningId": { "type": "string", "minLength": 1 },
+    "warningCode": { "type": "string", "minLength": 1 },
+    "severity": { "enum": ["info", "warning", "error"] },
+    "message": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "minLength": 1 },
+    "evidence": { "type": "object" },
+    "recoveryAction": { "type": "string", "minLength": 1 }
+  }
+}
+

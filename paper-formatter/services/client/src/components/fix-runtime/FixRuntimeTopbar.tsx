@@ -1,9 +1,10 @@
 import React from 'react';
-import type { ActiveFixFinding, FixRuntimeStore } from './types';
+import type { ActiveFixFinding, FixFindingStatusSummary, FixRuntimeStore } from './types';
 import { formatDuration } from './utils';
 
 interface Props {
   runtimeStore: FixRuntimeStore;
+  findingStatusSummary: FixFindingStatusSummary;
   documentTitle: string;
   displayedPageNumber: number;
   displayedChapter: string;
@@ -11,12 +12,14 @@ interface Props {
   onPauseToggle: () => void;
   onSpeedChange: (speed: 1 | 2 | 4) => void;
   onJumpToComplete: () => void;
+  onStartFix?: () => void;
 }
 
 const SPEEDS: Array<1 | 2 | 4> = [1, 2, 4];
 
 export const FixRuntimeTopbar: React.FC<Props> = ({
   runtimeStore,
+  findingStatusSummary,
   documentTitle,
   displayedPageNumber,
   displayedChapter,
@@ -24,21 +27,41 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
   onPauseToggle,
   onSpeedChange,
   onJumpToComplete,
+  onStartFix,
 }) => {
-  const progress = Math.max(0, Math.min(100, runtimeStore.progressPct));
+  const progress = findingStatusSummary.autoFixableTotal > 0
+    ? Math.round((findingStatusSummary.writtenBack / findingStatusSummary.autoFixableTotal) * 100)
+    : Math.max(0, Math.min(100, runtimeStore.progressPct));
   const isCompleted = runtimeStore.status === 'completed';
   const isPaused = runtimeStore.status === 'paused';
+  const notStarted = isPaused && progress === 0 && findingStatusSummary.writtenBack === 0;
+  const remainingLabel = isCompleted
+    ? findingStatusSummary.notAutoFixed > 0
+      ? `写回完成 · ${findingStatusSummary.notAutoFixed} 项未自动修复`
+      : '已完成'
+    : runtimeStore.estimatedRemainingMs > 0
+    ? `剩余 ${formatDuration(runtimeStore.estimatedRemainingMs)}`
+    : '服务写回中';
+  const findingProgressLabel = `${findingStatusSummary.writtenBack}/${findingStatusSummary.autoFixableTotal}`;
+  const activeRuleLabel = activeFinding?.ruleLabel || '学校规则 + 国标基线';
+  const compactRuleLabel = /学校规则|GB\/T|7713|vAuto/i.test(activeRuleLabel)
+    ? '学校规则 + GB/T 7713.1'
+    : activeRuleLabel;
+  const activeTargetLabel = activeFinding
+    ? `第 ${activeFinding.page} 页 · ${activeFinding.chapter}`
+    : `第 ${displayedPageNumber} 页 · ${displayedChapter}`;
+  const activeFixLabel = activeFinding?.label || '等待修复队列';
 
   return (
     <header className="fix-runtime-topbar">
-      <div style={{ minWidth: 0 }}>
+      <div className="fix-runtime-document-meta">
         <div className="fix-runtime-title">修复产物 · {documentTitle}</div>
         <div className="fix-runtime-subtitle">
-          严格按学校论文规范与国标基线推进，修复完成后进入人工确认。
+          修复完成后进入人工确认，可逐项确认或回退。
         </div>
       </div>
 
-      <div className="fix-runtime-progress">
+      <div className="fix-runtime-stage-status fix-runtime-progress">
         <div
           className="fix-runtime-progress-track"
           role="progressbar"
@@ -51,26 +74,35 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
         </div>
         <div className="fix-runtime-progress-meta">
           <span className="fix-runtime-finding-meta" data-testid="fix-runtime-topbar-finding">
-            {activeFinding ? `当前发现 · ${activeFinding.label}` : '当前发现 · 等待修复队列'}
+            当前正在修复：{activeFixLabel}
           </span>
           <span data-testid="fix-runtime-topbar-page">
-            {progress}% · 证据位置 第 {displayedPageNumber} 页 / 共 {runtimeStore.totalPages} 页 · {displayedChapter}
+            对象：{activeTargetLabel} · 写回进度 {findingProgressLabel}
           </span>
           <span data-testid="fix-runtime-topbar-remaining">
-            剩余 {formatDuration(runtimeStore.estimatedRemainingMs)}
+            {remainingLabel}
           </span>
+        </div>
+        <div className="fix-runtime-progress-explain" data-testid="fix-runtime-topbar-explain">
+          依据：{compactRuleLabel} · 仅调整字体、字号、段前段后与版式，不改正文语义。
         </div>
       </div>
 
-      <div className="fix-runtime-controls">
-        <button
-          type="button"
-          className="fix-control-button"
-          onClick={onPauseToggle}
-          disabled={isCompleted}
-        >
-          {isPaused ? '继续' : '暂停'}
-        </button>
+      <div className="fix-runtime-toolbar-actions fix-runtime-controls">
+        {notStarted && onStartFix ? (
+          <button type="button" className="fix-control-button is-start" onClick={onStartFix}>
+            启动修复
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="fix-control-button"
+            onClick={onPauseToggle}
+            disabled={isCompleted}
+          >
+            {isPaused ? '继续' : '暂停'}
+          </button>
+        )}
         <div className="fix-speed-switch" aria-label="修复速度">
           {SPEEDS.map((speed) => (
             <button
@@ -90,7 +122,7 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
           onClick={onJumpToComplete}
           disabled={isCompleted}
         >
-          跳到完成
+          跳过动画，查看结果
         </button>
       </div>
     </header>

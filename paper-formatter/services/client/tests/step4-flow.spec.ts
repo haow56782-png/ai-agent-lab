@@ -101,29 +101,103 @@ test.describe('Step4 baseline behaviors', () => {
     const livePage = page.getByTestId('fix-runtime-live-page');
 
     await expect(pageMeta).toContainText('第 3 页');
-    await expect(findingMeta).toContainText('当前发现');
-    await expect(actionCount).toContainText('发现项修复 0/42');
+    await expect(findingMeta).toContainText('当前正在修复');
+    await expect(pageMeta).toContainText('写回进度 0/3');
+    await expect(actionCount).toContainText('当前修复');
     await expect(livePage).toHaveAttribute('data-page-number', '3');
 
-    const initialRemaining = await remainingMeta.textContent();
-
-    await expect.poll(async () => await actionCount.textContent(), { timeout: 5000 }).not.toBe('发现项修复 0/42');
-    await expect.poll(async () => await remainingMeta.textContent(), { timeout: 5000 }).not.toBe(initialRemaining);
+    await expect(page.getByTestId('fix-runtime-finding-status-written')).toContainText('已自动修复0');
+    await expect(page.getByTestId('fix-runtime-finding-status-review')).toContainText('待你确认0');
+    await expect(page.getByTestId('fix-runtime-finding-status-manual')).toContainText('暂未处理0');
+    await expect(remainingMeta).not.toContainText('剩余 0s');
 
     await expect(livePage).toHaveAttribute('data-page-number', '3');
     await expect(pageMeta).toContainText('第 3 页');
+  });
+
+  test('Step4Fix replays completed server artifacts instead of jumping straight to completion', async ({ page }) => {
+    const state = seedAppStatePatch(4);
+    state.documentIdentity = {
+      legacyDocId: 'doc_real_replay',
+      canonicalDocumentId: '11111111-1111-4111-8111-111111111111',
+    };
+    state.schoolId = 'thu';
+    state.fixJobId = null;
+    state.jobStatus = 'queued';
+
+    await page.route('**/api/v1/health', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'ok', freeFixLimit: 15 }),
+      });
+    });
+    await page.route('**/api/v1/jobs/fix', async (route) => {
+      await route.fulfill({
+        status: 202,
+        contentType: 'application/json',
+        body: JSON.stringify({ jobId: 'job_replay_done', status: 'queued', estimatedSeconds: 180, freeFixLimit: 15 }),
+      });
+    });
+    await page.route('**/api/v1/jobs/job_replay_done/fix-status', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'done',
+          completedSteps: [
+            { type: 'heading', status: 'done', summary: '标题层级已写回', duration: 1 },
+            { type: 'body_style', status: 'done', summary: '正文样式已写回', duration: 1 },
+            { type: 'reference_format', status: 'done', summary: '参考文献已写回', duration: 1 },
+          ],
+          progress: 100,
+          stage: 'done',
+          message: '修复稿已生成，可进入人工确认',
+          artifacts: [
+            { id: 'art_heading', fixType: 'heading', title: '标题层级', summary: '已写回标题层级', details: [], status: 'ready', finding_id: canonicalFindingIds.first },
+            { id: 'art_body', fixType: 'body_style', title: '正文样式', summary: '已写回正文样式', details: [], status: 'ready', finding_id: canonicalFindingIds.second },
+            { id: 'art_reference', fixType: 'reference_format', title: '参考文献', summary: '已写回参考文献', details: [], status: 'ready', finding_id: canonicalFindingIds.third },
+          ],
+          findingTotal: 3,
+          autoFixableFindingTotal: 3,
+          fixedFindingTotal: 3,
+          needsReviewFindingTotal: 0,
+          notAutoFixedFindingTotal: 0,
+          actionTotal: 3,
+          completedActionTotal: 3,
+          result: {
+            fixedFileId: 'outputs/doc_real_replay/fixed.docx',
+            totalFixed: 3,
+            totalFindings: 3,
+            newScore: 96,
+            contentHash: 'content-hash',
+            originalHash: 'original-hash',
+          },
+        }),
+      });
+    });
+
+    await bootstrapState(page, state);
+    await page.goto('/');
+
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await expect(page.getByTestId('fix-runtime-topbar-page')).toContainText('写回进度 0/3');
+    await expect(page.getByTestId('fix-runtime-topbar-remaining')).not.toContainText('已完成');
+    await expect(page.getByRole('button', { name: /写回中 · 0\/3/ })).toBeDisabled();
+    await expect(page.getByTestId('fix-runtime-paper-scanner')).toBeVisible();
+    await expect(page.locator('.fix-runtime-action-card.is-live').first()).toBeVisible();
   });
 
   test('Step4Fix right action card click reframes the card upward and syncs the paper page', async ({ page }) => {
     await bootstrapState(page, seedAppStatePatch(4));
     await page.goto('/');
 
-    await page.getByRole('button', { name: '跳到完成' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('发现项修复 42/42');
+    await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
 
     const feed = page.getByTestId('fix-runtime-action-feed');
     const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');
-    await expect(cards).toHaveCount(20);
+    await expect(cards).toHaveCount(1);
 
     await feed.evaluate((node) => {
       node.scrollTop = node.scrollHeight;
@@ -139,16 +213,38 @@ test.describe('Step4 baseline behaviors', () => {
     await targetCard.click();
 
     expect(targetFindingId).toMatch(canonicalFindingIdPattern);
-    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('当前发现');
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('当前正在修复');
     await expect(page.getByTestId('fix-runtime-live-page')).toHaveAttribute('data-page-number', targetPage || '1');
     await expect(targetCard).toHaveClass(/is-user-focus/);
-    await expect.poll(async () => {
-      return targetCard.evaluate((node) => {
-        const feedNode = node.closest('[data-testid="fix-runtime-action-feed"]') as HTMLElement | null;
-        if (!feedNode) return Number.POSITIVE_INFINITY;
-        return Math.round(node.offsetTop - feedNode.scrollTop);
-      });
-    }).toBeLessThanOrEqual(100);
+    await expect(targetCard).toBeInViewport();
+  });
+
+  test('Step4Fix paper keeps only the focused reading window instead of stacking the full history', async ({ page }) => {
+    await bootstrapState(page, seedAppStatePatch(4));
+    await page.goto('/');
+
+    await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
+    const targetCard = page.locator('[data-testid^="fix-runtime-action-card-"]').first();
+    await targetCard.click();
+
+    const livePage = page.getByTestId('fix-runtime-live-page');
+    await expect.poll(async () => await livePage.locator('.fix-paper-annotation').count()).toBeLessThanOrEqual(5);
+    await expect.poll(async () => await livePage.locator('.fix-paper-replace-note').count()).toBeLessThanOrEqual(5);
+  });
+
+  test('Step4Fix groups repeated action logs into one card per finding', async ({ page }) => {
+    await bootstrapState(page, seedAppStatePatch(4));
+    await page.goto('/');
+
+    await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
+    const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');
+    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toContainText('修复动作');
+    await expect(cards.first()).toContainText(/已写回|正在写回/);
+    await expect(cards.first()).toContainText('安全说明：只修改格式属性，不改变论文语义。');
+    await page.getByRole('button', { name: '查看修复过程' }).click();
+    await expect(page.getByTestId('fix-process-drawer')).toBeVisible();
+    await expect(page.locator('.fix-process-row')).toHaveCount(3);
   });
 
   test('Step4Diff renders non-empty paper content for review-linked pages', async ({ page }) => {
@@ -276,6 +372,39 @@ test.describe('Step4 baseline behaviors', () => {
 
     await expect(page.getByText('交稿前最后确认')).toBeVisible();
     await expect(page.getByText('人工确认：0 项已经由你亲自过目')).toBeVisible();
+  });
+
+  test('Step6 download gate unlocks after the format job itself reaches completed', async ({ page }) => {
+    let jobPollCount = 0;
+    await page.route('**/api/v1/jobs/job_format_ready', async (route) => {
+      jobPollCount += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          jobId: 'job_format_ready',
+          type: 'format',
+          status: jobPollCount > 1 ? 'completed' : 'queued',
+          progress: jobPollCount > 1 ? 100 : 60,
+          stage: jobPollCount > 1 ? 'done' : 'formatting',
+          docId: 'demo-doc',
+          profileId: 'sch_demo',
+          estimatedSeconds: 5,
+          result: {},
+        }),
+      });
+    });
+
+    const state = seedAppStatePatch(6);
+    state.exported = true;
+    state.formatJobId = 'job_format_ready';
+    state.jobStatus = 'queued';
+    await bootstrapState(page, state);
+    await page.goto('/');
+
+    await expect.poll(() => jobPollCount).toBeGreaterThan(0);
+    await expect.poll(async () => await page.getByRole('button', { name: /领取最终交稿稿件/ }).isEnabled()).toBe(true);
+    await expect(page.getByText('交付文件还在生成中，完成后才能下载真实 DOCX。')).toHaveCount(0);
   });
 
   test('Step5 accepting one item auto-focuses the next pending review', async ({ page }) => {

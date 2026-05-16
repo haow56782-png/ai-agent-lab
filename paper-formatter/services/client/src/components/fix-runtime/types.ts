@@ -15,6 +15,16 @@ export interface FixRuntimeStore {
   speed: 1 | 2 | 4;
 }
 
+export interface FixFindingStatusSummary {
+  total: number;
+  autoFixableTotal: number;
+  writtenBack: number;
+  needsReview: number;
+  notAutoFixed: number;
+}
+
+export type FixTaskFilter = 'all' | 'written' | 'review' | 'manual';
+
 export interface ActiveFixFinding {
   id: string;
   label: string;
@@ -49,16 +59,21 @@ export interface FixTimelineProps {
 export interface TimelineRow {
   id: string;
   findingId: string;
+  actionId: string;
   findingLabel: string;
+  findingTitle: string;
   timestamp: string;
   chapter: string;
   page: number;
   paragraphIndex: number;
-  before: string;
-  after: string;
+  stateLabel: string;
+  stateSummary: string;
+  recentActionSummary: string;
+  progressSummary: string | null;
   ruleLabel: string;
   type: FixAction['type'];
   status: 'done' | 'live' | 'needs-review';
+  actionCount: number;
 }
 
 export interface TimelineRowSummary {
@@ -103,4 +118,5 @@ export interface VisibleRuleCard {
   name: string;
   summary: string;
   hitCount: number;
+  thesisSubset?: string;
 }

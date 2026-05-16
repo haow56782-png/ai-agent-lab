@@ -1,0 +1,518 @@
+{
+  "schemaVersion": "object-graph.v0.1",
+  "documentId": "cafa_probe_watermark_layer_docx",
+  "documentVersion": "snapshot-v0.1",
+  "source": {
+    "parser": "docx-xml",
+    "docxPath": "cafa-probe-watermark-layer.docx.docx",
+    "generatedAt": "2026-05-13T00:00:00.000Z",
+    "probeEvidence": {
+      "tableCount": 3,
+      "drawingCount": 7,
+      "captionCandidateCount": 4
+    }
+  },
+  "nodes": [
+    {
+      "objectId": "table:0",
+      "kind": "table",
+      "page": 1,
+      "paragraphIndex": 2,
+      "flowOrder": 2,
+      "startParagraphIndex": 2,
+      "endParagraphIndex": 2,
+      "rowCount": 3,
+      "columnCount": 4,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "",
+        "提報Proposal",
+        "初稿審查Draft for ICID reviewing on May 31st or Nov 30th",
+        "離校最終版本Final version for School leaving processes"
+      ],
+      "headerRowTextHash": "e4f63dbd06c9e4de97c03276a57cc6389f2577c1",
+      "schemaFingerprint": "4:e4f63dbd06c9e4de97c03276a57cc6389f2577c1"
+    },
+    {
+      "objectId": "figure:14:0",
+      "kind": "figure",
+      "page": 2,
+      "paragraphIndex": 14,
+      "flowOrder": 15,
+      "anchorParagraphIndex": 14,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "figure:22:0",
+      "kind": "figure",
+      "page": 3,
+      "paragraphIndex": 22,
+      "flowOrder": 23,
+      "anchorParagraphIndex": 22,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "figure:30:0",
+      "kind": "figure",
+      "page": 4,
+      "paragraphIndex": 30,
+      "flowOrder": 31,
+      "anchorParagraphIndex": 30,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "figure:40:0",
+      "kind": "figure",
+      "page": 6,
+      "paragraphIndex": 40,
+      "flowOrder": 41,
+      "anchorParagraphIndex": 40,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "caption:table:96",
+      "kind": "caption",
+      "page": 13,
+      "paragraphIndex": 96,
+      "flowOrder": 97,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "Table 3.2 How to update a cross-reference PAGEREF _Toc357437593 \\h",
+      "styleName": "TableofFigures",
+      "numberToken": "3.2",
+      "isContinuation": false
+    },
+    {
+      "objectId": "caption:figure:101",
+      "kind": "caption",
+      "page": 13,
+      "paragraphIndex": 101,
+      "flowOrder": 102,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "Figure 3.1 Diagrammatic illustration of the overlap between curriculum and instruction. PAGEREF _Toc357437606 \\h",
+      "styleName": "TableofFigures",
+      "numberToken": "3.1",
+      "isContinuation": false
+    },
+    {
+      "objectId": "figure:108:0",
+      "kind": "figure",
+      "page": 14,
+      "paragraphIndex": 108,
+      "flowOrder": 109,
+      "anchorParagraphIndex": 108,
+      "isInline": false,
+      "wrapMode": "wrapNone",
+      "relationshipId": ""
+    },
+    {
+      "objectId": "figure:140:0",
+      "kind": "figure",
+      "page": 18,
+      "paragraphIndex": 140,
+      "flowOrder": 141,
+      "anchorParagraphIndex": 140,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId16"
+    },
+    {
+      "objectId": "caption:table:191",
+      "kind": "caption",
+      "page": 24,
+      "paragraphIndex": 191,
+      "flowOrder": 192,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "Table . Comparison of the Effects of Instruction on Students' Achievement and Attitudes",
+      "styleName": "Caption",
+      "numberToken": ".",
+      "isContinuation": false
+    },
+    {
+      "objectId": "table:1",
+      "kind": "table",
+      "page": 25,
+      "paragraphIndex": 192,
+      "flowOrder": 193,
+      "startParagraphIndex": 192,
+      "endParagraphIndex": 192,
+      "rowCount": 4,
+      "columnCount": 3,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "Outcome Measures",
+        "With Instruction",
+        "Without Instruction"
+      ],
+      "headerRowTextHash": "50d4fecb65256cca95ce8b3a1ec2d15ac858962f",
+      "schemaFingerprint": "3:50d4fecb65256cca95ce8b3a1ec2d15ac858962f"
+    },
+    {
+      "objectId": "figure:195:0",
+      "kind": "figure",
+      "page": 25,
+      "paragraphIndex": 195,
+      "flowOrder": 197,
+      "anchorParagraphIndex": 195,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId17"
+    },
+    {
+      "objectId": "caption:table:217",
+      "kind": "caption",
+      "page": 28,
+      "paragraphIndex": 217,
+      "flowOrder": 219,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "Table . How to update a cross-reference",
+      "styleName": "Caption",
+      "numberToken": ".",
+      "isContinuation": false
+    },
+    {
+      "objectId": "table:2",
+      "kind": "table",
+      "page": 28,
+      "paragraphIndex": 218,
+      "flowOrder": 220,
+      "startParagraphIndex": 218,
+      "endParagraphIndex": 218,
+      "rowCount": 3,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {
+        "w:val": "04A0",
+        "w:firstRow": "1",
+        "w:lastRow": "0",
+        "w:firstColumn": "1",
+        "w:lastColumn": "0",
+        "w:noHBand": "0",
+        "w:noVBand": "1"
+      },
+      "firstRowText": [
+        "To",
+        "Do this"
+      ],
+      "headerRowTextHash": "9cee82673964baea2b27f7c7a12bfd8d6d7ad5f2",
+      "schemaFingerprint": "2:9cee82673964baea2b27f7c7a12bfd8d6d7ad5f2"
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "figure:14:0@p14",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:14:0",
+      "anchorParagraphIndex": 14,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          14
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:22:0@p22",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:22:0",
+      "anchorParagraphIndex": 22,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          22
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:30:0@p30",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:30:0",
+      "anchorParagraphIndex": 30,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          30
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:40:0@p40",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:40:0",
+      "anchorParagraphIndex": 40,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          40
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:108:0@p108",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:108:0",
+      "anchorParagraphIndex": 108,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          108
+        ],
+        "wrapMode": "wrapNone",
+        "relationshipId": ""
+      }
+    },
+    {
+      "edgeId": "figure:140:0@p140",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:140:0",
+      "anchorParagraphIndex": 140,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          140
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId16"
+      }
+    },
+    {
+      "edgeId": "figure:195:0@p195",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:195:0",
+      "anchorParagraphIndex": 195,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          195
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId17"
+      }
+    },
+    {
+      "edgeId": "table:1->caption:table:96",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:1",
+      "toObjectId": "caption:table:96",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          192,
+          96
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:40:0->caption:figure:101",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:40:0",
+      "toObjectId": "caption:figure:101",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          40,
+          101
+        ]
+      }
+    },
+    {
+      "edgeId": "table:1->caption:table:191",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:1",
+      "toObjectId": "caption:table:191",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          192,
+          191
+        ]
+      }
+    },
+    {
+      "edgeId": "table:2->caption:table:217",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:2",
+      "toObjectId": "caption:table:217",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          218,
+          217
+        ]
+      }
+    }
+  ],
+  "paragraphIndex": [
+    {
+      "paragraphIndex": 2,
+      "nodeIds": [
+        "table:0"
+      ],
+      "edgeIds": []
+    },
+    {
+      "paragraphIndex": 14,
+      "nodeIds": [
+        "figure:14:0"
+      ],
+      "edgeIds": [
+        "figure:14:0@p14"
+      ]
+    },
+    {
+      "paragraphIndex": 22,
+      "nodeIds": [
+        "figure:22:0"
+      ],
+      "edgeIds": [
+        "figure:22:0@p22"
+      ]
+    },
+    {
+      "paragraphIndex": 30,
+      "nodeIds": [
+        "figure:30:0"
+      ],
+      "edgeIds": [
+        "figure:30:0@p30"
+      ]
+    },
+    {
+      "paragraphIndex": 40,
+      "nodeIds": [
+        "figure:40:0"
+      ],
+      "edgeIds": [
+        "figure:40:0@p40",
+        "figure:40:0->caption:figure:101"
+      ]
+    },
+    {
+      "paragraphIndex": 96,
+      "nodeIds": [
+        "caption:table:96"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:96"
+      ]
+    },
+    {
+      "paragraphIndex": 101,
+      "nodeIds": [
+        "caption:figure:101"
+      ],
+      "edgeIds": [
+        "figure:40:0->caption:figure:101"
+      ]
+    },
+    {
+      "paragraphIndex": 108,
+      "nodeIds": [
+        "figure:108:0"
+      ],
+      "edgeIds": [
+        "figure:108:0@p108"
+      ]
+    },
+    {
+      "paragraphIndex": 140,
+      "nodeIds": [
+        "figure:140:0"
+      ],
+      "edgeIds": [
+        "figure:140:0@p140"
+      ]
+    },
+    {
+      "paragraphIndex": 191,
+      "nodeIds": [
+        "caption:table:191"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:191"
+      ]
+    },
+    {
+      "paragraphIndex": 192,
+      "nodeIds": [
+        "table:1"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:96",
+        "table:1->caption:table:191"
+      ]
+    },
+    {
+      "paragraphIndex": 195,
+      "nodeIds": [
+        "figure:195:0"
+      ],
+      "edgeIds": [
+        "figure:195:0@p195"
+      ]
+    },
+    {
+      "paragraphIndex": 217,
+      "nodeIds": [
+        "caption:table:217"
+      ],
+      "edgeIds": [
+        "table:2->caption:table:217"
+      ]
+    },
+    {
+      "paragraphIndex": 218,
+      "nodeIds": [
+        "table:2"
+      ],
+      "edgeIds": [
+        "table:2->caption:table:217"
+      ]
+    }
+  ],
+  "warnings": []
+}

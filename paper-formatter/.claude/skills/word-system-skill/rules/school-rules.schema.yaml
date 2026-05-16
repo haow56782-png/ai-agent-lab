@@ -1,0 +1,40 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: SchoolRulesProfile
+type: object
+required:
+  - school
+  - ruleVersion
+  - baselineStandard
+  - rules
+properties:
+  school:
+    type: string
+  ruleVersion:
+    type: string
+  fixtureVersion:
+    type: string
+  baselineStandard:
+    type: string
+  aliases:
+    type: array
+    items:
+      type: string
+  rules:
+    type: array
+    items:
+      type: object
+      required:
+        - ruleId
+        - ruleName
+        - ruleSource
+        - ruleLevel
+        - targetObject
+        - condition
+        - expectedFormat
+        - priority
+        - conflictPolicy
+        - warningCode
+        - fixable
+        - autoFixStrategy
+        - evidence
+

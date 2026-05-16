@@ -25,8 +25,11 @@ export interface SchoolOption {
   accent: string;
   baseStandardVersion?: 'GB/T 7713.1-2006' | 'GB/T 7713.1-2025';
   effectiveFrom?: string;
-  sourceType?: 'official' | 'learned';
+  sourceType?: 'official' | 'learned' | 'detected' | 'seed';
   uploadCount?: number;
+  recentUsageCount7d?: number;
+  recentHitRate7d?: number;
+  lastUsedAt?: string | null;
 }
 
 export interface DetectedSchool {
@@ -46,7 +49,9 @@ export interface AppState {
   doc: { name: string; size: string; pages: number } | null;
   rawFile: File | null;
   documentIdentity: DocumentIdentity | null;
-  jobId: string | null;
+  analyzeJobId: string | null;
+  formatJobId: string | null;
+  fixJobId: string | null;
   jobStatus: string | null;
   uploadPct: number;
   uploadStage: 'idle' | 'reading' | 'done';
@@ -77,7 +82,9 @@ export const initialState: AppState = {
   doc: null,
   rawFile: null,
   documentIdentity: null,
-  jobId: null,
+  analyzeJobId: null,
+  formatJobId: null,
+  fixJobId: null,
   jobStatus: null,
   uploadPct: 0,
   uploadStage: 'idle',

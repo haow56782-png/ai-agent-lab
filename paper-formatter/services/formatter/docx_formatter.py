@@ -24,6 +24,8 @@ Usage:
     diff = formatter.get_diff()
 """
 
+from __future__ import annotations
+
 from docx import Document
 from docx.shared import Pt, Cm, Mm, Emu
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -35,6 +37,8 @@ import hashlib
 import json
 import os
 from typing import Any
+
+FLOATING_OBJECT_OVERLAP_RULE_ID = "FLOATING_OBJECT_OVERLAP_TEXT"
 
 
 # ── Helpers ──
@@ -98,6 +102,61 @@ def _set_font(run, font_name: str | None, font_size_pt: float | None, bold: bool
                     rpr.remove(b)
 
 
+def _local_name(tag: str) -> str:
+    if "}" in tag:
+        return tag.split("}", 1)[1]
+    return tag
+
+
+def _find_descendant(node, names: set[str]):
+    for child in node.iter():
+        if _local_name(child.tag) in names:
+            return child
+    return None
+
+
+def _looks_like_watermark(name: str, descr: str) -> bool:
+    haystack = f"{name} {descr}".lower()
+    return any(token in haystack for token in (
+        "watermark", "seal", "stamp", "logo", "comment",
+        "印章", "水印", "批注", "公章", "校徽",
+    ))
+
+
+def _remove_wrap_children(anchor):
+    for child in list(anchor):
+        if _local_name(child.tag).startswith("wrap"):
+            anchor.remove(child)
+
+
+def normalize_floating_anchor(anchor, watermark_like: bool) -> str | None:
+    changed = False
+
+    if watermark_like:
+        if anchor.get("behindDoc") != "1":
+            anchor.set("behindDoc", "1")
+            changed = True
+        if anchor.get("allowOverlap") != "0":
+            anchor.set("allowOverlap", "0")
+            changed = True
+        return "behind_text" if changed else None
+
+    if anchor.get("behindDoc") != "0":
+        anchor.set("behindDoc", "0")
+        changed = True
+    if anchor.get("allowOverlap") != "0":
+        anchor.set("allowOverlap", "0")
+        changed = True
+
+    wrap_node = _find_descendant(anchor, {"wrapTopAndBottom"})
+    if wrap_node is None:
+        _remove_wrap_children(anchor)
+        anchor.insert(0, parse_xml(f'<wp:wrapTopAndBottom {nsdecls("wp")} />'))
+        changed = True
+
+    return "top_and_bottom" if changed else None
+
+
 # ── Default Rules (Chinese thesis common) ──
 
 DEFAULT_RULES = {
@@ -156,6 +215,80 @@ def _parse_rules(rules: dict | None) -> dict:
     return merged
 
 
+def _extract_content_snapshot(doc: Document) -> list[dict]:
+    blocks: list[dict] = []
+
+    for paragraph_index, paragraph in enumerate(doc.paragraphs):
+        blocks.append({
+            "kind": "paragraph",
+            "index": paragraph_index,
+            "text": paragraph.text,
+        })
+
+    for table_index, table in enumerate(doc.tables):
+        for row_index, row in enumerate(table.rows):
+            for cell_index, cell in enumerate(row.cells):
+                blocks.append({
+                    "kind": "table_cell",
+                    "table": table_index,
+                    "row": row_index,
+                    "cell": cell_index,
+                    "text": cell.text,
+                })
+
+    for section_index, section in enumerate(doc.sections):
+        for part_name, part in (("header", section.header), ("footer", section.footer)):
+            for paragraph_index, paragraph in enumerate(part.paragraphs):
+                blocks.append({
+                    "kind": part_name,
+                    "section": section_index,
+                    "index": paragraph_index,
+                    "text": paragraph.text,
+                })
+
+    return blocks
+
+
+def _hash_content_snapshot(snapshot: list[dict]) -> str:
+    payload = json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _compare_content_snapshots(original_snapshot: list[dict], output_snapshot: list[dict]) -> dict:
+    mismatches = []
+    max_len = max(len(original_snapshot), len(output_snapshot))
+
+    for block_index in range(max_len):
+        original_block = original_snapshot[block_index] if block_index < len(original_snapshot) else None
+        output_block = output_snapshot[block_index] if block_index < len(output_snapshot) else None
+        if original_block != output_block:
+            mismatches.append({
+                "blockIndex": block_index,
+                "original": original_block,
+                "output": output_block,
+            })
+            if len(mismatches) >= 5:
+                break
+
+    return {
+        "match": len(mismatches) == 0 and len(original_snapshot) == len(output_snapshot),
+        "originalBlockCount": len(original_snapshot),
+        "outputBlockCount": len(output_snapshot),
+        "originalContentHash": _hash_content_snapshot(original_snapshot),
+        "outputContentHash": _hash_content_snapshot(output_snapshot),
+        "mismatchCount": sum(
+            1
+            for block_index in range(max_len)
+            if (
+                original_snapshot[block_index] if block_index < len(original_snapshot) else None
+            ) != (
+                output_snapshot[block_index] if block_index < len(output_snapshot) else None
+            )
+        ),
+        "mismatches": mismatches,
+    }
+
+
 # ── Diff Tracker ──
 
 class DiffTracker:
@@ -176,6 +309,7 @@ class DiffTracker:
             "headings": ("heading", "标题", "题名", "章节"),
             "page_number": ("page", "页码", "目录"),
             "toc": ("toc", "目录", "页码"),
+            "floating_object_overlap": ("图片", "印章", "水印", "浮动对象", "shape", "stamp", "watermark", "overlap"),
         }
         tokens = token_map.get(element, (element,))
         for finding in self.finding_context:
@@ -187,6 +321,7 @@ class DiffTracker:
     def add(self, page: int, element: str, original: str, modified: str, position: str = ""):
         finding = self._match_finding(element, position)
         action = "format-hint" if original == modified else "replace"
+        note = "图片/印章覆盖正文" if element == "floating_object_overlap" else f"{element} 已按规则修正"
         diff = {
             "page": page,
             "type": "style_change",
@@ -197,7 +332,7 @@ class DiffTracker:
             "before": original,
             "after": modified,
             "position": position,
-            "note": f"{element} 已按规则修正",
+            "note": note,
         }
         if finding and finding.get("finding_id"):
             diff["finding_id"] = finding["finding_id"]
@@ -239,9 +374,11 @@ class DocxFormatter:
                 )
         self.doc = Document(input_path)
         self.rules = _parse_rules(rules)
+        self.finding_context = finding_context or []
         self.diff = DiffTracker(finding_context)
         self._input_hash = self._hash_file(input_path)
         self._input_path = input_path
+        self._input_content_snapshot = _extract_content_snapshot(self.doc)
 
     @staticmethod
     def _hash_file(path: str) -> str:
@@ -417,6 +554,53 @@ class DocxFormatter:
         if refresh_count > 0:
             self.diff.add(1, "toc", "旧目录域", f"已刷新 TOC \\o '1-3'", "目录页")
 
+    def format_floating_object_overlaps(self):
+        """Keep floating objects while moving them away from the readable text layer."""
+        overlap_findings = [
+            finding for finding in self.finding_context
+            if finding.get("rule_id") == FLOATING_OBJECT_OVERLAP_RULE_ID
+        ]
+        if not overlap_findings:
+            return
+
+        adjusted_count = 0
+        for paragraph_index, paragraph in enumerate(self.doc.paragraphs):
+            for run in paragraph.runs:
+                drawing_elements = run._element.findall(qn("w:drawing"))
+                for drawing in drawing_elements:
+                    anchor = None
+                    for child in drawing:
+                        if _local_name(child.tag) == "anchor":
+                            anchor = child
+                            break
+                    if anchor is None:
+                        continue
+
+                    doc_pr = _find_descendant(anchor, {"docPr"})
+                    name = doc_pr.get("name", "") if doc_pr is not None else ""
+                    descr = doc_pr.get("descr", "") if doc_pr is not None else ""
+                    mode = normalize_floating_anchor(anchor, _looks_like_watermark(name, descr))
+                    if not mode:
+                        continue
+
+                    adjusted_count += 1
+                    self.diff.add(
+                        1,
+                        "floating_object_overlap",
+                        f"浮动对象覆盖正文（段落 {paragraph_index + 1}）",
+                        "已调整对象图层与环绕方式，保留对象但避免遮挡正文",
+                        f"paragraph {paragraph_index + 1}",
+                    )
+
+        if adjusted_count == 0:
+            self.diff.add(
+                1,
+                "floating_object_overlap",
+                "检测到浮动对象覆盖正文",
+                "当前版本无法安全自动判断对象锚点，建议人工确认图片位置",
+                "manual-review",
+            )
+
     # ── Run All ──
 
     def format(self):
@@ -426,6 +610,7 @@ class DocxFormatter:
         self.format_headings()
         self.format_toc()
         self.format_page_numbers()
+        self.format_floating_object_overlaps()
 
         # Estimate page count from section breaks
         self.diff.set_page_count(len(self.doc.sections) + 2)
@@ -434,13 +619,29 @@ class DocxFormatter:
         """Save formatted document."""
         self.doc.save(output_path)
 
-    def get_diff(self) -> dict:
+    def get_diff(self, output_path: str | None = None) -> dict:
         """Return the diff report."""
         finding_diffs = [diff for diff in self.diff.diffs if diff.get("finding_id")]
-        return {
+        diff = {
             "diffs": self.diff.diffs,
             "findingDiffs": finding_diffs,
             "summary": self.diff.summary(),
+        }
+        if output_path:
+            diff["integrity"] = {
+                "contentLevel": self.get_content_integrity(output_path),
+                "packageLevel": self.get_integrity(output_path),
+            }
+        return diff
+
+    def get_content_integrity(self, output_path: str) -> dict:
+        output_doc = Document(output_path)
+        output_content_snapshot = _extract_content_snapshot(output_doc)
+        comparison = _compare_content_snapshots(self._input_content_snapshot, output_content_snapshot)
+        return {
+            **comparison,
+            "method": "paragraph_table_header_footer_text_sequence",
+            "note": "Compares extracted visible text blocks before and after formatting; OOXML package metadata changes are ignored.",
         }
 
     def get_integrity(self, output_path: str) -> dict:

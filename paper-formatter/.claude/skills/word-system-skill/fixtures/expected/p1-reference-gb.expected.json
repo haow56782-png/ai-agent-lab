@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "sampleName": "p1-reference-gb",
+    "school": "CAFA",
+    "ruleVersion": "2025",
+    "baselineStandard": "GB/T 7713.1-2025",
+    "baselineStatus": "human-curated-v0.1",
+    "sourceDocx": "p1-reference-gb.docx"
+  },
+  "expectedStats": {
+    "headings": 67,
+    "paragraphs": 259,
+    "figures": 10,
+    "tables": 11,
+    "continuationTables": 0,
+    "references": 198,
+    "headersFooters": 12,
+    "warnings": 15
+  },
+  "qualityGate": {
+    "enforceExactStats": true,
+    "requiredWarningCodes": ["LOW_CONFIDENCE_RECOGNITION", "CAPTION_UNBOUND"]
+  },
+  "expectedHeadings": [
+    { "text": "参考文献", "level": 1 }
+  ],
+  "expectedParagraphs": [
+    { "minimumCount": 250 }
+  ],
+  "expectedFigures": [
+    { "minimumCount": 10 }
+  ],
+  "expectedTables": [
+    { "minimumCount": 10 }
+  ],
+  "expectedContinuationTables": [],
+  "expectedReferences": [
+    { "minimumCount": 190 }
+  ],
+  "expectedHeadersFooters": [
+    { "minimumCount": 12 }
+  ],
+  "expectedWarnings": [
+    { "warningCode": "LOW_CONFIDENCE_RECOGNITION" },
+    { "warningCode": "CAPTION_UNBOUND" }
+  ]
+}
+

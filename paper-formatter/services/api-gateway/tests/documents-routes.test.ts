@@ -81,4 +81,23 @@ describe("document routes", () => {
       pageCount: 12,
     });
   });
+
+  it("normalizes mojibake filenames before returning document payloads", async () => {
+    vi.mocked(docRepo.getDocument).mockResolvedValue({
+      doc_id: "doc_mojibake",
+      canonical_document_id: "22222222-2222-4222-8222-222222222222",
+      filename: "å°å·å¤§å­¦æ¬ç§çè®ºæ.docx",
+      size_bytes: 4096,
+      sha256: "b".repeat(64),
+      file_type: "docx",
+      page_count: 9,
+      is_scanned_pdf: false,
+      created_at: "2026-05-13T00:00:00.000Z",
+    });
+
+    const { response, body } = await request("/documents/doc_mojibake");
+
+    expect(response.status).toBe(200);
+    expect(body.filename).toBe("兰州大学本科生论文.docx");
+  });
 });

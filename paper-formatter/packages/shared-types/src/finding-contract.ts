@@ -36,6 +36,7 @@ export interface EvidenceSpan {
   snippet: string;
   context_before?: string;
   context_after?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface RuleSnapshot {

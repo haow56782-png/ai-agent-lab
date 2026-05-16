@@ -1,0 +1,214 @@
+{
+  "schemaVersion": "object-graph.v0.1",
+  "documentId": "cafa_probe_figure_caption_docx",
+  "documentVersion": "snapshot-v0.1",
+  "source": {
+    "parser": "docx-xml",
+    "docxPath": "cafa-probe-figure-caption.docx.docx",
+    "generatedAt": "2026-05-13T00:00:00.000Z",
+    "probeEvidence": {
+      "tableCount": 2,
+      "drawingCount": 2,
+      "captionCandidateCount": 2
+    }
+  },
+  "nodes": [
+    {
+      "objectId": "table:0",
+      "kind": "table",
+      "page": 2,
+      "paragraphIndex": 10,
+      "flowOrder": 10,
+      "startParagraphIndex": 10,
+      "endParagraphIndex": 10,
+      "rowCount": 2,
+      "columnCount": 2,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {},
+      "firstRowText": [
+        "学校代码",
+        ""
+      ],
+      "headerRowTextHash": "c49428eb6a09161629865cdef8178b1070c46aa1",
+      "schemaFingerprint": "2:c49428eb6a09161629865cdef8178b1070c46aa1"
+    },
+    {
+      "objectId": "figure:10:0",
+      "kind": "figure",
+      "page": 2,
+      "paragraphIndex": 10,
+      "flowOrder": 11,
+      "anchorParagraphIndex": 10,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId9"
+    },
+    {
+      "objectId": "caption:table:97",
+      "kind": "caption",
+      "page": 13,
+      "paragraphIndex": 97,
+      "flowOrder": 103,
+      "captionKind": "table",
+      "role": "primary",
+      "text": "表1-1：《讯报》16期报纸版面数量统计表",
+      "styleName": "2",
+      "numberToken": "1-1",
+      "isContinuation": false
+    },
+    {
+      "objectId": "table:1",
+      "kind": "table",
+      "page": 13,
+      "paragraphIndex": 98,
+      "flowOrder": 104,
+      "startParagraphIndex": 98,
+      "endParagraphIndex": 98,
+      "rowCount": 7,
+      "columnCount": 3,
+      "headerRowCount": 0,
+      "hasTblHeaderInFirstRow": false,
+      "tblLookAttributes": {},
+      "firstRowText": [
+        "版面名称",
+        "版面刊登数量",
+        "频率"
+      ],
+      "headerRowTextHash": "975d9af9329413f6fcf5482c44ba5c50c4ae577c",
+      "schemaFingerprint": "3:975d9af9329413f6fcf5482c44ba5c50c4ae577c"
+    },
+    {
+      "objectId": "figure:99:0",
+      "kind": "figure",
+      "page": 13,
+      "paragraphIndex": 99,
+      "flowOrder": 106,
+      "anchorParagraphIndex": 99,
+      "isInline": true,
+      "wrapMode": "inline",
+      "relationshipId": "rId10"
+    },
+    {
+      "objectId": "caption:figure:100",
+      "kind": "caption",
+      "page": 13,
+      "paragraphIndex": 100,
+      "flowOrder": 107,
+      "captionKind": "figure",
+      "role": "primary",
+      "text": "图1-1：《讯报》16期报纸版面数量统计饼状图（2）",
+      "styleName": "2",
+      "numberToken": "1-1",
+      "isContinuation": false
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "figure:10:0@p10",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:10:0",
+      "anchorParagraphIndex": 10,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          10
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId9"
+      }
+    },
+    {
+      "edgeId": "figure:99:0@p99",
+      "edgeType": "anchored_at",
+      "fromObjectId": "figure:99:0",
+      "anchorParagraphIndex": 99,
+      "confidence": 1,
+      "evidence": {
+        "paragraphIndexes": [
+          99
+        ],
+        "wrapMode": "inline",
+        "relationshipId": "rId10"
+      }
+    },
+    {
+      "edgeId": "table:1->caption:table:97",
+      "edgeType": "captioned_by",
+      "fromObjectId": "table:1",
+      "toObjectId": "caption:table:97",
+      "captionKind": "table",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          98,
+          97
+        ]
+      }
+    },
+    {
+      "edgeId": "figure:99:0->caption:figure:100",
+      "edgeType": "captioned_by",
+      "fromObjectId": "figure:99:0",
+      "toObjectId": "caption:figure:100",
+      "captionKind": "figure",
+      "confidence": 0.85,
+      "evidence": {
+        "paragraphIndexes": [
+          99,
+          100
+        ]
+      }
+    }
+  ],
+  "paragraphIndex": [
+    {
+      "paragraphIndex": 10,
+      "nodeIds": [
+        "table:0",
+        "figure:10:0"
+      ],
+      "edgeIds": [
+        "figure:10:0@p10"
+      ]
+    },
+    {
+      "paragraphIndex": 97,
+      "nodeIds": [
+        "caption:table:97"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:97"
+      ]
+    },
+    {
+      "paragraphIndex": 98,
+      "nodeIds": [
+        "table:1"
+      ],
+      "edgeIds": [
+        "table:1->caption:table:97"
+      ]
+    },
+    {
+      "paragraphIndex": 99,
+      "nodeIds": [
+        "figure:99:0"
+      ],
+      "edgeIds": [
+        "figure:99:0@p99",
+        "figure:99:0->caption:figure:100"
+      ]
+    },
+    {
+      "paragraphIndex": 100,
+      "nodeIds": [
+        "caption:figure:100"
+      ],
+      "edgeIds": [
+        "figure:99:0->caption:figure:100"
+      ]
+    }
+  ],
+  "warnings": []
+}

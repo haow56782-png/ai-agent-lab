@@ -4,6 +4,7 @@ import { BaseStandardSelector } from './BaseStandardSelector';
 import { DetectionBanner } from './DetectionBanner';
 import { SchoolListItem } from './SchoolListItem';
 import type { BaseStandardVersion, SchoolOption } from './AppFrame';
+import type { RuleStatusFilter } from './profileSourceMeta';
 
 interface DetectionState {
   name: string;
@@ -13,14 +14,18 @@ interface DetectionState {
 
 interface ProfileSelectionPanelProps {
   query: string;
+  ruleStatusFilter: RuleStatusFilter;
+  ruleStatusCounts: Record<RuleStatusFilter, number>;
   baseStandard: BaseStandardVersion;
   filtered: SchoolOption[];
   allOptionsCount: number;
-  uploadCountMap: Record<string, number>;
+  hiddenPendingCount: number;
   detecting: boolean;
   detectedSchool: DetectionState | null;
   selectedSchoolId: string | null;
   onQueryChange: (value: string) => void;
+  onRuleStatusFilterChange: (value: RuleStatusFilter) => void;
+  onRevealPendingProfiles: () => void;
   onBaseStandardChange: (value: BaseStandardVersion) => void;
   onSelectSchool: (school: SchoolOption) => void;
   onAutoCreateSchool: () => void;
@@ -31,14 +36,18 @@ interface ProfileSelectionPanelProps {
 
 export const ProfileSelectionPanel: React.FC<ProfileSelectionPanelProps> = ({
   query,
+  ruleStatusFilter,
+  ruleStatusCounts,
   baseStandard,
   filtered,
   allOptionsCount,
-  uploadCountMap,
+  hiddenPendingCount,
   detecting,
   detectedSchool,
   selectedSchoolId,
   onQueryChange,
+  onRuleStatusFilterChange,
+  onRevealPendingProfiles,
   onBaseStandardChange,
   onSelectSchool,
   onAutoCreateSchool,
@@ -109,6 +118,37 @@ export const ProfileSelectionPanel: React.FC<ProfileSelectionPanelProps> = ({
       <span className="mono" style={{ fontSize: 10, color: 'var(--ink-400)' }}>{filtered.length} / {allOptionsCount} 所</span>
     </div>
 
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+      {([
+        { value: 'all', label: '全部' },
+        { value: 'official', label: '官方规则' },
+        { value: 'learned', label: '自动学习' },
+        { value: 'pending', label: '待补规则' },
+      ] as Array<{ value: RuleStatusFilter; label: string }>).map((filter) => {
+        const active = ruleStatusFilter === filter.value;
+        return (
+          <button
+            key={filter.value}
+            type="button"
+            onClick={() => onRuleStatusFilterChange(filter.value)}
+            style={{
+              border: active ? '1px solid var(--brand-700)' : '1px solid var(--hair)',
+              background: active ? 'var(--brand-50)' : 'var(--paper-0)',
+              color: active ? 'var(--brand-700)' : 'var(--ink-600)',
+              borderRadius: 999,
+              padding: '6px 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              fontFamily: 'var(--sans)',
+              fontWeight: active ? 600 : 500,
+            }}
+          >
+            {filter.label} · {ruleStatusCounts[filter.value]}
+          </button>
+        );
+      })}
+    </div>
+
     <div className="list-stagger" style={{
       background: 'var(--paper-0)', border: '1px solid var(--hair)',
       borderRadius: 4, overflow: 'auto', flex: 1, display: 'flex', flexDirection: 'column',
@@ -118,7 +158,6 @@ export const ProfileSelectionPanel: React.FC<ProfileSelectionPanelProps> = ({
           key={school.id}
           school={school}
           selected={selectedSchoolId === school.id}
-          uploadCount={uploadCountMap[school.id] || 0}
           showBorder={i < filtered.length - 1}
           effectiveFromLabel={school.effectiveFrom ? formatDate(school.effectiveFrom) : null}
           onSelect={() => onSelectSchool(school)}
@@ -126,10 +165,33 @@ export const ProfileSelectionPanel: React.FC<ProfileSelectionPanelProps> = ({
       ))}
       {filtered.length === 0 && (
         <div style={{ padding: '40px 18px', textAlign: 'center', color: 'var(--ink-400)', fontSize: 13 }}>
-          还没找到匹配学校。可以上传格式手册或范文，让系统帮你补齐这条路。
+          {ruleStatusFilter === 'official'
+            ? '当前先优先展示已录入规则包的学校。若你要找自动学习或待补规则档案，可以切换上方筛选。'
+            : '还没找到匹配学校。可以上传格式手册或范文，让系统帮你补齐这条路。'}
         </div>
       )}
     </div>
+
+    {ruleStatusFilter === 'all' && hiddenPendingCount > 0 && (
+      <button
+        type="button"
+        onClick={onRevealPendingProfiles}
+        style={{
+          marginTop: 10,
+          border: '1px dashed var(--hair-strong)',
+          background: 'var(--paper-0)',
+          color: 'var(--ink-600)',
+          borderRadius: 6,
+          padding: '10px 12px',
+          fontSize: 12,
+          cursor: 'pointer',
+          fontFamily: 'var(--sans)',
+          textAlign: 'left',
+        }}
+      >
+        继续查看待补规则 · {hiddenPendingCount} 所
+      </button>
+    )}
 
     <div className="card-hover"
       style={{

@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "sampleName": "p0-figure-caption",
+    "school": "CAFA",
+    "ruleVersion": "2025",
+    "baselineStandard": "GB/T 7713.1-2025",
+    "baselineStatus": "human-curated-v0.1",
+    "sourceDocx": "p0-figure-caption.docx"
+  },
+  "expectedStats": {
+    "headings": 37,
+    "paragraphs": 92,
+    "figures": 2,
+    "tables": 2,
+    "continuationTables": 0,
+    "references": 26,
+    "headersFooters": 2,
+    "warnings": 11
+  },
+  "qualityGate": {
+    "enforceExactStats": true,
+    "requiredWarningCodes": ["LOW_CONFIDENCE_RECOGNITION"]
+  },
+  "expectedHeadings": [
+    { "text": "图题样本", "level": 1 }
+  ],
+  "expectedParagraphs": [
+    { "minimumCount": 90 }
+  ],
+  "expectedFigures": [
+    { "minimumCount": 2 }
+  ],
+  "expectedTables": [
+    { "minimumCount": 2 }
+  ],
+  "expectedContinuationTables": [],
+  "expectedReferences": [
+    { "minimumCount": 20 }
+  ],
+  "expectedHeadersFooters": [
+    { "minimumCount": 2 }
+  ],
+  "expectedWarnings": [
+    { "warningCode": "LOW_CONFIDENCE_RECOGNITION" }
+  ]
+}
+

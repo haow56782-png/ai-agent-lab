@@ -7,6 +7,7 @@ Outputs JSON to stdout: { detected: bool, name: str|null, confidence: float, mat
 import json
 import re
 import sys
+from pathlib import Path
 
 try:
     from docx import Document
@@ -20,33 +21,75 @@ PATTERNS = [
     # Direct standalone: "XXX大学" or "XXX学院" at line start (likely title)
     (r'^([一-鿿]{2,}(?:大学|学院))$', 0.95),
     # Prefix: "学校名称：" or "学校：" or "学    校："
-    (r'(?:学\s*校\s*[名称]*|[学\s*院])\s*[：:]\s*([一-鿿]{2,}(?:大学|学院))', 0.90),
+    (r'(?:学\s*校(?:\s*名称)?|学\s*院)\s*[：:]\s*([一-鿿]{2,}(?:大学|学院))', 0.90),
     # Suffix: "所在学校/院校/单位：XXX大学"
     (r'(?:所在|毕业|就读于?)\s*(?:院校|学校|单位)\s*[：:]\s*([一-鿿]{2,}(?:大学|学院))', 0.88),
     # Lowercase: "xxx大学" embedded in longer text (cover page header)
-    (r'([一-鿿]{3,}(?:大学|学院))', 0.80),
+    (r'([一-鿿]{2,}(?:大学|学院))', 0.80),
     # Standalone "XXX University" in English
     (r'([A-Z][a-z]+ University)', 0.75),
     # Faculty/School pattern: "XXX大学 XXX学院" or "XXX大学XXX学院"
     (r'([一-鿿]{2,}(?:大学|学院))[\s　]*([一-鿿]{2,}(?:学院|系))', 0.85),
 ]
 
-# Schools known to have abbreviated/accepted short forms
-KNOWN_SHORT_NAMES = {
-    "清华": "清华大学",
-    "北大": "北京大学",
-    "同济": "同济大学",
-    "复旦": "复旦大学",
-    "交大": "上海交通大学",
-    "浙大": "浙江大学",
-    "南大": "南京大学",
-    "南开": "南开大学",
-    "武大": "武汉大学",
-    "华科": "华中科技大学",
-    "中科大": "中国科学技术大学",
-    "人大": "中国人民大学",
-    "重大": "重庆大学",
-}
+INVALID_CANDIDATE_TOKENS = (
+    "学生",
+    "作者",
+    "导师",
+    "所属",
+    "所在",
+    "就读",
+    "毕业",
+    "专业",
+    "院系",
+    "校名",
+)
+
+
+def is_invalid_candidate(name: str, matched_text: str) -> bool:
+    if not name:
+        return True
+    if any(token in name for token in INVALID_CANDIDATE_TOKENS):
+        return True
+    if "包括校名" in matched_text or "封面包括" in matched_text:
+        return True
+    return False
+
+def load_canonical_school_aliases() -> list[dict]:
+    candidates = [
+        Path(__file__).resolve().parents[1] / "fixtures" / "canonical-school-registry.json",
+        Path(__file__).resolve().parents[1] / "src" / "fixtures" / "canonical-school-registry.json",
+        Path(__file__).resolve().parents[2] / "src" / "fixtures" / "canonical-school-registry.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            with candidate.open("r", encoding="utf-8") as fh:
+                loaded = json.load(fh)
+            if isinstance(loaded, list):
+                return loaded
+    return []
+
+
+CANONICAL_SCHOOL_REGISTRY = load_canonical_school_aliases()
+
+
+def iter_school_aliases() -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    for entry in CANONICAL_SCHOOL_REGISTRY:
+        name = str(entry.get("name") or "").strip()
+        aliases = entry.get("aliases") or []
+        if not name or not isinstance(aliases, list):
+            continue
+        for alias in aliases:
+            alias_text = str(alias or "").strip()
+            if len(alias_text) < 2:
+                continue
+            pairs.append((alias_text, name))
+    pairs.sort(key=lambda item: len(item[0]), reverse=True)
+    return pairs
+
+
+KNOWN_SCHOOL_ALIASES = iter_school_aliases()
 
 
 def extract_cover_text(doc_path: str, max_paras: int = 30) -> list[dict]:
@@ -114,6 +157,8 @@ def detect_school(paras: list[dict]) -> dict:
 
             if match_text in seen:
                 continue
+            if is_invalid_candidate(match_text, text):
+                continue
             seen.add(match_text)
 
             # Boost confidence if large font (title) or centered
@@ -131,13 +176,13 @@ def detect_school(paras: list[dict]) -> dict:
                     "matched_text": text[:100],
                 }
 
-    # Check known short names (use normalized text too)
+    # Check known school aliases (shared with canonical profile registry)
     if not best["detected"]:
         for para in paras:
             text = para["text"]
             normalized = normalize(text)
-            for short, full in KNOWN_SHORT_NAMES.items():
-                if short in normalized:
+            for alias, full in KNOWN_SCHOOL_ALIASES:
+                if alias in normalized:
                     best = {
                         "detected": True,
                         "name": full,

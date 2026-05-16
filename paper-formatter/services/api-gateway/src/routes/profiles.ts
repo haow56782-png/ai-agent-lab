@@ -1,4 +1,5 @@
 import { Router } from "express";
+import multer from "multer";
 import * as profileRepo from "../repositories/profiles.js";
 import * as docRepo from "../repositories/documents.js";
 import * as storage from "../storage.js";
@@ -32,6 +33,22 @@ const CACHE_TTLS = {
   detectSchool: 300,
 };
 
+// ── File upload config (matching documents route pattern) ──
+const templateUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = file.originalname.toLowerCase().split(".").pop();
+    if (ext === "docx" || ext === "pdf") {
+      cb(null, true);
+    } else {
+      cb(createError(422, ERROR_CODES.UNSUPPORTED_FORMAT, `Unsupported format: .${ext}`) as any);
+    }
+  },
+});
+
+// ── Named action routes (BEFORE parameterized :profileId to avoid capture) ──
+
 profileRoutes.post("/search", async (req, res, next) => {
   try {
     const { schoolId, faculty, major } = req.body;
@@ -44,7 +61,7 @@ profileRoutes.post("/search", async (req, res, next) => {
     res.json({
       profiles: profiles.map((p) => ({
         profileId: p.school_id,
-        schoolName: p.school_id,
+        schoolName: p.name || p.school_id,
         version: p.version,
         ruleCount: p.rules_json.length,
         sourceType: p.source_type,
@@ -55,57 +72,6 @@ profileRoutes.post("/search", async (req, res, next) => {
   }
 });
 
-profileRoutes.get("/:profileId", async (req, res, next) => {
-  try {
-    const cacheKey = `profile:${req.params.profileId}`;
-    const cached = await redisGet(cacheKey);
-    if (cached) {
-      return res.json(JSON.parse(cached));
-    }
-
-    const profile = await profileRepo.getProfile(req.params.profileId);
-    if (!profile) {
-      return res.status(404).json({
-        error: { code: "NOT_FOUND", message: "Profile not found" },
-      });
-    }
-    await redisSetEx(cacheKey, CACHE_TTLS.profileDetail, JSON.stringify(profile));
-    res.json(profile);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ── List all profiles ──
-profileRoutes.get("/", async (_req, res, next) => {
-  try {
-    const q = _req.query.q as string | undefined;
-    const cacheKey = `profiles:list:${q || "all"}`;
-    const cached = await redisGet(cacheKey);
-    if (cached) {
-      return res.json(JSON.parse(cached));
-    }
-
-    const profiles = await profileRepo.listProfiles(q);
-    const payload = {
-      profiles: profiles.map((p) => ({
-        schoolId: p.school_id,
-        name: p.name || p.school_id,
-        faculty: p.faculty || "",
-        version: p.version,
-        ruleCount: p.rules_json.length,
-        uploadCount: p.upload_count,
-        sourceType: p.source_type,
-      })),
-    };
-    await redisSetEx(cacheKey, CACHE_TTLS.listProfiles, JSON.stringify(payload));
-    res.json(payload);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ── Detect school from DOCX ──
 profileRoutes.post("/detect", async (req, res, next) => {
   try {
     const command = parseDetectSchoolCommand(req.body);
@@ -147,7 +113,7 @@ profileRoutes.post("/detect", async (req, res, next) => {
       }
 
       // Check if this school already exists
-      const existing = await profileRepo.findProfileByName(output.name);
+      const existing = await profileRepo.findBestProfileByName(output.name);
       const payload = {
         detected: true,
         name: output.name,
@@ -165,18 +131,24 @@ profileRoutes.post("/detect", async (req, res, next) => {
   }
 });
 
-// ── Auto-create a new school profile ──
 profileRoutes.post("/auto-create", async (req, res, next) => {
   try {
     const command = parseAutoCreateSchoolCommand(req.body);
 
-    // Generate a unique school_id from the name
-    const hash = crypto.createHash("md5").update(command.name).digest("hex").slice(0, 8);
-    const schoolId = `sch_${hash}`;
-
-    // Check if already exists (race condition guard)
-    const existing = await profileRepo.findProfileByName(command.name);
+    const existing = await profileRepo.findBestProfileByName(command.name);
     if (existing) {
+      if (command.legacyDocId) {
+        await query(
+          `INSERT INTO document_profiles (doc_id, school_id, profile_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+          [command.legacyDocId, existing.school_id, existing.school_id],
+        );
+        await profileRepo.incrementUploadCount(existing.school_id);
+      }
+      await redisDel("profiles:list:all");
+      await redisDel("profiles:list:v2:all");
+      if (command.legacyDocId) {
+        await redisDel(`profiles:detect:${command.legacyDocId}`);
+      }
       return res.json({
         schoolId: existing.school_id,
         name: existing.name,
@@ -184,6 +156,10 @@ profileRoutes.post("/auto-create", async (req, res, next) => {
         isNew: false,
       });
     }
+
+    // Generate a unique school_id from the name only when no canonical/existing profile can be reused.
+    const hash = crypto.createHash("md5").update(command.name).digest("hex").slice(0, 8);
+    const schoolId = `sch_${hash}`;
 
     const profile = await profileRepo.createProfile({
       schoolId,
@@ -204,6 +180,7 @@ profileRoutes.post("/auto-create", async (req, res, next) => {
 
     console.log(`[profiles] Auto-created school: ${command.name} (${schoolId})`);
     await redisDel("profiles:list:all");
+    await redisDel("profiles:list:v2:all");
     if (command.legacyDocId) {
       await redisDel(`profiles:detect:${command.legacyDocId}`);
     }
@@ -219,18 +196,93 @@ profileRoutes.post("/auto-create", async (req, res, next) => {
   }
 });
 
-profileRoutes.post("/import-template", async (req, res, next) => {
+// ── Import template — GET (browser-friendly info) + POST (file upload) ──
+profileRoutes.get("/import-template", (_req, res) => {
+  res.json({
+    message: "上传学校格式手册或范文（.docx / .pdf）以自动生成规则草案",
+    usage: { method: "POST", contentType: "multipart/form-data", fields: [{ name: "file", type: "file", required: true }] },
+  });
+});
+
+profileRoutes.post("/import-template", templateUpload.single("file"), async (req, res, next) => {
   try {
+    if (!req.file) {
+      throw createError(400, ERROR_CODES.VALIDATION_ERROR, "请上传 .docx 或 .pdf 格式手册");
+    }
     const draftProfileId = `prof_draft_${Date.now().toString(36)}`;
+    console.log(`[profiles] Template upload: ${req.file.originalname} (${req.file.size} bytes)`);
     res.status(201).json({
       profileId: draftProfileId,
       status: "draft",
       ruleCount: 65,
       confidence: 0.72,
       manualReviewRequired: true,
-      suggestedSchool: "待确认",
+      suggestedSchool: req.file.originalname.replace(/\.(docx|pdf)$/i, "").trim().slice(0, 40) || "待确认",
       message: "模板已解析，请人工确认规则草案",
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── List all profiles ──
+profileRoutes.get("/", async (_req, res, next) => {
+  try {
+    const q = _req.query.q as string | undefined;
+    const cacheKey = `profiles:list:v2:${q || "all"}`;
+    const cached = await redisGet(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
+    }
+
+    const profiles = await profileRepo.listProfiles(q);
+    const payload = {
+      profiles: profiles.map((p) => ({
+        schoolId: p.school_id,
+        name: p.name || p.school_id,
+        faculty: p.faculty || "",
+        version: p.version,
+        effectiveFrom: p.effective_from,
+        ruleCount: p.rules_json.length,
+        uploadCount: p.upload_count,
+        recentUsageCount7d: p.recent_usage_count_7d || 0,
+        recentHitRate7d: p.recent_hit_rate_7d || 0,
+        lastUsedAt: p.last_used_at || null,
+        sourceType: p.source_type,
+      })),
+    };
+    await redisSetEx(cacheKey, CACHE_TTLS.listProfiles, JSON.stringify(payload));
+    res.json(payload);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Get single profile by ID (parameterized — must be defined AFTER all named routes) ──
+profileRoutes.get("/:profileId", async (req, res, next) => {
+  try {
+    // Safety guard: reject reserved action paths that aren't caught above
+    const RESERVED_PATHS = new Set(["import-template", "search", "detect", "auto-create"]);
+    if (RESERVED_PATHS.has(req.params.profileId)) {
+      return res.status(400).json({
+        error: { code: "BAD_REQUEST", message: `/${req.params.profileId} is not a valid profile ID` },
+      });
+    }
+
+    const cacheKey = `profile:v2:${req.params.profileId}`;
+    const cached = await redisGet(cacheKey);
+    if (cached) {
+      return res.json(JSON.parse(cached));
+    }
+
+    const profile = await profileRepo.getProfile(req.params.profileId);
+    if (!profile) {
+      return res.status(404).json({
+        error: { code: "NOT_FOUND", message: "Profile not found" },
+      });
+    }
+    await redisSetEx(cacheKey, CACHE_TTLS.profileDetail, JSON.stringify(profile));
+    res.json(profile);
   } catch (err) {
     next(err);
   }

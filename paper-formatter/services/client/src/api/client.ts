@@ -13,6 +13,7 @@ import type {
 } from '../../../../packages/shared-types/src/finding-contract';
 
 const API = '/api/v1';
+const RECENT_REQUEST_TTL_MS = 1200;
 
 export type {
   FindingContract,
@@ -21,8 +22,10 @@ export type {
 } from '../../../../packages/shared-types/src/finding-contract';
 
 export type {
+  ContentIntegrityResult,
   FindingDiffItem,
   FindingDiffResult,
+  FormatterIntegrityResult,
   FixJobArtifact,
   FixJobEvent,
   FixResult,
@@ -62,13 +65,39 @@ export interface DocumentRecord {
   createdAt: string;
 }
 
+export interface ProfileRuleEntry {
+  ruleId?: string;
+  label?: string;
+  category?: string;
+  categoryCode?: string;
+  source?: string;
+  thesisSubset?: string;
+  targetObject?: string;
+  uiSection?: string;
+  value?: unknown;
+  unit?: string;
+  allowedFonts?: string[];
+  [key: string]: unknown;
+}
+
 export interface SchoolProfile {
-  id: string;
+  id?: string;
+  schoolId?: string;
   name: string;
   faculty?: string;
   match?: number;
   rules?: number;
   version?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  gbVersion?: string;
+  sourceType?: string;
+  uploadCount?: number;
+  recentUsageCount7d?: number;
+  recentHitRate7d?: number;
+  lastUsedAt?: string | null;
+  rulesJson?: ProfileRuleEntry[];
+  styleMap?: ProfileRuleEntry[];
 }
 
 export interface ProfileSearchResponse {
@@ -90,6 +119,7 @@ export interface ImportTemplateResult {
 export interface DiffResult {
   diffs: FindingDiffItem[];
   findingDiffs?: FindingDiffItem[];
+  integrity?: FindingDiffResult['integrity'];
   summary: FindingDiffResult['summary'];
 }
 
@@ -101,6 +131,82 @@ export interface DuplicationRisk {
   estimatedImpact: number;
   fixable: boolean;
   severity: 'high' | 'medium' | 'low';
+}
+
+const FILENAME_MOJIBAKE_PATTERN = /[ÃÂåæçéèêëîïôöùûüÿ¢£¥¤½¼»«�]/;
+
+function normalizeDocumentFilename(filename: string): string {
+  const value = String(filename || '').trim();
+  if (!value || !FILENAME_MOJIBAKE_PATTERN.test(value)) return value;
+  try {
+    const bytes = Uint8Array.from(value, (char) => char.charCodeAt(0) & 0xff);
+    const decoded = new TextDecoder('utf-8').decode(bytes);
+    return decoded.includes('\uFFFD') ? value : decoded;
+  } catch {
+    return value;
+  }
+}
+
+function normalizeDocumentRecord(record: DocumentRecord): DocumentRecord {
+  return {
+    ...record,
+    filename: normalizeDocumentFilename(record.filename),
+  };
+}
+
+function normalizeSchoolProfile(record: any): SchoolProfile {
+  return {
+    id: record.id ?? record.school_id ?? record.schoolId,
+    schoolId: record.schoolId ?? record.school_id ?? record.id,
+    name: record.name,
+    faculty: record.faculty ?? '',
+    match: record.match,
+    rules: record.rules ?? record.ruleCount ?? (Array.isArray(record.rules_json) ? record.rules_json.length : undefined),
+    version: record.version,
+    effectiveFrom: record.effectiveFrom ?? record.effective_from,
+    effectiveTo: record.effectiveTo ?? record.effective_to ?? null,
+    gbVersion: record.gbVersion ?? record.gb_version,
+    sourceType: record.sourceType ?? record.source_type,
+    uploadCount: record.uploadCount ?? record.upload_count,
+    recentUsageCount7d: record.recentUsageCount7d ?? record.recent_usage_count_7d ?? 0,
+    recentHitRate7d: record.recentHitRate7d ?? record.recent_hit_rate_7d ?? 0,
+    lastUsedAt: record.lastUsedAt ?? record.last_used_at ?? null,
+    rulesJson: Array.isArray(record.rulesJson) ? record.rulesJson : (Array.isArray(record.rules_json) ? record.rules_json : []),
+    styleMap: Array.isArray(record.styleMap) ? record.styleMap : (Array.isArray(record.style_map) ? record.style_map : []),
+  };
+}
+
+type RecentRequestEntry<T> = {
+  createdAt: number;
+  promise: Promise<T>;
+};
+
+const recentRequestCache = new Map<string, RecentRequestEntry<unknown>>();
+
+function runRecentRequest<T>(key: string, factory: () => Promise<T>): Promise<T> {
+  const now = Date.now();
+  const cached = recentRequestCache.get(key) as RecentRequestEntry<T> | undefined;
+  if (cached && now - cached.createdAt < RECENT_REQUEST_TTL_MS) {
+    return cached.promise;
+  }
+
+  const promise = factory().finally(() => {
+    setTimeout(() => {
+      const current = recentRequestCache.get(key);
+      if (current?.promise === promise) {
+        recentRequestCache.delete(key);
+      }
+    }, RECENT_REQUEST_TTL_MS);
+  });
+
+  recentRequestCache.set(key, { createdAt: now, promise });
+  return promise;
+}
+
+function clearRecentRequest(prefix: string) {
+  for (const key of recentRequestCache.keys()) {
+    if (key.startsWith(prefix)) recentRequestCache.delete(key);
+  }
 }
 
 
@@ -140,7 +246,7 @@ export const api = {
       };
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(JSON.parse(xhr.responseText));
+          resolve(normalizeDocumentRecord(JSON.parse(xhr.responseText)));
         } else {
           try { reject(new Error(JSON.parse(xhr.responseText)?.error?.message || `HTTP ${xhr.status}`)); }
           catch { reject(new Error(`HTTP ${xhr.status}`)); }
@@ -160,7 +266,7 @@ export const api = {
     form.append('file', file);
     return fetch(`${API}/documents/`, { method: 'POST', body: form }).then(r => {
       if (!r.ok) return r.json().then(b => { throw new Error(b?.error?.message || `HTTP ${r.status}`); });
-      return r.json();
+      return r.json().then(normalizeDocumentRecord);
     });
   },
 
@@ -171,7 +277,9 @@ export const api = {
     }),
 
   getProfile: (id: string): Promise<SchoolProfile> =>
-    request(`/profiles/${id}`),
+    runRecentRequest(`profile:${id}`, () =>
+      request(`/profiles/${id}`).then(normalizeSchoolProfile),
+    ),
 
   importTemplate: (file: File): Promise<ImportTemplateResult> => {
     const form = new FormData();
@@ -188,12 +296,12 @@ export const api = {
       body: JSON.stringify({ docId: legacyDocId, profileId }),
     }),
 
-  createFormatJob: (payload: { legacyDocId?: string; jobId?: string; profileId: string }): Promise<QueuedJobResponse> =>
+  createFormatJob: (payload: { legacyDocId?: string; analyzeJobId?: string; profileId: string }): Promise<QueuedJobResponse> =>
     request('/jobs/format', {
       method: 'POST',
       body: JSON.stringify({
         docId: payload.legacyDocId,
-        jobId: payload.jobId,
+        jobId: payload.analyzeJobId,
         profileId: payload.profileId,
       }),
     }),
@@ -201,25 +309,25 @@ export const api = {
   getJob: (jobId: string): Promise<JobRecord> =>
     request(`/jobs/${jobId}`),
 
-  getDiff: (jobId: string): Promise<DiffResult> =>
-    request(`/jobs/${jobId}/diff`),
+  getDiff: (diffJobId: string): Promise<DiffResult> =>
+    request(`/jobs/${diffJobId}/diff`),
 
-  syncFindings: (payload: { jobId?: string; canonicalDocumentId: string; findings: FindingContract[] }): Promise<{
+  syncFindings: (payload: { analyzeJobId?: string; canonicalDocumentId: string; findings: FindingContract[] }): Promise<{
     upserted_count: number;
     finding_ids: string[];
   }> => request('/findings/sync', {
     method: 'POST',
     body: JSON.stringify({
-      job_id: payload.jobId,
+      job_id: payload.analyzeJobId,
       document_id: payload.canonicalDocumentId,
       findings: payload.findings,
     }),
   }),
 
-  listFindings: (filter: { canonicalDocumentId?: string; jobId?: string; status?: string; severity?: string; ruleId?: string; ruleGroup?: string }): Promise<FindingContract[]> => {
+  listFindings: (filter: { canonicalDocumentId?: string; analyzeJobId?: string; status?: string; severity?: string; ruleId?: string; ruleGroup?: string }): Promise<FindingContract[]> => {
     const params = new URLSearchParams();
     if (filter.canonicalDocumentId) params.set('document_id', filter.canonicalDocumentId);
-    if (filter.jobId) params.set('job_id', filter.jobId);
+    if (filter.analyzeJobId) params.set('job_id', filter.analyzeJobId);
     if (filter.status) params.set('status', filter.status);
     if (filter.severity) params.set('severity', filter.severity);
     if (filter.ruleId) params.set('rule_id', filter.ruleId);
@@ -258,29 +366,29 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  getDownload: (jobId: string): Promise<Blob> =>
-    fetch(`${API}/jobs/${jobId}/download`).then(r => {
+  getDownload: (downloadJobId: string): Promise<Blob> =>
+    fetch(`${API}/jobs/${downloadJobId}/download`).then(r => {
       if (!r.ok) throw new Error(`Download failed: HTTP ${r.status}`);
       return r.blob();
     }),
 
-  getDownloadUrl: (jobId: string, type?: string) =>
-    `${API}/jobs/${jobId}/download${type ? `?type=${type}` : ''}`,
+  getDownloadUrl: (downloadJobId: string, type?: string) =>
+    `${API}/jobs/${downloadJobId}/download${type ? `?type=${type}` : ''}`,
 
   // ── 02 Fix Matrix API ──
-  createFixJob: (payload: { legacyDocId?: string; jobId?: string; profileId: string; selectedFixes?: FixType[] }): Promise<QueuedJobResponse> =>
+  createFixJob: (payload: { legacyDocId?: string; sourceJobId?: string; profileId: string; selectedFixes?: FixType[] }): Promise<QueuedJobResponse> =>
     request('/jobs/fix', {
       method: 'POST',
       body: JSON.stringify({
         docId: payload.legacyDocId,
-        jobId: payload.jobId,
+        jobId: payload.sourceJobId,
         profileId: payload.profileId,
         selectedFixes: payload.selectedFixes,
       }),
     }),
 
-  getFixStatus: (jobId: string): Promise<FixStatusResponse> =>
-    request(`/jobs/${jobId}/fix-status`),
+  getFixStatus: (fixJobId: string): Promise<FixStatusResponse> =>
+    request(`/jobs/${fixJobId}/fix-status`),
 
   // ── 05 Share API ──
   createShareReport: (legacyDocId: string): Promise<{
@@ -309,19 +417,30 @@ export const api = {
     confidence: number;
     matchedText?: string;
     existingSchoolId: string | null;
-  }> => request('/profiles/detect', {
-    method: 'POST',
-    body: JSON.stringify({ docId: legacyDocId }),
-  }),
+  }> => runRecentRequest(`detect:${legacyDocId}`, () =>
+    request('/profiles/detect', {
+      method: 'POST',
+      body: JSON.stringify({ docId: legacyDocId }),
+    }),
+  ),
 
   autoCreateSchool: (name: string, legacyDocId: string): Promise<{
     schoolId: string;
     name: string;
     version: string;
     isNew: boolean;
-  }> => request('/profiles/auto-create', {
+  }> => request<{
+    schoolId: string;
+    name: string;
+    version: string;
+    isNew: boolean;
+  }>('/profiles/auto-create', {
     method: 'POST',
     body: JSON.stringify({ name, docId: legacyDocId }),
+  }).then((result) => {
+    clearRecentRequest('profiles:');
+    clearRecentRequest(`detect:${legacyDocId}`);
+    return result;
   }),
 
   listProfiles: (q?: string): Promise<{
@@ -330,9 +449,15 @@ export const api = {
       name: string;
       faculty: string;
       version: string;
+      effectiveFrom?: string;
       ruleCount: number;
       uploadCount: number;
+      recentUsageCount7d?: number;
+      recentHitRate7d?: number;
+      lastUsedAt?: string | null;
       sourceType: string;
     }>;
-  }> => request('/profiles' + (q ? `?q=${encodeURIComponent(q)}` : '')),
+  }> => runRecentRequest(`profiles:${q || 'all'}`, () =>
+    request('/profiles' + (q ? `?q=${encodeURIComponent(q)}` : '')),
+  ),
 };

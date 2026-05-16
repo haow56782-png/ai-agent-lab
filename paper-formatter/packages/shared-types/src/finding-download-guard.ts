@@ -53,7 +53,7 @@ export function canDownloadByFindings(input: FindingDownloadGuardInput): Finding
   const message = reasons.length === 0
     ? null
     : reasons.includes("JOB_NOT_COMPLETED")
-    ? "修复任务尚未完成，生成完成后才能下载真实 DOCX。"
+    ? "交付文件还在生成中，完成后才能下载真实 DOCX。"
     : reasons.includes("P0_PENDING")
     ? `还有 ${pendingP0FindingIds.length} 项 P0 发现必须处理，P0 不能豁免。`
     : `还有 ${unresolvedP1FindingIds.length} 项 P1 发现需要处理或签字豁免。`;
@@ -68,4 +68,3 @@ export function canDownloadByFindings(input: FindingDownloadGuardInput): Finding
     message,
   };
 }
-

@@ -1,0 +1,44 @@
+standard: GB/T 7713.1-2025
+ruleVersion: "2025"
+fixtureVersion: "v0.1"
+rules:
+  - ruleId: GB-HEADING-001
+    ruleName: 标题层级
+    ruleSource: GB
+    ruleLevel: baseline
+    targetObject: 标题
+    condition: thesis heading paragraphs
+    expectedFormat: 标题层级应清晰并可追溯到正文结构
+    priority: 200
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: RULE_CONFLICT
+    fixable: true
+    autoFixStrategy: numbering_update
+    evidence: heading text and numbering
+  - ruleId: GB-REFERENCE-001
+    ruleName: 参考文献著录
+    ruleSource: GB
+    ruleLevel: baseline
+    targetObject: 参考文献
+    condition: reference entry
+    expectedFormat: 参考文献著录应满足 GB/T 7714 倾向
+    priority: 200
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: REFERENCE_FORMAT_WARNING
+    fixable: true
+    autoFixStrategy: reference_format_update
+    evidence: raw entry and punctuation
+  - ruleId: GB-CAPTION-001
+    ruleName: 图表题注
+    ruleSource: GB
+    ruleLevel: baseline
+    targetObject: 图题
+    condition: caption paragraph
+    expectedFormat: 图题和表题应与对应对象绑定
+    priority: 200
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: CAPTION_POSITION_WARNING
+    fixable: true
+    autoFixStrategy: caption_reposition
+    evidence: object and caption anchor
+

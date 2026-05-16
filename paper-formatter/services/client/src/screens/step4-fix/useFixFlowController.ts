@@ -21,6 +21,7 @@ export function useFixFlowController({
   const [fixMessage, setFixMessage] = useState<string | null>(null);
   const [fixEvents, setFixEvents] = useState<FixJobEvent[]>([]);
   const [fixArtifacts, setFixArtifacts] = useState<FixJobArtifact[]>([]);
+  const [apiFindingTotal, setApiFindingTotal] = useState<number | undefined>(undefined);
   const autoStartTriggeredRef = useRef(false);
 
   const runtimeSeed = useFixRuntimeModel({
@@ -35,6 +36,7 @@ export function useFixFlowController({
     fixElapsedMs: 0,
     liveFrameIndex: 0,
     speed: 1,
+    apiFindingTotal,
   });
 
   const playback = useFixPlayback({
@@ -60,12 +62,13 @@ export function useFixFlowController({
     fixElapsedMs: playback.fixElapsedMs,
     liveFrameIndex: playback.liveFrameIndex,
     speed: playback.speed,
+    apiFindingTotal,
   });
 
   const polling = useFixPolling({
     state: {
       ...state,
-      jobId: fixJobId || state.jobId,
+      fixJobId: fixJobId || state.fixJobId,
       jobStatus: fixing ? 'running' : state.jobStatus,
     },
     fixJobId,
@@ -92,10 +95,11 @@ export function useFixFlowController({
     setForceCompleted: playback.setForceCompleted,
     setViewPaused: playback.setViewPaused,
     startDemoPlayback: playback.startDemoPlayback,
+    onFindingTotal: setApiFindingTotal,
   });
 
   const onPauseToggle = () => {
-    playback.onPauseToggle(fixing || playback.demoPlayback);
+    playback.onPauseToggle(fixing || playback.demoPlayback || (playback.forceCompleted && runtime.fixActions.length > 0));
   };
 
   const onPay = () => {
@@ -107,8 +111,8 @@ export function useFixFlowController({
     if (autoStartTriggeredRef.current) return;
     if (runtime.unsupportedLegacyDoc || fixing || fixJobId || playback.demoPlayback || runtime.doneCount > 0 || showPaywall) return;
     autoStartTriggeredRef.current = true;
-    playback.startDemoPlayback();
     if (!runtime.canLaunchRealFix) {
+      playback.startDemoPlayback();
       setFixMessage('当前是浏览模式，已切换到本地修复演示，不会触发真实写回。');
       return;
     }

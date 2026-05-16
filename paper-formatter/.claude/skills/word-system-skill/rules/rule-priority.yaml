@@ -1,0 +1,26 @@
+priorityOrder:
+  - ruleSource: user
+    weight: 500
+  - ruleSource: school
+    weight: 400
+  - ruleSource: CAFA
+    weight: 300
+  - ruleSource: GB
+    weight: 200
+  - ruleSource: system
+    weight: 100
+conflictPolicy:
+  default: warn_and_adopt_higher_priority
+  requirements:
+    - no_silent_override
+    - record_conflict_sources
+    - mark_adopted_rule
+    - retain_overridden_rules
+continuationTable:
+  authority: structure_first_text_assisted
+  confidenceFormula: structureScore * 0.7 + textScore * 0.3
+  thresholds:
+    autoContinuation: 85
+    suspectedWarning: 70
+    lowConfidenceWarning: 50
+

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 DOCX Structure Parser for 正稿 (ZhengGao).
 
@@ -148,6 +149,12 @@ def parse_ole2_docx(filepath: str) -> dict:
             "start_type": "continuous",
             "header_present": False,
             "footer_present": False,
+            "header_text": "",
+            "footer_text": "",
+            "footer_alignment": "left",
+            "footer_has_page_field": False,
+            "footer_page_field_count": 0,
+            "footer_page_number_format": "unknown",
         }],
         "paragraphs": [{"index": i, "text": p, "style": "",
                         "alignment": "left",
@@ -156,12 +163,18 @@ def parse_ole2_docx(filepath: str) -> dict:
                         "spacing": {"before_pt": 0, "after_pt": 0,
                                     "line_spacing": 1.5},
                         "is_heading": False, "heading_level": 0,
-                        "page_break_before": False, "runs": []}
+                        "page_break_before": False, "runs": [],
+                        "flow_order": i,
+                        "prev_flow_kind": "paragraph" if i > 0 else None,
+                        "next_flow_kind": "paragraph" if i < len(paragraphs) - 1 else None,
+                        "contains_image": False,
+                        "image_count": 0}
                        for i, p in enumerate(paragraphs)],
         "headings": headings,
         "tables": [],
         "images": [],
         "structure": [],
+        "flow": [{"order": i, "kind": "paragraph", "paragraph_index": i, "text": p[:80]} for i, p in enumerate(paragraphs)],
     }
 
 
@@ -173,15 +186,20 @@ def parse_docx(filepath: str) -> dict:
         return parse_ole2_docx(filepath)
 
     doc = Document(filepath)
+    flow_bundle = extract_document_flow(doc)
+    paragraphs = extract_paragraphs(doc, flow_bundle["paragraphs"])
+    tables = extract_tables(doc, flow_bundle["tables"])
+    images = extract_images(doc, flow_bundle["paragraphs"])
 
     return {
         "metadata": extract_metadata(doc),
         "sections": extract_sections(doc),
-        "paragraphs": extract_paragraphs(doc),
+        "paragraphs": paragraphs,
         "headings": extract_headings(doc),
-        "tables": extract_tables(doc),
-        "images": extract_images(doc),
-        "structure": detect_structure(doc),
+        "tables": tables,
+        "images": images,
+        "structure": detect_structure(doc, flow_bundle["paragraphs"]),
+        "flow": flow_bundle["items"],
     }
 
 
@@ -208,6 +226,15 @@ def extract_sections(doc: Document) -> list[dict]:
     """Extract section-level properties (page setup, headers, footers)."""
     result = []
     for i, section in enumerate(doc.sections):
+        header_texts = [_paragraph_display_text(p) for p in section.header.paragraphs if _paragraph_display_text(p)] if section.header else []
+        footer_texts = [_paragraph_display_text(p) for p in section.footer.paragraphs if _paragraph_display_text(p)] if section.footer else []
+        footer_alignment = None
+        footer_page_field_count = 0
+        if section.footer and section.footer.paragraphs:
+            first_footer_para = next((p for p in section.footer.paragraphs if p.text.strip()), section.footer.paragraphs[0])
+            footer_alignment = _get_alignment(first_footer_para)
+            footer_page_field_count = sum(1 for paragraph in section.footer.paragraphs if _paragraph_contains_page_field(paragraph))
+        footer_text = " ".join(footer_texts[:3])
         result.append({
             "index": i,
             "page_width_cm": round(section.page_width / 914400 * 2.54, 2) if section.page_width else 21.0,
@@ -222,6 +249,12 @@ def extract_sections(doc: Document) -> list[dict]:
             "start_type": str(section.start_type) if section.start_type else "continuous",
             "header_present": bool(section.header),
             "footer_present": bool(section.footer),
+            "header_text": " ".join(header_texts[:3]),
+            "footer_text": footer_text,
+            "footer_alignment": footer_alignment or "left",
+            "footer_has_page_field": footer_page_field_count > 0,
+            "footer_page_field_count": footer_page_field_count,
+            "footer_page_number_format": _detect_page_number_format(footer_text),
         })
     return result
 
@@ -262,6 +295,116 @@ def _get_spacing(paragraph) -> dict:
     }
 
 
+def _collect_field_instructions(node) -> list[str]:
+    instructions = []
+    for child in node.iter():
+        local = _local_name(child.tag)
+        if local == "fldSimple":
+            instr = child.get(qn("w:instr")) or child.get("instr") or ""
+            if instr:
+                instructions.append(instr)
+        elif local == "instrText" and child.text:
+            instructions.append(child.text)
+    return instructions
+
+
+def _paragraph_contains_page_field(paragraph) -> bool:
+    instructions = " ".join(_collect_field_instructions(paragraph._element)).upper()
+    return " PAGE " in f" {instructions} " or instructions.strip().startswith("PAGE")
+
+
+def _paragraph_display_text(paragraph) -> str:
+    text = paragraph.text.strip()
+    if text:
+        return text
+    fragments = []
+    for child in paragraph._element.iter():
+        if _local_name(child.tag) == "t" and child.text:
+            fragments.append(child.text)
+    return "".join(fragments).strip()
+
+
+def _detect_page_number_format(text: str) -> str:
+    candidate = re.sub(r"[\s\-–—.·]+", "", text or "").strip()
+    if not candidate:
+        return "unknown"
+    if re.fullmatch(r"[ivxlcdm]+", candidate, re.IGNORECASE):
+        return "roman"
+    if re.fullmatch(r"\d+", candidate):
+        return "arabic"
+    return "mixed"
+
+
+def _count_drawings(paragraph) -> int:
+    return sum(1 for child in paragraph._element.iter() if _local_name(child.tag) == "drawing")
+
+
+def extract_document_flow(doc: Document) -> dict:
+    """Extract body-order anchors so evaluators can reason about real document flow."""
+    items = []
+    paragraph_cursor = 0
+    table_cursor = 0
+    for child in doc.element.body.iterchildren():
+        local = _local_name(child.tag)
+        if local == "p":
+            if paragraph_cursor >= len(doc.paragraphs):
+                continue
+            paragraph_index = paragraph_cursor
+            paragraph_cursor += 1
+            text = doc.paragraphs[paragraph_index].text.strip()
+            items.append({
+                "order": len(items),
+                "kind": "paragraph",
+                "paragraph_index": paragraph_index,
+                "text": text[:120],
+            })
+        elif local == "tbl":
+            if table_cursor >= len(doc.tables):
+                continue
+            table_index = table_cursor
+            table_cursor += 1
+            first_cell = ""
+            try:
+                first_row = doc.tables[table_index].rows[0]
+                first_cell = first_row.cells[0].text.strip() if first_row.cells else ""
+            except Exception:
+                first_cell = ""
+            items.append({
+                "order": len(items),
+                "kind": "table",
+                "table_index": table_index,
+                "text": first_cell[:120],
+            })
+        elif local == "sectPr":
+            items.append({
+                "order": len(items),
+                "kind": "section_break",
+            })
+
+    for idx, item in enumerate(items):
+        item["prev_kind"] = items[idx - 1]["kind"] if idx > 0 else None
+        item["next_kind"] = items[idx + 1]["kind"] if idx + 1 < len(items) else None
+
+    paragraph_flow = {}
+    table_flow = {}
+    for item in items:
+        meta = {
+            "flow_order": item["order"],
+            "prev_flow_kind": item.get("prev_kind"),
+            "next_flow_kind": item.get("next_kind"),
+        }
+        if item["kind"] == "paragraph":
+            paragraph_flow[item["paragraph_index"]] = meta
+        elif item["kind"] == "table":
+            table_flow[item["table_index"]] = meta
+
+    return {
+        "items": items,
+        "paragraphs": paragraph_flow,
+        "tables": table_flow,
+    }
+
+
 def _get_font_props(run) -> dict:
     font = run.font
     return {
@@ -274,9 +417,10 @@ def _get_font_props(run) -> dict:
     }
 
 
-def extract_paragraphs(doc: Document) -> list[dict]:
+def extract_paragraphs(doc: Document, paragraph_flow: dict[int, dict] | None = None) -> list[dict]:
     """Extract all paragraphs with formatting and style info."""
     result = []
+    paragraph_flow = paragraph_flow or {}
     for i, para in enumerate(doc.paragraphs):
         text = para.text.strip()
         style = para.style.name if para.style else ""
@@ -287,6 +431,8 @@ def extract_paragraphs(doc: Document) -> list[dict]:
                 **_get_font_props(run),
             })
 
+        image_count = _count_drawings(para)
+        flow_meta = paragraph_flow.get(i, {})
         result.append({
             "index": i,
             "text": para.text,
@@ -298,6 +444,11 @@ def extract_paragraphs(doc: Document) -> list[dict]:
             "heading_level": int(para.style.name.replace("Heading ", "")) if para.style and para.style.name.startswith("Heading") else 0,
             "page_break_before": para.paragraph_format.page_break_before if para.paragraph_format.page_break_before else False,
             "runs": runs_data,
+            "flow_order": flow_meta.get("flow_order"),
+            "prev_flow_kind": flow_meta.get("prev_flow_kind"),
+            "next_flow_kind": flow_meta.get("next_flow_kind"),
+            "contains_image": image_count > 0,
+            "image_count": image_count,
         })
     return result
 
@@ -318,9 +469,10 @@ def extract_headings(doc: Document) -> list[dict]:
     return result
 
 
-def extract_tables(doc: Document) -> list[dict]:
+def extract_tables(doc: Document, table_flow: dict[int, dict] | None = None) -> list[dict]:
     """Extract tables with row/col count and cell content."""
     result = []
+    table_flow = table_flow or {}
     for ti, table in enumerate(doc.tables):
         rows_count = len(table.rows)
         cols_count = len(table.columns)
@@ -328,38 +480,108 @@ def extract_tables(doc: Document) -> list[dict]:
         for ri, row in enumerate(table.rows):
             cells = [cell.text.strip() for cell in row.cells]
             rows_data.append({"index": ri, "cells": cells})
+        flow_meta = table_flow.get(ti, {})
         result.append({
             "index": ti,
             "rows": rows_count,
             "cols": cols_count,
             "data": rows_data,
+            "flow_order": flow_meta.get("flow_order"),
+            "prev_flow_kind": flow_meta.get("prev_flow_kind"),
+            "next_flow_kind": flow_meta.get("next_flow_kind"),
         })
     return result
 
 
-def extract_images(doc: Document) -> list[dict]:
+def _local_name(tag: str) -> str:
+    if "}" in tag:
+        return tag.split("}", 1)[1]
+    return tag
+
+
+def _find_descendant(node, names: set[str]):
+    for child in node.iter():
+        if _local_name(child.tag) in names:
+            return child
+    return None
+
+
+def _looks_like_watermark(name: str, descr: str) -> bool:
+    haystack = f"{name} {descr}".lower()
+    tokens = (
+        "watermark", "seal", "stamp", "logo", "comment",
+        "印章", "水印", "批注", "公章", "校徽",
+    )
+    return any(token in haystack for token in tokens)
+
+
+def extract_images(doc: Document, paragraph_flow: dict[int, dict] | None = None) -> list[dict]:
     """Extract inline images/shapes from the document."""
     result = []
+    paragraph_flow = paragraph_flow or {}
     for i, para in enumerate(doc.paragraphs):
         for run in para.runs:
             drawing_elements = run._element.findall(qn("w:drawing"))
             for drawing in drawing_elements:
-                # Try to extract image size from extent
-                extent = drawing.findall(qn("wp:extent"))
+                container = None
+                object_type = "inline"
+                for child in drawing:
+                    if _local_name(child.tag) == "anchor":
+                        container = child
+                        object_type = "floating"
+                        break
+                    if _local_name(child.tag) == "inline":
+                        container = child
+                        object_type = "inline"
+                        break
+                if container is None:
+                    container = drawing
+
+                extent = [node for node in container.iter() if _local_name(node.tag) == "extent"]
                 cx = 0
                 cy = 0
                 for ext in extent:
                     cx = int(ext.get("cx", 0))
                     cy = int(ext.get("cy", 0))
+
+                doc_pr = _find_descendant(container, {"docPr"})
+                name = doc_pr.get("name", "") if doc_pr is not None else ""
+                descr = doc_pr.get("descr", "") if doc_pr is not None else ""
+                wrap_type = "inline"
+                if object_type == "floating":
+                    wrap_names = {"wrapNone", "wrapSquare", "wrapTight", "wrapThrough", "wrapTopAndBottom"}
+                    wrap_node = _find_descendant(container, wrap_names)
+                    wrap_type = _local_name(wrap_node.tag) if wrap_node is not None else "wrapNone"
+                behind_text = object_type == "floating" and container.get("behindDoc", "0") in ("1", "true", "True")
+                allow_overlap = object_type == "floating" and container.get("allowOverlap", "0") in ("1", "true", "True")
+                is_watermark_like = _looks_like_watermark(name, descr)
+                overlap_risk = (
+                    object_type == "floating"
+                    and not behind_text
+                    and (allow_overlap or wrap_type in ("wrapNone", "wrapSquare", "wrapTight", "wrapThrough", "wrapTopAndBottom"))
+                    and (cx > 0 or cy > 0)
+                    and bool(para.text.strip())
+                )
+                flow_meta = paragraph_flow.get(i, {})
                 result.append({
                     "paragraph_index": i,
+                    "paragraph_text": para.text.strip()[:160],
                     "width_pt": round(cx / 914400 * 72, 1) if cx else 0,
                     "height_pt": round(cy / 914400 * 72, 1) if cy else 0,
+                    "object_type": object_type,
+                    "wrap_type": wrap_type,
+                    "behind_text": behind_text,
+                    "allow_overlap": allow_overlap,
+                    "name": name,
+                    "description": descr,
+                    "is_watermark_like": is_watermark_like,
+                    "overlap_risk": overlap_risk,
+                    "flow_order": flow_meta.get("flow_order"),
                 })
     return result
 
 
-def detect_structure(doc: Document) -> list[dict]:
+def detect_structure(doc: Document, paragraph_flow: dict[int, dict] | None = None) -> list[dict]:
     """
     Detect document structural elements by analyzing content.
 
@@ -373,7 +595,14 @@ def detect_structure(doc: Document) -> list[dict]:
       - reference: Reference section content
     """
     structure = []
+    paragraph_flow = paragraph_flow or {}
     paragraphs = doc.paragraphs
+
+    def append_structure(item: dict):
+        flow_meta = paragraph_flow.get(item.get("index"), {})
+        if flow_meta.get("flow_order") is not None:
+            item["flow_order"] = flow_meta.get("flow_order")
+        structure.append(item)
 
     # Patterns for detection
     abstract_pattern = re.compile(r'^摘要$|^abstract', re.IGNORECASE)
@@ -397,7 +626,7 @@ def detect_structure(doc: Document) -> list[dict]:
         if ref_pattern.match(text):
             found_refs = True
             in_references = True
-            structure.append({
+            append_structure({
                 "index": i,
                 "type": "references_header",
                 "text": text,
@@ -407,7 +636,7 @@ def detect_structure(doc: Document) -> list[dict]:
 
         # Headings
         if para.style and para.style.name.startswith("Heading"):
-            structure.append({
+            append_structure({
                 "index": i,
                 "type": "heading",
                 "text": text,
@@ -422,7 +651,7 @@ def detect_structure(doc: Document) -> list[dict]:
         if figure_pattern.match(text) or "caption" in style_name or "题注" in style_name:
             # Check if it looks like a figure ("图" prefix)
             if text.startswith("图") or re.match(r'^[Ff]igure|^[Ff]ig\.', text):
-                structure.append({
+                append_structure({
                     "index": i,
                     "type": "figure_caption",
                     "text": text,
@@ -432,7 +661,7 @@ def detect_structure(doc: Document) -> list[dict]:
 
         # Table captions (表 x-x or Table X)
         if table_pattern.match(text) or ("caption" in style_name and ("表" in text or "table" in text.lower())):
-            structure.append({
+            append_structure({
                 "index": i,
                 "type": "table_caption",
                 "text": text,
@@ -443,7 +672,7 @@ def detect_structure(doc: Document) -> list[dict]:
         # Abstract detection
         if abstract_pattern.match(text):
             found_abstract = True
-            structure.append({
+            append_structure({
                 "index": i,
                 "type": "abstract",
                 "text": text,
@@ -451,7 +680,7 @@ def detect_structure(doc: Document) -> list[dict]:
             })
             continue
         if found_abstract and not para.style.name.startswith("Heading") and len(text) > 50:
-            structure.append({
+            append_structure({
                 "index": i,
                 "type": "abstract_body",
                 "text": text[:100],
@@ -463,7 +692,7 @@ def detect_structure(doc: Document) -> list[dict]:
         # TOC detection
         if toc_pattern.match(text):
             found_toc = True
-            structure.append({
+            append_structure({
                 "index": i,
                 "type": "toc",
                 "text": text,
@@ -473,7 +702,7 @@ def detect_structure(doc: Document) -> list[dict]:
 
         # Reference entries (numbered citations like [1], [1-3], etc.)
         if in_references and re.match(r'^\[\d+', text):
-            structure.append({
+            append_structure({
                 "index": i,
                 "type": "reference_entry",
                 "text": text[:120],

@@ -22,9 +22,29 @@ const STRUCT_ITEMS = [
   { k: '参考文献', key: 'references' },
 ];
 
-const MIN_PARSE_EXPERIENCE_MS = 2.5 * 1000;
+const FINDING_SOURCE_HINTS: Record<string, string> = {
+  页面: '页边距 / 版芯 / 装订要求',
+  样式: '正文字体槽 / 标题层级 / 段落样式',
+  '分节 & 页码': '前置页 / 页脚 / 页码连续性',
+  '图表 & 题注': '图题位置 / 表格关系 / 图目录',
+  '目录 & 域': '目录域 / 图目录 / 自动刷新',
+  参考文献: 'DOI / 著录完整性 / 参考文献体例',
+};
+
 const VISUAL_PROGRESS_CAP = 97;
+/** Maximum artificial animation floor (ms). When backend is ahead, we catch up. */
+const ANIMATION_FLOOR_MS = 400;
+/** Backend stage → frontend phase index mapping */
+const BACKEND_STAGE_TO_PHASE: Record<string, number> = {
+  validating: 0,
+  parsing: 1,
+  analyzing_structure: 2,
+  applying_rules: 3,
+  done: 3,
+};
 const VISUAL_PHASE_BREAKPOINTS = [0.2, 0.52, 0.82, 1];
+const parseJobLaunchRegistry = new Map<string, Promise<{ jobId: string; status: string }>>();
+const activeParsePollSessions = new Map<string, symbol>();
 
 
 function extractContent(texts: string[], headings: string[], key: string, count: number): string[] {
@@ -154,17 +174,59 @@ function extractContent(texts: string[], headings: string[], key: string, count:
   return result.length > 0 ? result : ['（未识别到内容）'];
 }
 
-function getVisualProgressFrame(elapsedMs: number) {
-  const ratio = Math.min(1, elapsedMs / MIN_PARSE_EXPERIENCE_MS);
-  const pct = Math.min(
-    VISUAL_PROGRESS_CAP,
-    Math.max(1, Math.round(ratio * VISUAL_PROGRESS_CAP)),
-  );
+/**
+ * Compute visual progress by blending time-driven floor with backend-driven ceiling.
+ * - When backend progress is available, it becomes the primary driver.
+ * - Time-driven animation provides a smooth floor so UI never jumps.
+ * - When backend completes, progress jumps to 100% immediately (no artificial wait).
+ */
+function getVisualProgressFrame(input: {
+  elapsedMs: number;
+  speedMultiplier: number;
+  backendProgress: number;  // 0-100, from job polling
+  backendStage: string;      // from job polling
+  isJobComplete: boolean;
+}) {
+  const { elapsedMs, speedMultiplier, backendProgress, backendStage, isJobComplete } = input;
 
-  let phaseIdx = VISUAL_PHASE_BREAKPOINTS.findIndex((breakpoint) => ratio <= breakpoint);
-  if (phaseIdx === -1) phaseIdx = VISUAL_PHASE_BREAKPOINTS.length - 1;
+  // If job is complete, immediately show 100%
+  if (isJobComplete) {
+    return { pct: 100, phaseIdx: PARSE_PHASES.length - 1, ratio: 1 };
+  }
 
-  return { pct, phaseIdx, ratio };
+  // Time-driven floor: smooth animation based on elapsed time
+  const effectiveMs = elapsedMs * speedMultiplier;
+  const timeRatio = Math.min(1, effectiveMs / ANIMATION_FLOOR_MS);
+  const timePct = Math.round(timeRatio * 40);  // time floor tops out at ~40%
+
+  // Blend: use the higher of time floor and backend progress
+  const blendedPct = Math.max(timePct, Math.min(VISUAL_PROGRESS_CAP, backendProgress));
+  const pct = Math.min(VISUAL_PROGRESS_CAP, Math.max(1, blendedPct));
+
+  // Determine phase: prefer backend stage mapping, fall back to time-driven
+  let phaseIdx = BACKEND_STAGE_TO_PHASE[backendStage] ?? 0;
+  if (phaseIdx === 0) {
+    // Fallback: time-driven phase when backend hasn't reported yet
+    phaseIdx = VISUAL_PHASE_BREAKPOINTS.findIndex((breakpoint) => timeRatio <= breakpoint);
+    if (phaseIdx === -1) phaseIdx = 0;
+  }
+  phaseIdx = Math.min(phaseIdx, PARSE_PHASES.length - 1);
+
+  return { pct, phaseIdx, ratio: pct / 100 };
+}
+
+function appendUniqueLogs(
+  current: { t: 'phase' | 'ok' | 'warn'; text: string }[],
+  next: { t: 'phase' | 'ok' | 'warn'; text: string }[],
+) {
+  const seen = new Set(current.map((item) => `${item.t}:${item.text}`));
+  const deduped = next.filter((item) => {
+    const key = `${item.t}:${item.text}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return deduped.length > 0 ? [...current, ...deduped] : current;
 }
 
 const Step3Parse: React.FC<Props> = ({ showToast }) => {
@@ -190,6 +252,7 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
   const pausedRef = useRef(false);
   const fastModeRef = useRef(false);
   const queuedCompletionRef = useRef<(() => void) | null>(null);
+  const scrollRootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -226,6 +289,55 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
         }),
     })).filter(g => g.items.length > 0);
   }, [parseResults]);
+
+  const findingSourceGroups = useMemo(() => {
+    return issueGroups
+      .map((group) => ({
+        label: group.cat,
+        count: group.items.length,
+        hint: FINDING_SOURCE_HINTS[group.cat] || '交稿前需要重点复核的规则命中',
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4);
+  }, [issueGroups]);
+
+  const coveredPageCount = useMemo(() => {
+    const pages = new Set<number>();
+    parseResults?.ruleDetails?.forEach((group) => {
+      group.items.forEach((item) => {
+        if (Array.isArray(item)) return;
+        if (item.status === 'pass') return;
+        if (typeof item.location?.pageIndex === 'number') {
+          pages.add(item.location.pageIndex + 1);
+        }
+      });
+    });
+    parseResults?.findings?.forEach((finding) => {
+      finding.evidence_spans?.forEach((span) => {
+        if (typeof span.page === 'number' && span.page > 0) pages.add(span.page);
+      });
+    });
+    return pages.size;
+  }, [parseResults]);
+
+  const evidenceHighlights = useMemo(() => {
+    const fromFindings = (parseResults?.findings || [])
+      .slice(0, 4)
+      .map((finding) => ({
+        label: finding.rule_snapshot.rule_text,
+        snippet: finding.evidence_snapshot || finding.rule_snapshot.rule_description || '已命中规则，但当前证据摘要为空。',
+      }));
+
+    if (fromFindings.length > 0) return fromFindings;
+
+    return logs
+      .filter((item) => item.t !== 'phase')
+      .slice(-4)
+      .map((item) => ({
+        label: item.t === 'warn' ? '规则命中' : '解析结果',
+        snippet: item.text,
+      }));
+  }, [logs, parseResults]);
 
   const scoreTone = animatedScore < 60 ? 'var(--rust-500)' : animatedScore < 80 ? 'var(--sun-500)' : animatedScore < 95 ? 'var(--leaf-500)' : 'var(--leaf-700)';
   const scoreBg = animatedScore < 60 ? 'var(--rust-100)' : animatedScore < 80 ? 'var(--sun-100)' : animatedScore < 95 ? 'var(--leaf-100)' : 'var(--leaf-50)';
@@ -451,15 +563,22 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
     const docId = getLegacyDocumentId(state);
     const profileId = state.schoolId;
     const noProfile = !profileId;
+    const parseSessionKey = `${docId || 'demo'}:${profileId || 'auto'}`;
     let cancelled = false;
     let completionTimer: number | null = null;
     let visualTimer: number | null = null;
     let completionScheduled = false;
+    let currentPollJobId: string | null = null;
 
     const stopTimers = () => {
       if (completionTimer) window.clearTimeout(completionTimer);
       if (visualTimer) window.clearTimeout(visualTimer);
     };
+
+    // Backend-driven progress refs — updated by polling, consumed by animation loop
+    const backendProgressRef = { current: 0 };
+    const backendStageRef = { current: '' };
+    const jobCompletedRef = { current: false };
 
     const startVisualProgressLoop = () => {
       const step = () => {
@@ -469,12 +588,22 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
           return;
         }
         const speedMultiplier = fastModeRef.current ? 1.8 : 1;
-        const { pct, phaseIdx } = getVisualProgressFrame((Date.now() - parseStart) * speedMultiplier);
+        const { pct, phaseIdx } = getVisualProgressFrame({
+          elapsedMs: Date.now() - parseStart,
+          speedMultiplier,
+          backendProgress: backendProgressRef.current,
+          backendStage: backendStageRef.current,
+          isJobComplete: jobCompletedRef.current,
+        });
+        if (pct >= 100) {
+          // Backend completed: don't keep looping, let finalize handle it
+          set({ parsePct: pct, parsePhase: phaseIdx });
+          applyVisualPhaseArtifacts(phaseIdx);
+          return;
+        }
         set({ parsePct: pct, parsePhase: phaseIdx });
         applyVisualPhaseArtifacts(phaseIdx);
-        if (pct < VISUAL_PROGRESS_CAP) {
-          visualTimer = window.setTimeout(step, 240);
-        }
+        visualTimer = window.setTimeout(step, 240);
       };
 
       step();
@@ -483,8 +612,10 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
     const scheduleCompletion = (finish: () => void) => {
       if (completionScheduled) return;
       completionScheduled = true;
+      // No more artificial MIN_PARSE_EXPERIENCE_MS wait — use minimal floor for visual polish
+      const minimalFloor = 200;
       const effectiveElapsed = (Date.now() - parseStart) * (fastModeRef.current ? 1.8 : 1);
-      const remaining = Math.max(0, MIN_PARSE_EXPERIENCE_MS - effectiveElapsed);
+      const remaining = Math.max(0, minimalFloor - effectiveElapsed);
       completionTimer = window.setTimeout(() => {
         if (cancelled) return;
         if (pausedRef.current) {
@@ -529,10 +660,10 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
 
         const rLog = (result.log as string[]) || [];
         if (rLog.length) {
-          setLogs(L => [...L, ...rLog.map((text: string) => ({
+          setLogs((L) => appendUniqueLogs(L, rLog.map((text: string) => ({
             t: text.startsWith('▲') ? 'warn' as const : 'ok' as const,
             text,
-          }))]);
+          }))));
         }
         if (rLog.some((text: string) => text.includes('旧版 .doc 格式'))) {
           showToast(LEGACY_DOC_HINT);
@@ -553,53 +684,81 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
       }
 
       try {
-        setLogs(L => [...L, { t: 'phase', text: noProfile ? 'AUTO · 文档格式自检' : 'PRS · 创建解析任务' }]);
-        const job = await api.createAnalyzeJob(docId, profileId);
+        setLogs((L) => appendUniqueLogs(L, [{ t: 'phase', text: noProfile ? 'AUTO · 文档格式自检' : 'PRS · 创建解析任务' }]));
+        const launchPromise = parseJobLaunchRegistry.get(parseSessionKey)
+          ?? api.createAnalyzeJob(docId, profileId).finally(() => {
+            parseJobLaunchRegistry.delete(parseSessionKey);
+          });
+        parseJobLaunchRegistry.set(parseSessionKey, launchPromise);
+        const job = await launchPromise;
         if (cancelled) return;
-        set({ jobId: job.jobId, jobStatus: job.status });
+        set({ analyzeJobId: job.jobId, jobStatus: job.status });
+        currentPollJobId = job.jobId;
 
-        setLogs(L => [...L, { t: 'ok', text: `✓ 任务已创建: ${job.jobId}` }]);
+        setLogs((L) => appendUniqueLogs(L, [{ t: 'ok', text: `✓ 任务已创建: ${job.jobId}` }]));
 
         const POLL_INTERVAL = 1200;
         let lastStage = '';
+        const pollSessionToken = Symbol(job.jobId);
+        activeParsePollSessions.set(job.jobId, pollSessionToken);
 
         const poll = async () => {
-          if (cancelled) return;
+          if (cancelled || activeParsePollSessions.get(job.jobId) !== pollSessionToken) return;
           try {
             const status = await api.getJob(job.jobId);
-            if (cancelled) return;
+            if (cancelled || activeParsePollSessions.get(job.jobId) !== pollSessionToken) return;
             set({ jobStatus: status.status });
+
+            // Feed real backend progress into the visual animation loop
+            if (typeof status.progress === 'number') {
+              backendProgressRef.current = status.progress;
+            }
+            if (status.stage) {
+              backendStageRef.current = status.stage;
+            }
 
             // Log stage transitions
             if (status.stage && status.stage !== lastStage) {
               lastStage = status.stage;
               if (noProfile) {
-                if (status.stage === 'parsing') setLogs(L => [...L, { t: 'phase', text: 'AUTO · 文档解析中' }]);
-                else if (status.stage === 'analyzing_structure') setLogs(L => [...L, { t: 'phase', text: 'AUTO · 格式检测' }]);
-                else if (status.stage === 'applying_rules') setLogs(L => [...L, { t: 'phase', text: 'AUTO · 问题汇总' }]);
+                if (status.stage === 'parsing') setLogs((L) => appendUniqueLogs(L, [{ t: 'phase', text: 'AUTO · 文档解析中' }]));
+                else if (status.stage === 'analyzing_structure') setLogs((L) => appendUniqueLogs(L, [{ t: 'phase', text: 'AUTO · 格式检测' }]));
+                else if (status.stage === 'applying_rules') setLogs((L) => appendUniqueLogs(L, [{ t: 'phase', text: 'AUTO · 问题汇总' }]));
               } else {
-                if (status.stage === 'parsing') setLogs(L => [...L, { t: 'phase', text: 'STR · 文档解析中' }]);
-                else if (status.stage === 'analyzing_structure') setLogs(L => [...L, { t: 'phase', text: 'REF · 结构识别' }]);
-                else if (status.stage === 'applying_rules') setLogs(L => [...L, { t: 'phase', text: 'CHK · 规则预匹配' }]);
+                if (status.stage === 'parsing') setLogs((L) => appendUniqueLogs(L, [{ t: 'phase', text: 'STR · 文档解析中' }]));
+                else if (status.stage === 'analyzing_structure') setLogs((L) => appendUniqueLogs(L, [{ t: 'phase', text: 'REF · 结构识别' }]));
+                else if (status.stage === 'applying_rules') setLogs((L) => appendUniqueLogs(L, [{ t: 'phase', text: 'CHK · 规则预匹配' }]));
               }
             }
 
             if (status.status === 'completed') {
+              jobCompletedRef.current = true;
+              backendProgressRef.current = 100;
+              backendStageRef.current = 'done';
+              if (activeParsePollSessions.get(job.jobId) === pollSessionToken) {
+                activeParsePollSessions.delete(job.jobId);
+              }
               scheduleCompletion(() => finalizeSuccessfulParse(status.result));
             } else if (status.status === 'failed') {
+              if (activeParsePollSessions.get(job.jobId) === pollSessionToken) {
+                activeParsePollSessions.delete(job.jobId);
+              }
               stopTimers();
               showToast(`解析失败: ${status.error?.message || '未知错误'}`);
               fallbackComplete();
             } else {
-              setTimeout(poll, POLL_INTERVAL);
+              window.setTimeout(poll, POLL_INTERVAL);
             }
           } catch (err: any) {
+            if (activeParsePollSessions.get(job.jobId) === pollSessionToken) {
+              activeParsePollSessions.delete(job.jobId);
+            }
             showToast(`状态查询失败: ${err.message}`);
             fallbackComplete();
           }
         };
 
-        setTimeout(poll, 800);
+        window.setTimeout(poll, 800);
       } catch (err: any) {
         showToast(`任务创建失败: ${err.message}`);
         runSimulated();
@@ -607,7 +766,7 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
     }
 
     function runSimulated() {
-      setLogs(L => [...L, { t: 'phase', text: 'SIM · 启动玻璃盒解析流程' }]);
+      setLogs((L) => appendUniqueLogs(L, [{ t: 'phase', text: 'SIM · 启动玻璃盒解析流程' }]));
       scheduleCompletion(() => fallbackComplete());
     }
 
@@ -689,14 +848,22 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
     return () => {
       cancelled = true;
       stopTimers();
+      if (currentPollJobId) activeParsePollSessions.delete(currentPollJobId);
     };
   }, []);
 
   const elapsedStr = parseElapsed < 60 ? `${parseElapsed}s` : `${Math.floor(parseElapsed / 60)}m ${parseElapsed % 60}s`;
 
+  useEffect(() => {
+    if (!state.parseDone) return;
+    window.requestAnimationFrame(() => {
+      scrollRootRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+    });
+  }, [state.parseDone]);
+
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <div style={{ flex: 1, overflow: 'auto', padding: '28px 56px' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: 0 }}>
+      <div ref={scrollRootRef} data-step-scroll-root="step3" style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: '28px 56px' }}>
         {!state.parseDone ? (
           <ParseTimeline
             state={state}
@@ -726,6 +893,9 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
             scoreTone={scoreTone}
             scoreBg={scoreBg}
             issueGroups={issueGroups}
+            findingSourceGroups={findingSourceGroups}
+            evidenceHighlights={evidenceHighlights}
+            coveredPageCount={coveredPageCount}
             school={school}
             elapsedStr={elapsedStr}
             logs={logs}

@@ -1,10 +1,8 @@
-import type { FindingContract, FixJobArtifact, FixJobEvent, FixStatusResponse, FixType, RuleHitItem } from '../../api/client';
+import type { FindingContract, FixJobArtifact, FixJobEvent, FixStatusResponse, FixType } from '../../api/client';
 import type { AppState, SchoolOption } from '../../components/AppFrame';
 import type { FixAction, FixActionRule } from '../../mock/fixActions';
 import type { PaperBlock, PaperContent, PaperPage } from '../../mock/paperContent';
 import { getPageTextBlocks } from '../../components/fix-runtime/utils';
-
-type RuleHitStatus = 'pass' | 'warn' | 'fail';
 
 interface RuntimeFindingInput {
   state: AppState;
@@ -23,115 +21,10 @@ interface RuntimeFixActionInput {
 type FindingLinkedArtifact = FixJobArtifact & { finding_id?: string; related_finding_ids?: string[] };
 type FindingLinkedEvent = FixJobEvent & { finding_id?: string; related_finding_ids?: string[] };
 
-function stableFindingId(seed: string): string {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < seed.length; index += 1) {
-    hash ^= seed.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  const hex = (hash >>> 0).toString(16).padStart(8, '0');
-  const padded = `${hex}${hex.split('').reverse().join('')}${hex}${hex}`.slice(0, 32);
-  return `${padded.slice(0, 8)}-${padded.slice(8, 12)}-4${padded.slice(13, 16)}-8${padded.slice(17, 20)}-${padded.slice(20, 32)}`;
-}
-
-function toRuleId(cat: string, label: string): string {
-  const token = `${cat}_${label}`
-    .replace(/[^A-Za-z0-9\u4e00-\u9fa5]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .toUpperCase()
-    .slice(0, 48) || 'FORMAT_REVIEW';
-  return `RULE-L2-${token}`;
-}
-
-function normalizeRuleHit(item: RuleHitItem | [string, RuleHitStatus]): { label: string; status: RuleHitStatus; page: number } | null {
-  if (Array.isArray(item)) {
-    return { label: item[0], status: item[1], page: 1 };
-  }
-  const status = item.status === 'fail' ? 'fail' : item.status === 'warn' ? 'warn' : 'pass';
-  return {
-    label: item.label,
-    status,
-    page: Math.max(1, (item.location?.pageIndex ?? 0) + 1),
-  };
-}
-
-function buildSuggestion(label: string, evidence: string, status: RuleHitStatus): FindingContract['suggestion'] {
-  if (status === 'fail') {
-    return {
-      type: 'replace',
-      fix_diff: {
-        before: evidence,
-        after: `按规范修正“${label}”`,
-        spans_affected: [],
-      },
-      explanation: `按规范修正“${label}”`,
-    };
-  }
-  return {
-    type: 'manual_only',
-    explanation: `请核对“${label}”是否符合学校规则与国标基线。`,
-  };
-}
-
 export function collectRuntimeFindings({
   state,
-  school,
-  canonicalDocumentId,
-  parsedTexts,
 }: RuntimeFindingInput): FindingContract[] {
-  const canonicalFindings = state.parseResults?.findings ?? [];
-  if (canonicalFindings.length > 0) return canonicalFindings;
-
-  const now = new Date().toISOString();
-  const ruleGroups = state.parseResults?.ruleDetails as Array<{ cat: string; items: Array<RuleHitItem | [string, RuleHitStatus]> }> | undefined;
-  const findings: FindingContract[] = [];
-
-  ruleGroups?.forEach((group, groupIndex) => {
-    group.items.forEach((rawItem, itemIndex) => {
-      const item = normalizeRuleHit(rawItem);
-      if (!item || item.status === 'pass') return;
-      const evidence = parsedTexts[itemIndex % Math.max(parsedTexts.length, 1)] || `${group.cat} · ${item.label}`;
-      const ruleId = toRuleId(group.cat, item.label);
-      const findingId = stableFindingId(`${canonicalDocumentId}:${group.cat}:${item.label}:${item.page}:${groupIndex}:${itemIndex}`);
-      const evidenceSpan = {
-        page: item.page,
-        char_start: 0,
-        char_end: Math.max(1, evidence.length),
-        snippet: evidence,
-      };
-      const suggestion = buildSuggestion(item.label, evidence, item.status);
-      findings.push({
-        finding_id: findingId,
-        document_id: canonicalDocumentId,
-        document_version: 1,
-        rule_id: ruleId,
-        rule_group: group.cat,
-        rule_snapshot: {
-          rule_text: item.label,
-          rule_version: school?.version || 'vAuto',
-          rule_description: group.cat,
-        },
-        severity: item.status === 'fail' ? 'P0' : findings.length === 0 ? 'P1' : 'P2',
-        confidence: item.status === 'fail' ? 0.92 : 0.78,
-        evidence_spans: [evidenceSpan],
-        evidence_snapshot: evidence,
-        cross_page: false,
-        is_global: false,
-        suggestion: {
-          ...suggestion,
-          fix_diff: suggestion.fix_diff
-            ? { ...suggestion.fix_diff, spans_affected: [evidenceSpan] }
-            : undefined,
-        },
-        status: 'pending',
-        created_at: now,
-        updated_at: now,
-        audit_trail: [],
-      });
-    });
-  });
-
-  return findings;
+  return state.parseResults?.findings ?? [];
 }
 
 function isTextBlock(block: PaperBlock): boolean {
@@ -197,7 +90,7 @@ function pickFindingForFixType(fixType: FixType | undefined, findings: FindingCo
     caption: /图表|题注/i,
     reference_format: /参考文献|著录|DOI/i,
     table_format: /表格|三线表/i,
-    image_format: /图片|图题/i,
+    image_format: /图片|图题|印章|水印|浮动对象|覆盖正文|shape/i,
     punctuation: /标点/i,
   };
   const matcher = fixType ? tokens[fixType] : undefined;
@@ -205,6 +98,24 @@ function pickFindingForFixType(fixType: FixType | undefined, findings: FindingCo
     ? findings.find((finding) => matcher.test(`${finding.rule_group || ''} ${finding.rule_id} ${finding.rule_snapshot.rule_text} ${finding.rule_snapshot.rule_description || ''}`))
     : null;
   return matched ?? findings[index % findings.length] ?? null;
+}
+
+export function resolveFixTypeForFinding(finding: FindingContract): FixType {
+  const haystack = `${finding.rule_group || ''} ${finding.rule_id} ${finding.rule_snapshot.rule_text} ${finding.rule_snapshot.rule_description || ''}`;
+  if (/图片|印章|水印|浮动对象|覆盖正文|shape/i.test(haystack)) return 'image_format';
+  if (/页边距|版芯|装订线/i.test(haystack)) return 'margin';
+  if (/正文|字体|行距|缩进|样式/i.test(haystack)) return 'body_style';
+  if (/标题|题名|章节|层级/i.test(haystack)) return 'heading';
+  if (/页码|页脚|分节/i.test(haystack)) return 'page_number';
+  if (/封面|声明|题名页/i.test(haystack)) return 'cover';
+  if (/目录|TOC/i.test(haystack)) return 'toc';
+  if (/摘要|关键词/i.test(haystack)) return 'abstract_format';
+  if (/交叉引用|引用/i.test(haystack)) return 'cross_ref';
+  if (/图题|表题|题注|caption/i.test(haystack)) return 'caption';
+  if (/参考文献|著录|DOI|7714/i.test(haystack)) return 'reference_format';
+  if (/表格|三线表|keep-together/i.test(haystack)) return 'table_format';
+  if (/标点/i.test(haystack)) return 'punctuation';
+  return 'body_style';
 }
 
 function hasFindingLink(item: { finding_id?: string; related_finding_ids?: string[] }): boolean {

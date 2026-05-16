@@ -1,13 +1,15 @@
 import React from 'react';
+import type { ContentIntegrityView } from '../utils/contentIntegrityView';
 
 interface DeliveryHeaderProps {
+  contentIntegrity: ContentIntegrityView;
   deliveryNarrative: string;
   oldScore: number;
   newScore: number;
 }
 
 export const DeliveryHeader: React.FC<DeliveryHeaderProps> = ({
-  deliveryNarrative, oldScore, newScore,
+  contentIntegrity, deliveryNarrative, oldScore, newScore,
 }) => (
   <div style={{
     background: 'var(--paper-0)', borderRadius: 6, border: '1px solid var(--hair)',
@@ -45,9 +47,9 @@ export const DeliveryHeader: React.FC<DeliveryHeaderProps> = ({
         fontSize: 12, color: 'var(--ink-600)', lineHeight: 1.5,
         marginBottom: 8,
       }}>
-        <div>✅ 你的论文内容没有被改写，只做了排版处理</div>
-        <div className="mono" style={{ fontSize: 10.5, color: 'var(--leaf-700)' }}>
-          内容指纹校验通过（原稿与修正稿正文完全一致）
+        <div>{contentIntegrity.status === 'warning' ? '⚠ 正文内容需要复核' : '✅ 你的论文内容按正文指纹校验保护'}</div>
+        <div className="mono" style={{ fontSize: 10.5, color: contentIntegrity.toneColor }}>
+          {contentIntegrity.shortLabel} · {contentIntegrity.detail}
         </div>
       </div>
     </div>

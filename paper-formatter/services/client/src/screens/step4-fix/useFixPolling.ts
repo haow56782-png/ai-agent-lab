@@ -1,10 +1,12 @@
-import { useCallback, useEffect, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 import { api } from '../../api/client';
 import type { FindingContract, FixJobArtifact, FixJobEvent, FixStatusResponse, FixType } from '../../api/client';
 import { getLegacyDocumentId, type AppState } from '../../components/AppFrame';
 import { BROWSE_MODE_FIX_HINT, LEGACY_DOC_HINT } from './constants';
-import { attachFindingsToFixStatus } from './findingFixActionAdapter';
+import { attachFindingsToFixStatus, resolveFixTypeForFinding } from './findingFixActionAdapter';
 import type { FixStep } from './types';
+
+const activeFixStatusPollSessions = new Map<string, symbol>();
 
 interface Params {
   state: AppState;
@@ -32,6 +34,7 @@ interface Params {
   setForceCompleted: Dispatch<SetStateAction<boolean>>;
   setViewPaused: Dispatch<SetStateAction<boolean>>;
   startDemoPlayback: () => void;
+  onFindingTotal?: (count: number) => void;
 }
 
 export function useFixPolling({
@@ -60,12 +63,16 @@ export function useFixPolling({
   setForceCompleted,
   setViewPaused,
   startDemoPlayback,
+  onFindingTotal,
 }: Params) {
   const legacyDocId = getLegacyDocumentId(state);
   const applyFixStatus = useCallback((status: FixStatusResponse) => {
     const linkedStatus = attachFindingsToFixStatus(status, runtimeFindings);
     if (typeof status.freeFixLimit === 'number') {
       setFreeFixLimit(status.freeFixLimit);
+    }
+    if (typeof status.findingTotal === 'number') {
+      onFindingTotal?.(status.findingTotal);
     }
     setFixMessage(linkedStatus.message || null);
     setFixEvents(linkedStatus.events || []);
@@ -89,17 +96,28 @@ export function useFixPolling({
     applyFixStatus(status);
     setFixing(false);
     setFixJobId(null);
-    setAppState({ jobStatus: 'completed' });
-    setFixMessage(status.message || '修复完成，可下载真实 DOCX');
+    setForceCompleted(true);
+    setAppState({ fixJobId, jobStatus: 'completed' });
+    setFixMessage(status.message || '修复稿已生成，可进入人工确认');
 
     const completedCount = status.completedSteps?.length || 0;
     if (!paid && doneCount + completedCount < steps.length) {
       setShowPaywall(true);
       showToast(`已免费修复 ${freeFixLimit} 项，解锁后可继续全部修复`);
     } else {
-      showToast('全部修复完成！');
+      showToast('修复稿已生成，下一步请人工确认');
     }
-  }, [applyFixStatus, doneCount, freeFixLimit, paid, setAppState, setFixJobId, setFixMessage, setFixing, setShowPaywall, showToast, steps.length]);
+  }, [applyFixStatus, doneCount, fixJobId, freeFixLimit, paid, setAppState, setFixJobId, setFixMessage, setFixing, setForceCompleted, setShowPaywall, showToast, steps.length]);
+
+  // Stable refs so the poll effect can read the latest callbacks without
+  // restarting on every steps/runtimeFindings change.
+  const applyFixStatusRef = useRef(applyFixStatus);
+  applyFixStatusRef.current = applyFixStatus;
+  const completeFixRef = useRef(completeFix);
+  completeFixRef.current = completeFix;
+  const fixStartedAtRef = useRef<number | null>(null);
+  const setFixElapsedMsRef = useRef(setFixElapsedMs);
+  setFixElapsedMsRef.current = setFixElapsedMs;
 
   const fetchFreeFixLimit = useCallback(async (): Promise<number> => {
     try {
@@ -115,10 +133,15 @@ export function useFixPolling({
   }, [freeFixLimit, setFreeFixLimit]);
 
   const getNextFixTypes = useCallback((limit: number): FixType[] => {
+    if (runtimeFindings.length > 0) {
+      const pendingFindingTypes = Array.from(new Set(runtimeFindings.map(resolveFixTypeForFinding)));
+      if (paid) return pendingFindingTypes;
+      return pendingFindingTypes.slice(0, Math.max(limit - doneCount, 0));
+    }
     const pending = steps.filter((step) => step.status !== 'done').map((step) => step.type);
     if (paid) return pending;
     return pending.slice(0, Math.max(limit - doneCount, 0));
-  }, [doneCount, paid, steps]);
+  }, [doneCount, paid, runtimeFindings, steps]);
 
   const launchFixJob = useCallback(async (fixTypes: FixType[]) => {
     if (!legacyDocId || !state.schoolId) {
@@ -144,12 +167,13 @@ export function useFixPolling({
       setForceCompleted(false);
       setViewPaused(false);
       setShowPaywall(false);
+      fixStartedAtRef.current = Date.now();
       setFixStartedAt(Date.now());
       setFixElapsedMs(0);
 
       const job = await api.createFixJob({
         legacyDocId,
-        jobId: state.jobId || undefined,
+        sourceJobId: state.analyzeJobId || state.formatJobId || undefined,
         profileId: state.schoolId,
         selectedFixes: fixTypes,
       });
@@ -157,7 +181,7 @@ export function useFixPolling({
         setFreeFixLimit(job.freeFixLimit);
       }
       setFixJobId(job.jobId);
-      setAppState({ jobId: job.jobId, jobStatus: job.status });
+      setAppState({ fixJobId: job.jobId, jobStatus: job.status });
     } catch (err: any) {
       setFixing(false);
       setFixJobId(null);
@@ -182,7 +206,8 @@ export function useFixPolling({
     showToast,
     startDemoPlayback,
     legacyDocId,
-    state.jobId,
+    state.analyzeJobId,
+    state.formatJobId,
     state.schoolId,
   ]);
 
@@ -233,22 +258,38 @@ export function useFixPolling({
 
     let cancelled = false;
     let timer: number | null = null;
+    const pollToken = Symbol(fixJobId);
+    activeFixStatusPollSessions.set(fixJobId, pollToken);
 
     const poll = async () => {
       try {
+        if (cancelled || activeFixStatusPollSessions.get(fixJobId) !== pollToken) return;
         const status = await api.getFixStatus(fixJobId);
-        if (cancelled) return;
-        applyFixStatus(status);
+        if (cancelled || activeFixStatusPollSessions.get(fixJobId) !== pollToken) return;
+
+        // Read latest callbacks from refs to avoid effect dependency cycle
+        applyFixStatusRef.current(status);
+
+        // Advance elapsed time during real fix so progress/focal-action advance
+        if (fixStartedAtRef.current) {
+          setFixElapsedMsRef.current(Date.now() - fixStartedAtRef.current);
+        }
 
         if (status.status === 'done') {
-          completeFix(status);
+          if (activeFixStatusPollSessions.get(fixJobId) === pollToken) {
+            activeFixStatusPollSessions.delete(fixJobId);
+          }
+          completeFixRef.current(status);
           return;
         }
 
         if (status.status === 'failed') {
+          if (activeFixStatusPollSessions.get(fixJobId) === pollToken) {
+            activeFixStatusPollSessions.delete(fixJobId);
+          }
           setFixing(false);
           setFixJobId(null);
-          setAppState({ jobStatus: 'failed' });
+          setAppState({ fixJobId, jobStatus: 'failed' });
           setFixMessage(status.errorMessage || status.message || '修复失败');
           setSteps((prev) => prev.map((step) =>
             status.currentStep === step.type ? { ...step, status: 'failed' } : step,
@@ -258,9 +299,10 @@ export function useFixPolling({
           return;
         }
 
-        timer = window.setTimeout(poll, 800);
+        timer = window.setTimeout(poll, 2000);
       } catch (err: any) {
-        if (cancelled) return;
+        if (cancelled || activeFixStatusPollSessions.get(fixJobId) !== pollToken) return;
+        activeFixStatusPollSessions.delete(fixJobId);
         setFixing(false);
         setFixJobId(null);
         const errorText = err?.message || '状态暂不可用';
@@ -278,8 +320,11 @@ export function useFixPolling({
     return () => {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
+      if (activeFixStatusPollSessions.get(fixJobId) === pollToken) {
+        activeFixStatusPollSessions.delete(fixJobId);
+      }
     };
-  }, [applyFixStatus, completeFix, fixJobId, setAppState, setFixJobId, setFixMessage, setFixing, setSteps, showToast, startDemoPlayback, state.jobStatus]);
+  }, [fixJobId, setAppState, setFixJobId, setFixMessage, setFixing, setSteps, showToast, startDemoPlayback, state.jobStatus]);
 
   return {
     onStartFix,

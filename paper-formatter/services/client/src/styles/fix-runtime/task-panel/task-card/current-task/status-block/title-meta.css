@@ -1,0 +1,50 @@
+/* Fix runtime current task title and meta styles */
+.fix-runtime-action-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-400);
+  margin-bottom: 7px;
+}
+
+.fix-runtime-action-anchor {
+  color: var(--brand-700);
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.fix-runtime-action-finding {
+  margin-bottom: 6px;
+  color: var(--brand-700);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.fix-runtime-action-before {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-900);
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+
+.fix-runtime-action-after {
+  display: grid;
+  gap: 3px;
+  font-size: 11.5px;
+  color: var(--ink-500);
+  line-height: 1.55;
+}
+
+.fix-runtime-action-after strong {
+  color: var(--ink-900);
+  font-size: 11px;
+}
+
+.fix-runtime-action-after span {
+  color: var(--ink-600);
+}

@@ -46,6 +46,16 @@ interface PersistedReviewState {
   page?: number | null;
 }
 
+function createEmptyReviewState(): ReviewState {
+  return {
+    focusFindingId: null,
+    findings: [],
+    scrollSource: null,
+    audit_trail: [],
+    p1Exemption: null,
+  };
+}
+
 function toPersistedStatus(status: FindingStatus): PersistedFindingStatus | null {
   if (status === 'accepted') return 'accepted';
   if (status === 'rejected') return 'ignored';
@@ -60,13 +70,7 @@ function fromPersistedStatus(status: PersistedFindingStatus | undefined): Findin
 }
 
 class ReviewStore {
-  private state: ReviewState = {
-    focusFindingId: null,
-    findings: [],
-    scrollSource: null,
-    audit_trail: [],
-    p1Exemption: null,
-  };
+  private state: ReviewState = createEmptyReviewState();
 
   private listeners = new Set<Listener>();
   private releaseTimer: number | null = null;
@@ -206,6 +210,26 @@ class ReviewStore {
     this.emit();
   };
 
+  reset = () => {
+    if (typeof window === 'undefined') {
+      this.state = createEmptyReviewState();
+      this.emit();
+      return;
+    }
+    if (this.releaseTimer !== null) {
+      window.clearTimeout(this.releaseTimer);
+      this.releaseTimer = null;
+    }
+    if (this.pendingFocusRetryTimer !== null) {
+      window.clearTimeout(this.pendingFocusRetryTimer);
+      this.pendingFocusRetryTimer = null;
+    }
+    this.state = createEmptyReviewState();
+    this.clearPersistedState();
+    this.writeHash(null);
+    this.emit();
+  };
+
   initializeHashSync = () => {
     if (this.hashSyncStarted || typeof window === 'undefined') return;
     this.hashSyncStarted = true;
@@ -251,6 +275,11 @@ class ReviewStore {
     } catch {
       return null;
     }
+  }
+
+  private clearPersistedState() {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(REVIEW_PERSISTENCE_KEY);
   }
 
   private persistState() {
@@ -332,6 +361,7 @@ export const reviewActions = {
   hydrateFindings: reviewStore.hydrateFindings,
   initializeHashSync: reviewStore.initializeHashSync,
   recordP1Exemption: reviewStore.recordP1Exemption,
+  reset: reviewStore.reset,
   setFindingStatus: reviewStore.setFindingStatus,
   setFocus: reviewStore.setFocus,
 };

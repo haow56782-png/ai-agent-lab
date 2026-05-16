@@ -1,0 +1,171 @@
+/* Fix runtime sidebar styles */
+.fix-runtime-note {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  min-height: 0;
+}
+.fix-runtime-note-left,
+.fix-runtime-note-right {
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(251,250,246,.94), rgba(244,240,230,.92));
+}
+
+.fix-runtime-note-left {
+  border-right: 1px solid var(--hair);
+}
+.fix-runtime-note-right {
+  border-left: 1px solid var(--hair);
+}
+
+.fix-runtime-note-head {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  color: var(--ink-400);
+  text-transform: uppercase;
+}
+
+.fix-runtime-note-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 360px;
+  transition: opacity .5s ease;
+}
+
+.fix-runtime-note-right .fix-runtime-note-stack {
+  padding-bottom: 560px;
+}
+
+.fix-runtime-note.is-page-flipping .fix-runtime-note-stack {
+  opacity: .34;
+}
+
+.fix-runtime-rule-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--ink-400);
+}
+
+.fix-runtime-rule-sources span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.56);
+  border: 1px solid rgba(21,23,27,.08);
+}
+
+.fix-runtime-current-rule {
+  display: grid;
+  gap: 5px;
+  padding: 12px 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(42,77,58,.12);
+  background: rgba(255,255,255,.66);
+}
+
+.fix-runtime-current-rule-card,
+.fix-runtime-current-task-card {
+  position: relative;
+}
+
+.fix-runtime-current-rule strong {
+  color: var(--brand-700);
+  font-size: 13px;
+}
+
+.fix-runtime-rule-sources-inline {
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.fix-runtime-current-rule span {
+  color: var(--ink-500);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.fix-runtime-action-card {
+  padding: 13px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(21,23,27,.08);
+  background: rgba(255,255,255,.68);
+  box-shadow: 0 8px 24px -22px rgba(21,23,27,.18);
+  transition: opacity .35s ease, transform .35s ease, box-shadow .2s ease, border-color .2s ease;
+  cursor: pointer;
+}
+
+.fix-runtime-note-stack.is-quiet {
+  padding-bottom: 96px;
+}
+.fix-runtime-action-card:hover {
+  border-color: var(--sun-500);
+  box-shadow: 0 4px 14px -10px rgba(21,23,27,.24);
+}
+.fix-runtime-action-card:focus-visible {
+  outline: 2px solid var(--sun-500);
+  outline-offset: 2px;
+}
+
+.fix-runtime-current-rule-card.is-rule-hit {
+  animation: fixRuleFlash .72s ease;
+}
+
+.fix-runtime-note-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-400);
+  margin-bottom: 5px;
+}
+
+.fix-runtime-rule-code {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--brand-700);
+  margin-bottom: 5px;
+}
+
+.fix-runtime-note-anchor {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-900);
+  margin-bottom: 5px;
+}
+
+.fix-runtime-note-detail {
+  font-size: 11px;
+  color: var(--ink-500);
+  line-height: 1.5;
+}
+
+.fix-runtime-rule-hitcount {
+  margin-top: 9px;
+  font-size: 10.5px;
+  color: var(--ink-400);
+}
+
+.fix-runtime-rule-status {
+  margin-top: 7px;
+  font-size: 10px;
+  color: var(--brand-700);
+}
+
+.fix-runtime-rule-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.fix-runtime-rule-overflow {
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  color: var(--ink-500);
+  background: rgba(255,255,255,.52);
+  border: 1px dashed rgba(21,23,27,.12);
+  align-self: flex-start;
+  cursor: pointer;
+}

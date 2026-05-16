@@ -1,0 +1,88 @@
+{
+  "metadata": {
+    "sampleName": "dhu-approved-2026-05-14",
+    "school": "东华大学",
+    "schoolId": "dhu",
+    "ruleVersion": "approved-draft",
+    "baselineStandard": "GB/T 7713.1-2025",
+    "baselineStatus": "approved-school-rule-draft-v0.1",
+    "sourceDocx": "dhu-approved-2026-05-14.docx"
+  },
+  "expectedStats": {
+    "headings": 69,
+    "paragraphs": 190,
+    "figures": 0,
+    "tables": 5,
+    "continuationTables": 1,
+    "references": 37,
+    "headersFooters": 8,
+    "warnings": 24
+  },
+  "qualityGate": {
+    "enforceExactStats": true,
+    "requiredWarningCodes": [
+      "LOW_CONFIDENCE_RECOGNITION",
+      "CONTINUATION_AMBIGUOUS"
+    ]
+  },
+  "expectedHeadings": [
+    {
+      "text": "学 院：计算机科学与技术学院",
+      "level": 1
+    },
+    {
+      "text": "专 业：软件工程",
+      "level": 1
+    },
+    {
+      "text": "姓 名：王 浩",
+      "level": 1
+    },
+    {
+      "text": "学 号：20XX12345",
+      "level": 1
+    },
+    {
+      "text": "指 导 教 师：某 某 教 授",
+      "level": 1
+    }
+  ],
+  "expectedParagraphs": [
+    {
+      "minimumCount": 190
+    }
+  ],
+  "expectedFigures": [
+    {
+      "minimumCount": 0
+    }
+  ],
+  "expectedTables": [
+    {
+      "minimumCount": 5
+    }
+  ],
+  "expectedContinuationTables": [
+    {
+      "minimumCount": 1
+    }
+  ],
+  "expectedReferences": [
+    {
+      "minimumCount": 37
+    }
+  ],
+  "expectedHeadersFooters": [
+    {
+      "minimumCount": 8
+    }
+  ],
+  "expectedWarnings": [
+    {
+      "warningCode": "LOW_CONFIDENCE_RECOGNITION"
+    },
+    {
+      "warningCode": "CONTINUATION_AMBIGUOUS"
+    }
+  ]
+}

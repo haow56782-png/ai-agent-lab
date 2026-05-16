@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Icon, Btn } from '../components/Common';
 import { createDocumentIdentity, useApp, DEMO_DOC, getSchoolOptions } from '../components/AppFrame';
 import { api } from '../api/client';
+import { reviewActions } from '../stores/reviewStore';
 
 interface Props {
   showToast: (msg: string) => void;
@@ -27,6 +28,53 @@ export interface CheckHistoryItem {
 const HISTORY_KEY = 'remei_check_history';
 const MAX_HISTORY = 10;
 const UPLOAD_TRIGGER_BLOCK_SELECTOR = 'button, a, input, select, textarea, [data-no-upload-trigger]';
+const SCHOOL_BADGE_ACCENTS = ['var(--brand-700)', 'var(--rust-500)', 'var(--leaf-500)', 'var(--sun-500)', 'var(--brand-500)', 'var(--ink-700)'] as const;
+
+type UploadMode = 'word' | 'pdf';
+
+const UPLOAD_MODE_COPY: Record<UploadMode, {
+  title: string;
+  extension: 'docx' | 'pdf';
+  accept: string;
+  zoneTitle: string;
+  supportText: string;
+  note: string;
+  button: string;
+  mismatch: string;
+}> = {
+  word: {
+    title: 'Word 排版修复',
+    extension: 'docx',
+    accept: '.docx',
+    zoneTitle: '拖入 Word 论文，或点击选择文件',
+    supportText: '支持 .docx · 单文件 ≤ 15 MB',
+    note: '系统会生成修正版 Word，不改动原文件',
+    button: '上传 Word 论文',
+    mismatch: '当前选择的是 Word 排版修复，请上传 .docx 文件',
+  },
+  pdf: {
+    title: 'PDF 格式检测',
+    extension: 'pdf',
+    accept: '.pdf',
+    zoneTitle: '拖入 PDF 论文，或点击选择文件',
+    supportText: '支持 .pdf · 单文件 ≤ 15 MB',
+    note: '系统会生成格式检测报告，不直接修改 PDF',
+    button: '上传 PDF 检测',
+    mismatch: '当前选择的是 PDF 格式检测，请上传 .pdf 文件',
+  },
+};
+
+interface ProfileCatalogItem {
+  schoolId: string;
+  name: string;
+  faculty: string;
+  version: string;
+  ruleCount: number;
+  uploadCount: number;
+  sourceType: string;
+  initial: string;
+  accent: string;
+}
 
 function isUploadTriggerBlocked(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && Boolean(target.closest(UPLOAD_TRIGGER_BLOCK_SELECTOR));
@@ -37,6 +85,10 @@ function loadHistory(): CheckHistoryItem[] {
     const raw = localStorage.getItem(HISTORY_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch { return []; }
+}
+
+function makeSchoolInitial(name: string): string {
+  return name.trim().slice(0, 1) || '校';
 }
 
 function formatTime(ts: number): string {
@@ -50,25 +102,51 @@ function formatTime(ts: number): string {
   return `${d.getMonth() + 1} 月 ${d.getDate()} 日`;
 }
 
+function getFileExtension(fileName: string): string {
+  return fileName.toLowerCase().split('.').pop() || '';
+}
+
+function getHistoryFileType(fileName: string): 'DOCX' | 'PDF' {
+  return getFileExtension(fileName) === 'pdf' ? 'PDF' : 'DOCX';
+}
+
 const Step1Upload: React.FC<Props> = ({ showToast }) => {
   const { state, set } = useApp();
+  const [uploadMode, setUploadMode] = useState<UploadMode>('word');
   const [drag, setDrag] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [history] = useState<CheckHistoryItem[]>(loadHistory);
   const [showSchoolModal, setShowSchoolModal] = useState(false);
-  const [uploadCountMap, setUploadCountMap] = useState<Record<string, number>>({});
+  const [profileCatalog, setProfileCatalog] = useState<ProfileCatalogItem[] | null>(null);
+  const [profileCatalogError, setProfileCatalogError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
   const hasHistory = history.length > 0;
+  const fallbackSchoolCount = useMemo(
+    () => getSchoolOptions().filter((school) => school.sourceType !== 'learned').length,
+    [],
+  );
+  const schoolCatalogCount = profileCatalog?.length ?? fallbackSchoolCount;
+  const uploadCopy = UPLOAD_MODE_COPY[uploadMode];
 
   useEffect(() => {
-    if (!showSchoolModal) return;
-    api.listProfiles().then(r => {
-      const map: Record<string, number> = {};
-      for (const p of r.profiles) map[p.schoolId] = p.uploadCount;
-      setUploadCountMap(map);
-    }).catch(() => {});
-  }, [showSchoolModal]);
+    let cancelled = false;
+    api.listProfiles().then((response) => {
+      if (cancelled) return;
+      setProfileCatalog(response.profiles.map((profile, index) => ({
+        ...profile,
+        initial: makeSchoolInitial(profile.name),
+        accent: SCHOOL_BADGE_ACCENTS[index % SCHOOL_BADGE_ACCENTS.length],
+      })));
+      setProfileCatalogError(null);
+    }).catch((error) => {
+      if (cancelled) return;
+      setProfileCatalogError(error instanceof Error ? error.message : '学校规范列表暂时加载失败');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // P2 5-2: Same-file detection — show toast if file was uploaded before
   useEffect(() => {
@@ -88,25 +166,40 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
   }, [set, showToast]);
 
   const handleFile = useCallback(async (file: File) => {
-    const ext = file.name.toLowerCase().split('.').pop();
-    if (ext !== 'docx' && ext !== 'pdf') {
-      if (ext === 'pdf') {
-        setUploadError('PDF 文件需先转为 Word 格式，再上传 .docx 文件');
-      } else if (ext === 'doc' || ext === 'wps') {
-        setUploadError(`当前文件是旧版 ${ext === 'doc' ? '.doc' : '.wps'} 格式，暂不支持直接排版。${LEGACY_DOC_HINT}`);
-      } else {
-        setUploadError('请上传 .docx 格式的 Word 文档');
-      }
+    const ext = getFileExtension(file.name);
+    if (ext === 'doc' || ext === 'wps') {
+      setUploadError(`当前文件是旧版 ${ext === 'doc' ? '.doc' : '.wps'} 格式，暂不支持直接排版。${LEGACY_DOC_HINT}`);
+      return;
+    }
+    if (ext !== uploadCopy.extension) {
+      setUploadError(uploadCopy.mismatch);
       return;
     }
     const sizeMB = file.size / (1024 * 1024);
-    if (sizeMB > 50) {
+    if (sizeMB > 15) {
       setUploadError(`文件过大（当前 ${sizeMB.toFixed(0)} MB），请压缩图片后重新上传`);
       return;
     }
 
     setUploadError(null);
-    set({ rawFile: file, uploadStage: 'reading', uploadPct: 0 });
+    reviewActions.reset();
+    set({
+      rawFile: file,
+      uploadStage: 'reading',
+      uploadPct: 0,
+      analyzeJobId: null,
+      formatJobId: null,
+      fixJobId: null,
+      jobStatus: null,
+      parsePct: 0,
+      parsePhase: 0,
+      parseDone: false,
+      parseResults: null,
+      exporting: false,
+      exported: false,
+      diffPage: 3,
+      activeRuleId: null,
+    });
 
     const MIN_UPLOAD_MS = 600;
     const uploadStartedAt = Date.now();
@@ -134,6 +227,18 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
         doc: { name: file.name, size: sizeLabel, pages: 0 },
         uploadStage: 'done',
         uploadPct: 100,
+        analyzeJobId: null,
+        formatJobId: null,
+        fixJobId: null,
+        jobStatus: null,
+        parsePct: 0,
+        parsePhase: 0,
+        parseDone: false,
+        parseResults: null,
+        exporting: false,
+        exported: false,
+        diffPage: 3,
+        activeRuleId: null,
       });
       showToast(`已上传 · ${file.name}`);
       setTimeout(() => set({ step: 2 }), 700);
@@ -144,7 +249,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
       set({ uploadStage: 'idle', uploadPct: 0 });
       showToast(`上传失败: ${err.message}`);
     }
-  }, [set, showToast]);
+  }, [set, showToast, uploadCopy]);
 
   const startUpload = useCallback(() => {
     if (state.uploadStage === 'reading') return;
@@ -176,15 +281,55 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
     e.target.value = '';
   }, [handleFile]);
 
+  const switchUploadMode = useCallback((mode: UploadMode) => {
+    if (state.uploadStage === 'reading') return;
+    setUploadMode(mode);
+    setDrag(false);
+    setUploadError(null);
+  }, [state.uploadStage]);
+
   const useDemo = useCallback(() => {
-    set({ uploadStage: 'reading', uploadPct: 0, rawFile: null });
+    reviewActions.reset();
+    set({
+      uploadStage: 'reading',
+      uploadPct: 0,
+      rawFile: null,
+      analyzeJobId: 'demo',
+      formatJobId: 'demo',
+      fixJobId: 'demo',
+      jobStatus: 'completed',
+      parsePct: 0,
+      parsePhase: 0,
+      parseDone: false,
+      parseResults: null,
+      exporting: false,
+      exported: false,
+      diffPage: 3,
+      activeRuleId: null,
+    });
     let p = 0;
     const tick = setInterval(() => {
       p = Math.min(100, p + 6 + Math.random() * 12);
       set({ uploadPct: Math.round(p) });
       if (p >= 100) {
         clearInterval(tick);
-        set({ doc: DEMO_DOC, uploadStage: 'done', documentIdentity: createDocumentIdentity({ legacyDocId: 'demo' }) });
+        set({
+          doc: DEMO_DOC,
+          uploadStage: 'done',
+          documentIdentity: createDocumentIdentity({ legacyDocId: 'demo' }),
+          analyzeJobId: 'demo',
+          formatJobId: 'demo',
+          fixJobId: 'demo',
+          jobStatus: 'completed',
+          parsePct: 0,
+          parsePhase: 0,
+          parseDone: false,
+          parseResults: null,
+          exporting: false,
+          exported: false,
+          diffPage: 3,
+          activeRuleId: null,
+        });
         showToast('已识别 .docx · 87 页 · 准备就绪');
         setTimeout(() => set({ step: 2 }), 700);
       }
@@ -212,19 +357,66 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
           上传 .docx 或 .pdf，我们只处理排版，不改一字正文。
           你会拿到修正稿、规则命中报告和差异预览，带着更从容的底气走向毕业、上岸和下一段目标。
         </p>
-        <div style={{
-          marginBottom: 16, padding: '10px 12px', borderRadius: 4,
-          background: 'var(--brand-50)', border: '1px solid rgba(59,92,130,.12)',
-          fontSize: 12.5, color: 'var(--ink-600)', lineHeight: 1.55,
-        }}>
-          <span style={{ color: 'var(--brand-700)', fontWeight: 600 }}>开始前提醒：</span>
-          <span>{LEGACY_DOC_HINT}</span>
+        {uploadMode === 'word' && (
+          <div style={{
+            marginBottom: 16, padding: '10px 12px', borderRadius: 4,
+            background: 'var(--brand-50)', border: '1px solid rgba(59,92,130,.12)',
+            fontSize: 12.5, color: 'var(--ink-600)', lineHeight: 1.55,
+          }}>
+            <span style={{ color: 'var(--brand-700)', fontWeight: 600 }}>开始前提醒：</span>
+            <span>{LEGACY_DOC_HINT}</span>
+          </div>
+        )}
+
+        <div
+          data-no-upload-trigger
+          role="tablist"
+          aria-label="选择上传类型"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: 4,
+            marginBottom: 14,
+            border: '1px solid var(--hair)',
+            borderRadius: 7,
+            background: 'var(--paper-0)',
+            boxShadow: '0 1px 0 rgba(0,0,0,.02)',
+          }}
+        >
+          {(['word', 'pdf'] as UploadMode[]).map((mode) => {
+            const active = uploadMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => switchUploadMode(mode)}
+                disabled={state.uploadStage === 'reading'}
+                style={{
+                  border: 'none',
+                  borderRadius: 5,
+                  padding: '8px 13px',
+                  background: active ? 'var(--ink-900)' : 'transparent',
+                  color: active ? '#fff' : 'var(--ink-600)',
+                  fontSize: 12.5,
+                  fontWeight: active ? 650 : 500,
+                  cursor: state.uploadStage === 'reading' ? 'not-allowed' : 'pointer',
+                  transition: 'background .16s ease, color .16s ease',
+                  opacity: state.uploadStage === 'reading' && !active ? 0.45 : 1,
+                }}
+              >
+                {UPLOAD_MODE_COPY[mode].title} <span className="mono" style={{ opacity: active ? 0.78 : 0.55 }}>{UPLOAD_MODE_COPY[mode].accept}</span>
+              </button>
+            );
+          })}
         </div>
 
         <input
           ref={inputRef}
           type="file"
-          accept=".docx,.pdf"
+          accept={uploadCopy.accept}
           onChange={onFileChange}
           style={{ display: 'none' }}
         />
@@ -260,13 +452,18 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
             <Icon name="upload" size={22} />
           </div>
           <div className="serif" style={{ fontSize: 20, fontWeight: 600, color: 'var(--ink-900)' }}>
-            {uploadError ? '上传失败，请重新选择论文文件' : drag ? '松开后开始接住这篇论文' : '拖入论文，或点击选择文件'}
+            {uploadError ? '上传失败，请重新选择论文文件' : drag ? '松开后开始接住这篇论文' : uploadCopy.zoneTitle}
           </div>
           <div style={{ fontSize: 12.5, color: 'var(--ink-500)' }}>
-            支持 <span className="mono">.docx</span> · <span className="mono">.pdf</span>（数字 / 扫描）· 单文件 ≤ 50 MB
+            {uploadCopy.supportText.split(uploadCopy.accept).map((part, index, arr) => (
+              <React.Fragment key={`${part}-${index}`}>
+                {part}
+                {index < arr.length - 1 && <span className="mono">{uploadCopy.accept}</span>}
+              </React.Fragment>
+            ))}
           </div>
           <div style={{ fontSize: 11.5, color: 'var(--ink-400)', textAlign: 'center', maxWidth: 420, lineHeight: 1.5 }}>
-            不支持直接上传旧版 <span className="mono">.doc</span> / <span className="mono">.wps</span> 兼容文件进行自动排版。
+            {uploadCopy.note}。不支持直接上传旧版 <span className="mono">.doc</span> / <span className="mono">.wps</span> 兼容文件进行自动排版。
           </div>
 
           {state.uploadStage === 'reading' ? (
@@ -291,13 +488,13 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <Btn kind="primary" icon="upload" onClick={startUpload}>上传论文</Btn>
+              <Btn kind="primary" icon="upload" onClick={startUpload}>{uploadCopy.button}</Btn>
             </div>
           )}
 
           {/* P2 5-3: Trust text */}
           <div style={{ marginTop: 14, fontSize: 12, color: 'var(--ink-400)', display: 'flex', gap: 4 }}>
-            <span>已收录 <strong style={{ color: 'var(--brand-700)' }}>{getSchoolOptions().length}</strong> 所高校规范</span>
+            <span>已收录 <strong style={{ color: 'var(--brand-700)' }}>{schoolCatalogCount}</strong> 所高校规范</span>
             <span>·</span>
             <button type="button" onClick={() => setShowSchoolModal(true)} style={{
               background: 'none', border: 'none', padding: 0,
@@ -361,6 +558,9 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
             <span className="mono" style={{ fontSize: 10, color: 'var(--ink-400)', letterSpacing: '.12em' }}>HISTORY</span>
           </div>
           {history.slice(0, MAX_HISTORY).map((r, i, a) => (
+            (() => {
+              const fileType = getHistoryFileType(r.fileName);
+              return (
             <div key={r.id} style={{
               padding: '12px 0', borderBottom: i < a.length - 1 ? '1px solid var(--hair)' : 'none',
               display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
@@ -371,7 +571,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
                 fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 borderRadius: 2, flex: '0 0 auto',
-              }}>DOC</div>
+              }}>{fileType}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, color: 'var(--ink-900)', fontWeight: 500, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.fileName}</div>
                 <div className="mono" style={{ fontSize: 10.5, color: 'var(--ink-500)', marginTop: 3 }}>{r.schoolName} · {formatTime(r.timestamp)}</div>
@@ -381,6 +581,8 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
                 </div>
               </div>
             </div>
+              );
+            })()
           ))}
         </aside>
       )}
@@ -401,9 +603,24 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
             <div className="serif" style={{ fontSize: 18, fontWeight: 600, color: 'var(--ink-900)', marginBottom: 18 }}>
               已收录学校规范
             </div>
+            {profileCatalogError ? (
+              <div style={{
+                marginBottom: 12,
+                padding: '10px 12px',
+                borderRadius: 4,
+                background: 'var(--sun-100)',
+                color: 'var(--sun-700)',
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}>
+                {profileCatalogError}
+              </div>
+            ) : null}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {getSchoolOptions().map(s => (
-                <div key={s.id} style={{
+              {profileCatalog === null ? (
+                <div style={{ padding: '12px 0', fontSize: 12, color: 'var(--ink-400)' }}>正在整理已收录学校规范…</div>
+              ) : profileCatalog.map(s => (
+                <div key={s.schoolId} style={{
                   padding: '12px 0', borderBottom: '1px solid var(--hair)',
                   display: 'flex', alignItems: 'center', gap: 12,
                 }}>
@@ -422,10 +639,10 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
                     )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div className="mono num" style={{ fontSize: 11, color: 'var(--ink-500)' }}>{s.rules} 条</div>
-                    {(uploadCountMap[s.id] || 0) > 0 && (
+                    <div className="mono num" style={{ fontSize: 11, color: 'var(--ink-500)' }}>{s.ruleCount} 条</div>
+                    {(s.uploadCount || 0) > 0 && (
                       <div className="mono" style={{ fontSize: 9.5, color: 'var(--ink-400)', marginTop: 1 }}>
-                        {uploadCountMap[s.id]} 篇已上传
+                        {s.uploadCount} 篇已上传
                       </div>
                     )}
                   </div>

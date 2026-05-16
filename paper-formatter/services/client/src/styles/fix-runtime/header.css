@@ -1,0 +1,173 @@
+/* Fix runtime header styles */
+.fix-runtime-topbar,
+.fix-runtime-bottombar {
+  display: grid;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
+  background: rgba(251,250,246,.92);
+  backdrop-filter: blur(10px);
+}
+
+.fix-runtime-topbar {
+  grid-template-columns: minmax(220px, 1.2fr) minmax(320px, 1.8fr) auto;
+  border-bottom: 1px solid var(--hair);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.fix-runtime-document-meta,
+.fix-runtime-stage-status {
+  min-width: 0;
+}
+
+.fix-runtime-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fix-runtime-subtitle {
+  font-size: 11px;
+  color: var(--ink-500);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.fix-runtime-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fix-runtime-progress-track {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.28);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.22);
+  overflow: hidden;
+}
+
+.fix-runtime-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(42,77,58,.76), #2a4d3a);
+  transition: width .35s ease;
+}
+
+.fix-runtime-progress-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 12px;
+  font-size: 10.5px;
+  color: var(--ink-500);
+}
+
+.fix-runtime-finding-meta {
+  color: var(--brand-700);
+  font-weight: 700;
+}
+
+.fix-runtime-progress-meta span:last-child {
+  justify-self: end;
+}
+
+.fix-runtime-progress-explain {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--ink-500);
+}
+
+.fix-runtime-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fix-runtime-toolbar-actions {
+  justify-self: end;
+}
+
+.fix-control-button,
+.fix-speed-switch button,
+.fix-diff-button {
+  height: 34px;
+  border-radius: 999px;
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease, opacity .2s ease;
+}
+
+.fix-control-button {
+  padding: 0 16px;
+  border: 1px solid rgba(21,23,27,.14);
+  background: var(--paper-0);
+  color: var(--ink-700);
+}
+
+.fix-control-button:disabled,
+.fix-diff-button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.fix-speed-switch {
+  display: inline-flex;
+  border: 1px solid rgba(21,23,27,.12);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,.76);
+}
+
+.fix-speed-switch button {
+  min-width: 44px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--ink-500);
+}
+
+.fix-speed-switch button.is-active {
+  background: var(--ink-900);
+  color: var(--paper-0);
+}
+
+.fix-speed-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(21,23,27,.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,.76);
+  color: var(--ink-700);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.fix-speed-select select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fix-runtime-stage {
+  display: grid;
+  grid-template-columns: 220px minmax(600px, 1fr) 280px;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+  background:
+    linear-gradient(rgba(21,23,27,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(21,23,27,.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

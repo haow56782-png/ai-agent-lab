@@ -4,22 +4,36 @@ import { Icon, Btn } from '../components/Common';
 import { DraftProfileCard } from '../components/DraftProfileCard';
 import { ProfileSelectionPanel } from '../components/ProfileSelectionPanel';
 import { SelectedProfileSummary } from '../components/SelectedProfileSummary';
+import { getProfileRuleStatus, type RuleStatusFilter } from '../components/profileSourceMeta';
 import {
   useApp,
   getLegacyDocumentId,
-  getSchoolOptions,
-  findSchoolById,
-  upsertLearnedSchool,
   defaultBaseStandardVersion,
   type SchoolOption,
   type BaseStandardVersion,
 } from '../components/AppFrame';
-import { api } from '../api/client';
-import { RULE_COUNT } from '../constants/rules';
+import { api, type SchoolProfile } from '../api/client';
 
 interface Props {
   showToast: (msg: string) => void;
 }
+
+type ProfileCatalogItem = Awaited<ReturnType<typeof api.listProfiles>>['profiles'][number];
+
+const PROFILE_ACCENTS = [
+  'var(--brand-700)',
+  'var(--rust-500)',
+  'var(--leaf-500)',
+  'var(--sun-500)',
+  'var(--brand-500)',
+  'var(--ink-700)',
+];
+
+const RULE_STATUS_PRIORITY: Record<Exclude<RuleStatusFilter, 'all'>, number> = {
+  official: 0,
+  learned: 1,
+  pending: 2,
+};
 
 function inferSchoolMeta(filename: string): { name: string; faculty: string } {
   const base = filename.replace(/\.(docx|pdf)$/i, '').trim();
@@ -39,22 +53,144 @@ function fmtDate(dateStr?: string | null): string {
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
+function parseIsoTime(value?: string | null): number {
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function toProfileOption(
+  profile: ProfileCatalogItem,
+  index: number,
+  baseStandard: BaseStandardVersion,
+): SchoolOption {
+  const ruleCount = Math.max(profile.ruleCount || 0, 0);
+  return {
+    id: profile.schoolId,
+    name: profile.name,
+    faculty: profile.faculty || '',
+    match: Math.min(100, 60 + Math.round(ruleCount / 4)),
+    rules: ruleCount,
+    version: profile.version,
+    initial: profile.name.trim().slice(0, 1) || '校',
+    accent: PROFILE_ACCENTS[index % PROFILE_ACCENTS.length],
+    baseStandardVersion: baseStandard,
+    effectiveFrom: profile.effectiveFrom,
+    sourceType: profile.sourceType === 'official' || profile.sourceType === 'seed'
+      ? 'seed'
+      : profile.sourceType === 'detected'
+      ? 'detected'
+      : 'learned',
+    uploadCount: profile.uploadCount,
+    recentUsageCount7d: profile.recentUsageCount7d || 0,
+    recentHitRate7d: profile.recentHitRate7d || 0,
+    lastUsedAt: profile.lastUsedAt || null,
+  };
+}
+
 const Step2Profile: React.FC<Props> = ({ showToast }) => {
   const { state, set } = useApp();
   const legacyDocId = getLegacyDocumentId(state);
   const [q, setQ] = useState('');
+  const [ruleStatusFilter, setRuleStatusFilter] = useState<RuleStatusFilter>('official');
+  const [pendingProfilesExpanded, setPendingProfilesExpanded] = useState(false);
   const templateInputRef = useRef<HTMLInputElement>(null);
-  const [schoolOptions, setSchoolOptions] = useState(() => getSchoolOptions());
-  const selected = findSchoolById(state.schoolId);
+  const [profileCatalog, setProfileCatalog] = useState<ProfileCatalogItem[]>([]);
+  const [selectedProfileDetail, setSelectedProfileDetail] = useState<SchoolProfile | null>(null);
+  const [profileDetailLoading, setProfileDetailLoading] = useState(false);
   const [showRules, setShowRules] = useState(false);
-  const [uploadCountMap, setUploadCountMap] = useState<Record<string, number>>({});
-  const [extraSchools, setExtraSchools] = useState<SchoolOption[]>([]);
   const [baseStandard, setBaseStandard] = useState<BaseStandardVersion>(defaultBaseStandardVersion());
-  const allOptions = React.useMemo(() => [...schoolOptions, ...extraSchools], [schoolOptions, extraSchools]);
-  const filtered = allOptions.filter(s =>
-    (s.baseStandardVersion || 'GB/T 7713.1-2006') === baseStandard &&
-    (!q || s.name.includes(q) || s.faculty.includes(q))
+
+  const refreshProfiles = useCallback(async () => {
+    const result = await api.listProfiles();
+    setProfileCatalog(result.profiles);
+    return result.profiles;
+  }, []);
+
+  const profileOptions = React.useMemo(
+    () => profileCatalog.map((profile, index) => toProfileOption(profile, index, baseStandard)).sort((left, right) => {
+      const leftStatus = getProfileRuleStatus(left);
+      const rightStatus = getProfileRuleStatus(right);
+      const statusDiff = RULE_STATUS_PRIORITY[leftStatus] - RULE_STATUS_PRIORITY[rightStatus];
+      if (statusDiff !== 0) return statusDiff;
+      const recentUsageDiff = (right.recentUsageCount7d || 0) - (left.recentUsageCount7d || 0);
+      if (recentUsageDiff !== 0) return recentUsageDiff;
+      const recentHitRateDiff = (right.recentHitRate7d || 0) - (left.recentHitRate7d || 0);
+      if (recentHitRateDiff !== 0) return recentHitRateDiff;
+      const recentTimeDiff = parseIsoTime(right.lastUsedAt) - parseIsoTime(left.lastUsedAt);
+      if (recentTimeDiff !== 0) return recentTimeDiff;
+      const uploadDiff = (right.uploadCount || 0) - (left.uploadCount || 0);
+      if (uploadDiff !== 0) return uploadDiff;
+      const matchDiff = right.match - left.match;
+      if (matchDiff !== 0) return matchDiff;
+      return left.name.localeCompare(right.name, 'zh-CN');
+    }),
+    [baseStandard, profileCatalog],
   );
+  const ruleStatusCounts = React.useMemo(() => {
+    const counts: Record<RuleStatusFilter, number> = {
+      all: profileOptions.length,
+      official: 0,
+      learned: 0,
+      pending: 0,
+    };
+    for (const profile of profileOptions) {
+      counts[getProfileRuleStatus(profile)] += 1;
+    }
+    return counts;
+  }, [profileOptions]);
+  const selected = React.useMemo(
+    () => profileOptions.find((profile) => profile.id === state.schoolId) || null,
+    [profileOptions, state.schoolId],
+  );
+  const queryMatchedProfiles = profileOptions.filter((profile) => {
+    const matchesQuery = !q || profile.name.includes(q) || profile.faculty.includes(q);
+    return matchesQuery;
+  });
+  const pendingProfiles = queryMatchedProfiles.filter((profile) => getProfileRuleStatus(profile) === 'pending');
+  const visiblePendingProfiles = ruleStatusFilter === 'all' && pendingProfilesExpanded ? pendingProfiles : [];
+  const hiddenPendingCount = ruleStatusFilter === 'all' && !pendingProfilesExpanded ? pendingProfiles.length : 0;
+  const filtered = ruleStatusFilter === 'all'
+    ? queryMatchedProfiles.filter((profile) => getProfileRuleStatus(profile) !== 'pending').concat(visiblePendingProfiles)
+    : queryMatchedProfiles.filter((profile) => getProfileRuleStatus(profile) === ruleStatusFilter);
+
+  useEffect(() => {
+    if (ruleStatusFilter !== 'all') {
+      setPendingProfilesExpanded(false);
+      return;
+    }
+    if (pendingProfiles.length === 0) {
+      setPendingProfilesExpanded(false);
+    }
+  }, [pendingProfiles.length, ruleStatusFilter]);
+
+  useEffect(() => {
+    if (!selected || state.schoolId === 'draft') {
+      setSelectedProfileDetail(null);
+      setProfileDetailLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setProfileDetailLoading(true);
+    api.getProfile(selected.id)
+      .then((detail) => {
+        if (cancelled) return;
+        setSelectedProfileDetail(detail);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn('profile detail failed:', err);
+        setSelectedProfileDetail(null);
+      })
+      .finally(() => {
+        if (!cancelled) setProfileDetailLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selected, state.schoolId]);
 
   const startParse = () => {
     if (!state.doc) { showToast('请先上传论文文档'); return; }
@@ -72,34 +208,22 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
       const result = await api.importTemplate(file);
       const rules = result.ruleCount || 65;
       const inferred = inferSchoolMeta(file.name);
-      const learnedSchool = upsertLearnedSchool({
-        name: inferred.name,
-        faculty: inferred.faculty,
-        rules,
-        baseStandardVersion: baseStandard,
-      });
-      const existsBefore = schoolOptions.some(item => item.id === learnedSchool.id);
-      setSchoolOptions(getSchoolOptions());
       set({
-        schoolId: learnedSchool.id,
+        schoolId: null,
         draftSchool: {
-          id: learnedSchool.id,
-          name: learnedSchool.name,
-          faculty: learnedSchool.faculty,
-          rules: learnedSchool.rules,
-          match: learnedSchool.match,
-          baseStandardVersion: learnedSchool.baseStandardVersion,
+          id: 'draft',
+          name: inferred.name,
+          faculty: inferred.faculty,
+          rules,
+          match: Math.min(100, 60 + Math.round(rules / 4)),
+          baseStandardVersion: baseStandard,
         },
       });
-      showToast(
-        existsBefore
-          ? `${learnedSchool.name} 规则覆盖已补充到 ${learnedSchool.match}%`
-          : `已自动加入学校列表 · ${learnedSchool.name} · 覆盖 ${learnedSchool.match}%`
-      );
+      showToast(`已生成规则草案 · ${inferred.name}，确认后可以继续体检`);
     } catch (err: any) {
       showToast(`模板解析失败: ${err.message}`);
     }
-  }, [baseStandard, schoolOptions, set, showToast]);
+  }, [baseStandard, set, showToast]);
 
   const onTemplateFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -109,85 +233,60 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
 
   const useDraftProfile = useCallback(() => {
     const name = state.draftSchool?.name || '自定义';
-    const draftId = state.draftSchool?.id || 'draft';
-    setSchoolOptions(getSchoolOptions());
-    set({ schoolId: draftId, draftSchool: null });
+    set({ schoolId: 'draft', draftSchool: null });
     showToast(`已选用 · ${name} 规则包`);
-  }, [state.draftSchool]);
+  }, [set, showToast, state.draftSchool]);
 
   useEffect(() => {
     if (!legacyDocId) return;
-    const docId: string = legacyDocId;
-
+    const docId = legacyDocId;
     let cancelled = false;
 
     const run = async () => {
       set({ detecting: true });
       try {
-        const [detectResult, profileResult] = await Promise.all([
+        const [detectResult, profiles] = await Promise.all([
           api.detectSchool(docId),
-          api.listProfiles(),
+          refreshProfiles(),
         ]);
         if (cancelled) return;
 
-        const ucMap: Record<string, number> = {};
-        const extras: SchoolOption[] = [];
-        const localIds = new Set(getSchoolOptions().map(o => o.id));
-        const accentColors = ['var(--brand-700)', 'var(--rust-500)', 'var(--leaf-500)', 'var(--sun-500)', 'var(--brand-500)', 'var(--ink-700)'];
-
-        for (let i = 0; i < profileResult.profiles.length; i++) {
-          const p = profileResult.profiles[i];
-          ucMap[p.schoolId] = p.uploadCount;
-          if (!localIds.has(p.schoolId)) {
-            extras.push({
-              id: p.schoolId,
-              name: p.name,
-              faculty: p.faculty || '',
-              match: Math.min(100, 60 + Math.round(p.ruleCount / 4)),
-              rules: p.ruleCount,
-              version: p.version,
-              initial: p.name.trim().slice(0, 1) || '校',
-              accent: accentColors[extras.length % 6],
-              baseStandardVersion: 'GB/T 7713.1-2006' as const,
-              sourceType: 'learned',
-              uploadCount: p.uploadCount,
-            });
-          }
-        }
-        setUploadCountMap(ucMap);
-        setExtraSchools(extras);
-
-        let synced = false;
-        for (const p of profileResult.profiles) {
-          if (p.ruleCount > 0) {
-            const local = findSchoolById(p.schoolId);
-            if (local && local.rules < p.ruleCount) {
-              upsertLearnedSchool({
-                name: p.name, faculty: p.faculty, rules: p.ruleCount, id: p.schoolId,
-                baseStandardVersion: baseStandard,
-              });
-              synced = true;
-            }
-          }
-        }
-        if (synced) {
-          setSchoolOptions(getSchoolOptions());
-        }
-
         if (detectResult.detected && detectResult.name) {
+          const knownProfile = detectResult.existingSchoolId
+            ? profiles.find((profile) => profile.schoolId === detectResult.existingSchoolId)
+            : profiles.find((profile) => profile.name === detectResult.name);
+
+          if (knownProfile) {
+            set({
+              schoolId: knownProfile.schoolId,
+              detectedSchool: null,
+            });
+            showToast(`检测到 ${knownProfile.name}，已自动选择`);
+            return;
+          }
+
           set({
             detectedSchool: {
               name: detectResult.name,
               confidence: detectResult.confidence,
-              isNew: !detectResult.existingSchoolId,
-              existingSchoolId: detectResult.existingSchoolId,
+              isNew: true,
+              existingSchoolId: null,
             },
           });
 
-          if (detectResult.existingSchoolId) {
-            const known = findSchoolById(detectResult.existingSchoolId);
-            set({ schoolId: detectResult.existingSchoolId });
-            showToast(`检测到 ${known?.name || detectResult.name}，已自动选择`);
+          try {
+            const created = await api.autoCreateSchool(detectResult.name, docId);
+            if (cancelled) return;
+            await refreshProfiles();
+            if (cancelled) return;
+            set({
+              schoolId: created.schoolId,
+              detectedSchool: null,
+            });
+            showToast(`检测到 ${detectResult.name}，已自动建档并选用`);
+          } catch (err: any) {
+            if (cancelled) return;
+            showToast(`检测到 ${detectResult.name}，但自动建档失败：${err.message}`);
           }
         }
       } catch (err) {
@@ -199,49 +298,13 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
 
     run();
     return () => { cancelled = true; };
-  }, [baseStandard, legacyDocId, set, showToast]);
-
-  useEffect(() => {
-    if (!legacyDocId) return;
-    let cancelled = false;
-    api.listProfiles().then(result => {
-      if (cancelled) return;
-      const ucMap: Record<string, number> = {};
-      let synced = false;
-      for (const p of result.profiles) {
-        ucMap[p.schoolId] = p.uploadCount;
-        if (p.ruleCount > 0) {
-          const local = findSchoolById(p.schoolId);
-          if (local && local.rules < p.ruleCount) {
-            upsertLearnedSchool({
-              name: p.name, faculty: p.faculty, rules: p.ruleCount, id: p.schoolId,
-              baseStandardVersion: baseStandard,
-            });
-            synced = true;
-          }
-        }
-      }
-      setUploadCountMap(ucMap);
-      if (synced) {
-        setSchoolOptions(getSchoolOptions());
-      }
-    }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [baseStandard, legacyDocId, state.schoolId]);
+  }, [legacyDocId, refreshProfiles, set, showToast]);
 
   const handleAutoCreate = async () => {
     if (!state.detectedSchool || !legacyDocId) return;
     try {
       const result = await api.autoCreateSchool(state.detectedSchool.name, legacyDocId);
-      upsertLearnedSchool({
-        name: state.detectedSchool.name,
-        faculty: '',
-        rules: RULE_COUNT,
-        id: result.schoolId,
-        baseStandardVersion: baseStandard,
-      });
-      setSchoolOptions(getSchoolOptions());
-      setExtraSchools(prev => prev.filter(s => s.id !== result.schoolId));
+      await refreshProfiles();
       set({ schoolId: result.schoolId, detectedSchool: null });
       showToast(`已添加学校 · ${state.detectedSchool.name}`);
     } catch (err: any) {
@@ -261,14 +324,23 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
 
       <ProfileSelectionPanel
         query={q}
+        ruleStatusFilter={ruleStatusFilter}
+        ruleStatusCounts={ruleStatusCounts}
         baseStandard={baseStandard}
         filtered={filtered}
-        allOptionsCount={allOptions.length}
-        uploadCountMap={uploadCountMap}
+        allOptionsCount={profileOptions.length}
+        hiddenPendingCount={hiddenPendingCount}
         detecting={state.detecting}
         detectedSchool={state.detectedSchool}
         selectedSchoolId={state.schoolId}
         onQueryChange={setQ}
+        onRuleStatusFilterChange={(value) => {
+          setRuleStatusFilter(value);
+          if (value !== 'all') {
+            setPendingProfilesExpanded(false);
+          }
+        }}
+        onRevealPendingProfiles={() => setPendingProfilesExpanded(true)}
         onBaseStandardChange={setBaseStandard}
         onSelectSchool={(school) => {
           set({ schoolId: school.id, draftSchool: null });
@@ -325,16 +397,16 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
               页面、字号、标题、页码、参考文献这些关键细节，都会从这里开始定准
             </div>
             <div style={{ width: '100%', borderTop: '1px solid var(--hair)', margin: '8px 0', paddingTop: 16 }}>
-              <div style={{ fontSize: 12, color: 'var(--ink-500)', marginBottom: 10 }}>如果你现在只想先看结构，也可以：</div>
-              <Btn kind="ghost" icon="eye" onClick={() => { set({ step: 3, parsePct: 0, parsePhase: 0, parseDone: false }); showToast('浏览模式 · 仅查看文档结构，不修改格式'); }}
-                style={{ border: '1px solid var(--paper-3)', opacity: 0.8 }}>
-                先进入浏览模式
-              </Btn>
+              <div style={{ fontSize: 12, color: 'var(--ink-500)', lineHeight: 1.6, maxWidth: 320 }}>
+                选定学校 / 学院规范后，下一步会直接进入发现项体检，不再回到旧的浏览模式分支。
+              </div>
             </div>
           </div>
         ) : (
           <SelectedProfileSummary
             profile={selected}
+            profileDetail={selectedProfileDetail}
+            loading={profileDetailLoading}
             effectiveFromLabel={fmtDate(selected.effectiveFrom)}
             onShowRules={() => setShowRules(true)}
             onStartParse={startParse}
@@ -342,7 +414,7 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
         )}
       </div>
 
-      {showRules && <RulesModal onClose={() => setShowRules(false)} school={selected} />}
+      {showRules && <RulesModal onClose={() => setShowRules(false)} school={selected} profileDetail={selectedProfileDetail} />}
     </div>
   );
 };

@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "sampleName": "p2-floating-image-watermark",
+    "school": "CAFA",
+    "ruleVersion": "2025",
+    "baselineStandard": "GB/T 7713.1-2025",
+    "baselineStatus": "human-curated-v0.1",
+    "sourceDocx": "p2-floating-image-watermark.docx"
+  },
+  "expectedStats": {
+    "headings": 71,
+    "paragraphs": 232,
+    "figures": 7,
+    "tables": 7,
+    "continuationTables": 0,
+    "references": 204,
+    "headersFooters": 6,
+    "warnings": 13
+  },
+  "qualityGate": {
+    "enforceExactStats": true,
+    "requiredWarningCodes": ["LOW_CONFIDENCE_RECOGNITION", "CAPTION_UNBOUND"]
+  },
+  "expectedHeadings": [
+    { "text": "ABSTRACT", "level": 1 }
+  ],
+  "expectedParagraphs": [
+    { "minimumCount": 230 }
+  ],
+  "expectedFigures": [
+    { "imageType": "floating", "minimumCount": 1 },
+    { "minimumCount": 7 }
+  ],
+  "expectedTables": [
+    { "minimumCount": 7 }
+  ],
+  "expectedContinuationTables": [],
+  "expectedReferences": [
+    { "minimumCount": 200 }
+  ],
+  "expectedHeadersFooters": [
+    { "minimumCount": 6 }
+  ],
+  "expectedWarnings": [
+    { "warningCode": "LOW_CONFIDENCE_RECOGNITION" },
+    { "warningCode": "CAPTION_UNBOUND" }
+  ]
+}
+

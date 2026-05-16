@@ -1,0 +1,29 @@
+/* Fix runtime current task action button styles */
+.fix-runtime-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.fix-runtime-card-actions button {
+  flex: 1 1 auto;
+  min-height: 28px;
+  border-radius: 7px;
+  border: 1px solid rgba(21,23,27,.1);
+  background: rgba(255,255,255,.78);
+  color: var(--ink-700);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.fix-runtime-card-actions button:hover {
+  border-color: rgba(42,77,58,.38);
+  background: rgba(232,240,235,.78);
+  color: var(--brand-700);
+}
+
+.fix-runtime-card-actions button:active {
+  transform: scale(.98);
+}

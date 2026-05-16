@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { useApp, findSchoolById } from '../components/AppFrame';
 import { FixTimeline } from '../components/FixTimeline';
-import { FixPaywallCard } from '../components/FixPaywallCard';
-import { PAYWALL_PRICE } from './step4-fix/constants';
+// import { FixPaywallCard } from '../components/FixPaywallCard';
+// import { PAYWALL_PRICE } from './step4-fix/constants';
 import { useFixFlowController } from './step4-fix/useFixFlowController';
 
 interface Props {
@@ -37,6 +37,7 @@ const Step4Fix: React.FC<Props> = ({ showToast }) => {
         onViewDiff={() => set({ step: 5 })}
         onStartFix={controller.onStartFix}
       />
+      {/* [暂隐藏] 9.9 付费继续真实修复弹窗
       {controller.showPaywall && (
         <div
           style={{
@@ -59,6 +60,7 @@ const Step4Fix: React.FC<Props> = ({ showToast }) => {
           />
         </div>
       )}
+      */}
     </div>
   );
 };

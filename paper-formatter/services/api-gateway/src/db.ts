@@ -95,6 +95,81 @@ export async function ensureSchema(): Promise<void> {
     );
     CREATE UNIQUE INDEX IF NOT EXISTS idx_doc_profiles_unique ON document_profiles(doc_id, school_id);
 
+    CREATE TABLE IF NOT EXISTS school_rule_sets (
+      rule_set_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      school_id       VARCHAR(100) NOT NULL,
+      school_name     VARCHAR(200) NOT NULL,
+      version         VARCHAR(40)  NOT NULL,
+      effective_from  DATE         NOT NULL,
+      effective_to    DATE,
+      source_type     VARCHAR(32)  NOT NULL DEFAULT 'seed',
+      source_hash     VARCHAR(64),
+      rules_cache     JSONB        NOT NULL DEFAULT '[]',
+      style_cache     JSONB        NOT NULL DEFAULT '[]',
+      created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      UNIQUE (school_id, version)
+    );
+
+    CREATE TABLE IF NOT EXISTS school_rules (
+      rule_pk              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      rule_set_id          UUID NOT NULL REFERENCES school_rule_sets(rule_set_id) ON DELETE CASCADE,
+      school_id            VARCHAR(100) NOT NULL,
+      rule_id              VARCHAR(160) NOT NULL,
+      rule_name            VARCHAR(240) NOT NULL,
+      rule_source          VARCHAR(32) NOT NULL DEFAULT 'school',
+      rule_level           VARCHAR(32) NOT NULL DEFAULT 'school',
+      rule_type            VARCHAR(32) NOT NULL DEFAULT 'format',
+      cache_kind           VARCHAR(20) NOT NULL DEFAULT 'rule',
+      category             VARCHAR(120) NOT NULL,
+      category_code        VARCHAR(20),
+      thesis_subset        VARCHAR(80) NOT NULL,
+      target_object        VARCHAR(120) NOT NULL,
+      ui_section           VARCHAR(80) NOT NULL,
+      condition_json       JSONB NOT NULL DEFAULT '{}',
+      expected_format_json JSONB NOT NULL DEFAULT '{}',
+      priority             INTEGER NOT NULL DEFAULT 0,
+      conflict_policy      VARCHAR(80) NOT NULL DEFAULT 'warn_on_conflict',
+      warning_code         VARCHAR(120),
+      fixable              BOOLEAN NOT NULL DEFAULT TRUE,
+      auto_fix_strategy    VARCHAR(120) NOT NULL DEFAULT 'profile_default',
+      evidence_json        JSONB NOT NULL DEFAULT '{}',
+      raw_rule_json        JSONB NOT NULL DEFAULT '{}',
+      created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (rule_set_id, rule_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS rule_snapshots (
+      snapshot_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      document_id      VARCHAR(100),
+      job_id           VARCHAR(50) REFERENCES jobs(job_id),
+      finding_id       VARCHAR(100),
+      school_id        VARCHAR(100) NOT NULL,
+      rule_set_id      UUID REFERENCES school_rule_sets(rule_set_id),
+      rule_id          VARCHAR(160) NOT NULL,
+      rule_payload     JSONB NOT NULL,
+      snapshot_context VARCHAR(60) NOT NULL DEFAULT 'analyze',
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    ALTER TABLE school_rules ADD COLUMN IF NOT EXISTS cache_kind VARCHAR(20) NOT NULL DEFAULT 'rule';
+
+    CREATE INDEX IF NOT EXISTS idx_school_rule_sets_school ON school_rule_sets(school_id);
+    CREATE INDEX IF NOT EXISTS idx_school_rule_sets_effective ON school_rule_sets(school_id, effective_from DESC);
+    CREATE INDEX IF NOT EXISTS idx_school_rule_sets_source ON school_rule_sets(source_type);
+    CREATE INDEX IF NOT EXISTS idx_school_rules_school_rule ON school_rules(school_id, rule_id);
+    CREATE INDEX IF NOT EXISTS idx_school_rules_rule_set ON school_rules(rule_set_id);
+    CREATE INDEX IF NOT EXISTS idx_school_rules_subset ON school_rules(thesis_subset);
+    CREATE INDEX IF NOT EXISTS idx_school_rules_target ON school_rules(target_object);
+    CREATE INDEX IF NOT EXISTS idx_school_rules_category ON school_rules(category_code, category);
+    CREATE INDEX IF NOT EXISTS idx_school_rules_source_level ON school_rules(rule_source, rule_level);
+    CREATE INDEX IF NOT EXISTS idx_school_rules_cache_kind ON school_rules(rule_set_id, cache_kind);
+    CREATE INDEX IF NOT EXISTS idx_rule_snapshots_document ON rule_snapshots(document_id);
+    CREATE INDEX IF NOT EXISTS idx_rule_snapshots_job ON rule_snapshots(job_id);
+    CREATE INDEX IF NOT EXISTS idx_rule_snapshots_finding ON rule_snapshots(finding_id);
+    CREATE INDEX IF NOT EXISTS idx_rule_snapshots_rule ON rule_snapshots(school_id, rule_id);
+
     CREATE TABLE IF NOT EXISTS findings (
       finding_id      VARCHAR(100) PRIMARY KEY,
       job_id          VARCHAR(50) REFERENCES jobs(job_id),

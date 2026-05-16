@@ -19,6 +19,7 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
   onSpeedChange,
   onJumpToComplete,
   onViewDiff,
+  onStartFix,
 }) => {
   const playback = useFixRuntimePlayback({
     runtimeStore,
@@ -36,6 +37,7 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
     <section className={`fix-runtime-shell speed-${playback.visualRuntimeStore.speed}`}>
       <FixRuntimeTopbar
         runtimeStore={playback.visualRuntimeStore}
+        findingStatusSummary={playback.findingStatusSummary}
         documentTitle={documentTitle}
         displayedPageNumber={playback.displayedPageNumber}
         displayedChapter={playback.displayedChapter}
@@ -43,6 +45,7 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
         onPauseToggle={onPauseToggle}
         onSpeedChange={onSpeedChange}
         onJumpToComplete={onJumpToComplete}
+        onStartFix={onStartFix}
       />
 
       <div className="fix-runtime-stage">
@@ -51,6 +54,7 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
           leftRules={playback.leftRules}
           hiddenRuleCount={playback.hiddenRuleCount}
           ruleFlashId={playback.ruleFlashId}
+          activeThesisSubset={playback.activeThesisSubset}
         />
 
         <FixRuntimePaperStage
@@ -77,8 +81,7 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
 
         <FixRuntimeActionFeed
           runtimeStore={playback.visualRuntimeStore}
-          appliedCount={playback.appliedCount}
-          fixActionsLength={fixActions.length}
+          findingStatusSummary={playback.findingStatusSummary}
           timelineRows={playback.timelineRows}
           viewDiffEnabled={playback.viewDiffEnabled}
           diffPulse={playback.diffPulse}

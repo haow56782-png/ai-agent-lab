@@ -43,7 +43,7 @@ test.describe('Step1 upload entry', () => {
     await installFileInputClickCounter(page);
     await page.goto('/');
 
-    await page.getByRole('button', { name: '上传论文' }).click();
+    await page.getByRole('button', { name: '上传 Word 论文' }).click();
     await expect.poll(() => getFileInputClickCount(page)).toBe(1);
 
     await resetFileInputClickCount(page);
@@ -64,5 +64,40 @@ test.describe('Step1 upload entry', () => {
 
     await expect(page.getByText('已收录学校规范')).toBeVisible();
     await expect.poll(() => getFileInputClickCount(page)).toBe(0);
+  });
+
+  test('switches upload copy and file input accept between Word repair and PDF detection', async ({ page }) => {
+    await page.goto('/');
+
+    const fileInput = page.locator('input[type="file"]');
+    await expect(page.getByText('拖入 Word 论文，或点击选择文件')).toBeVisible();
+    await expect(page.getByRole('button', { name: '上传 Word 论文' })).toBeVisible();
+    await expect(fileInput).toHaveAttribute('accept', '.docx');
+
+    await page.getByRole('tab', { name: /PDF 格式检测/ }).click();
+
+    await expect(page.getByText('拖入 PDF 论文，或点击选择文件')).toBeVisible();
+    await expect(page.getByRole('button', { name: '上传 PDF 检测' })).toBeVisible();
+    await expect(fileInput).toHaveAttribute('accept', '.pdf');
+  });
+
+  test('shows explicit mismatch errors for the selected upload mode', async ({ page }) => {
+    await page.goto('/');
+
+    const fileInput = page.locator('input[type="file"]');
+    await fileInput.setInputFiles({
+      name: 'paper.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4'),
+    });
+    await expect(page.getByText('当前选择的是 Word 排版修复，请上传 .docx 文件')).toBeVisible();
+
+    await page.getByRole('tab', { name: /PDF 格式检测/ }).click();
+    await fileInput.setInputFiles({
+      name: 'paper.docx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      buffer: Buffer.from('docx'),
+    });
+    await expect(page.getByText('当前选择的是 PDF 格式检测，请上传 .pdf 文件')).toBeVisible();
   });
 });

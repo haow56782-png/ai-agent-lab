@@ -58,9 +58,11 @@ function fmtValue(value: unknown, unit?: string): string {
 }
 
 function getRuleText(entry: ProfileRuleEntry): string {
-  if (entry.description?.trim()) return entry.description;
-  if (entry.label) return entry.label;
-  return entry.ruleId || '未命名规则';
+  const description = typeof entry.description === 'string' ? entry.description.trim() : '';
+  if (description) return description;
+  if (typeof entry.label === 'string' && entry.label.trim()) return entry.label;
+  if (typeof entry.ruleId === 'string' && entry.ruleId.trim()) return entry.ruleId;
+  return '未命名规则';
 }
 
 function getRuleValue(entry: ProfileRuleEntry): string | null {
@@ -80,7 +82,6 @@ interface RuleItem {
   text: string;
   value: string | null;
   hasValue: boolean;
-  targetObject?: string;
 }
 
 interface SubsetGroup {
@@ -91,9 +92,25 @@ interface SubsetGroup {
   rules: RuleItem[];
 }
 
+const BA_RE = /^(.+)_(before|after)_([^_]+)$/;
+
+function combineLabels(a: string, b: string): string {
+  let commonLen = 0;
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i] === b[i]) commonLen++;
+    else break;
+  }
+  if (commonLen >= 2) {
+    return a + "/" + b.substring(commonLen);
+  }
+  return a + " / " + b;
+}
+
 function buildSubsetGroups(entries: ProfileRuleEntry[]): SubsetGroup[] {
   const map = new Map<string, SubsetGroup>();
-  for (const entry of entries) {
+  let i = 0;
+  while (i < entries.length) {
+    const entry = entries[i];
     const s = entry.thesisSubset || '__other';
     let group = map.get(s);
     if (!group) {
@@ -106,13 +123,34 @@ function buildSubsetGroups(entries: ProfileRuleEntry[]): SubsetGroup[] {
       };
       map.set(s, group);
     }
+
+    // Merge before/after pairs onto one line (e.g. "一级标题段前" + "一级标题段后")
+    const next = entries[i + 1];
+    const em = entry.ruleId?.match(BA_RE);
+    const nm = next?.ruleId?.match(BA_RE);
+    if (
+      em && nm && em[1] === nm[1] && em[3] === nm[3] &&
+      em[2] === 'before' && nm[2] === 'after' &&
+      entry.thesisSubset === next.thesisSubset &&
+      entry.category === next.category
+    ) {
+      group.rules.push({
+        key: `${entry.ruleId}-${group.rules.length}`,
+        text: combineLabels(getRuleText(entry), getRuleText(next)),
+        value: `${getRuleValue(entry) || fmtValue(entry.value, entry.unit)} / ${getRuleValue(next) || fmtValue(next.value, next.unit)}`,
+        hasValue: true,
+      });
+      i += 2;
+      continue;
+    }
+
     group.rules.push({
       key: `${entry.ruleId || entry.label || 'rule'}-${group.rules.length}`,
       text: getRuleText(entry),
       value: getRuleValue(entry),
       hasValue: entry.value !== undefined || Array.isArray(entry.allowedFonts),
-      targetObject: entry.targetObject || undefined,
     });
+    i++;
   }
   return [...map.values()].sort((a, b) => {
     const ai = SUBSET_FLOW.indexOf(a.thesisSubset);
@@ -271,7 +309,7 @@ const RulesModal: React.FC<RulesModalProps> = ({ onClose, school, profileDetail 
             </strong>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--ink-500)' }}>
-            <span className="mono">{activeSubset.thesisSubset}</span>
+            <span>已纳入校验</span>
             <span>·</span>
             <span>{activeSubset.rules.length} 条规则</span>
           </div>
@@ -297,13 +335,6 @@ const RulesModal: React.FC<RulesModalProps> = ({ onClose, school, profileDetail 
                   {idx + 1}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {rule.targetObject && (
-                    <div style={{
-                      fontSize: 11, color: 'var(--ink-400)', marginBottom: 2,
-                    }}>
-                      {rule.targetObject}
-                    </div>
-                  )}
                   <div style={{ fontSize: 12.5, color: 'var(--ink-700)', lineHeight: 1.55 }}>
                     {rule.text}
                   </div>

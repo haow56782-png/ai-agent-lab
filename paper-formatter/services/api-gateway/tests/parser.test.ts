@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execSync } from "child_process";
-import { unlinkSync, existsSync, mkdirSync } from "fs";
+import { unlinkSync, existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 import { tmpdir } from "os";
 import { v4 as uuid } from "uuid";
+import { detectCaptionPosition } from "../src/rules/detectors/caption-position.detector.js";
 
 const PARSER_SCRIPT = path.resolve(__dirname, "../../docx-parser/src/parse.py");
 
@@ -127,6 +128,154 @@ doc.save('${docxPath}')
       expect(refSection).toBeTruthy();
     } finally {
       try { unlinkSync(docxPath); } catch { /* ok */ }
+    }
+  });
+
+  it("emits document flow anchors and footer page field signals", () => {
+    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_flow.docx`);
+    const pngPath = path.join(tmpDir, `${uuid().slice(0, 8)}_pixel.png`);
+    writeFileSync(pngPath, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9JwAAAAASUVORK5CYII=", "base64"));
+    execSync(
+      `python3 -c "
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+doc = Document()
+doc.add_paragraph('图1前说明')
+p_img = doc.add_paragraph()
+p_img.add_run().add_picture('${pngPath.replace(/\\/g, "\\\\")}')
+doc.add_paragraph('图1-1 网络结构')
+table = doc.add_table(rows=1, cols=1)
+table.cell(0, 0).text = '表格内容'
+doc.add_paragraph('表1-1 实验参数')
+footer = doc.sections[0].footer.paragraphs[0]
+footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+fld = OxmlElement('w:fldSimple')
+fld.set(qn('w:instr'), ' PAGE \\\\* MERGEFORMAT ')
+r = OxmlElement('w:r')
+t = OxmlElement('w:t')
+t.text = '1'
+r.append(t)
+fld.append(r)
+footer._p.append(fld)
+doc.save('${docxPath}')
+"`,
+      { timeout: 10_000 }
+    );
+    try {
+      const result = runParser(docxPath);
+      expect(Array.isArray(result.flow)).toBe(true);
+      expect(result.flow.some((item: any) => item.kind === "table")).toBe(true);
+      expect(result.paragraphs.some((paragraph: any) => paragraph.contains_image)).toBe(true);
+      expect(result.sections[0].footer_has_page_field).toBe(true);
+      expect(result.sections[0].footer_page_number_format).toBe("arabic");
+      const tableCaption = result.structure.find((item: any) => item.type === "table_caption");
+      expect(typeof tableCaption?.flow_order).toBe("number");
+    } finally {
+      try { unlinkSync(docxPath); } catch { /* ok */ }
+      try { unlinkSync(pngPath); } catch { /* ok */ }
+    }
+  });
+
+  it("feeds parser flow anchors into caption detector for real object ordering", () => {
+    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_caption_flow.docx`);
+    const pngPath = path.join(tmpDir, `${uuid().slice(0, 8)}_pixel.png`);
+    writeFileSync(pngPath, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9JwAAAAASUVORK5CYII=", "base64"));
+    execSync(
+      `python3 -c "
+from docx import Document
+doc = Document()
+doc.add_paragraph('图1-1 网络结构')
+p_img = doc.add_paragraph()
+p_img.add_run().add_picture('${pngPath.replace(/\\/g, "\\\\")}')
+table = doc.add_table(rows=1, cols=1)
+table.cell(0, 0).text = '表格内容'
+doc.add_paragraph('表1-1 实验参数')
+doc.save('${docxPath}')
+"`,
+      { timeout: 10_000 }
+    );
+    try {
+      const parsed = runParser(docxPath);
+      const detections = detectCaptionPosition({
+        doc: { canonical_document_id: "doc-test" } as any,
+        profileId: "cafa",
+        profile: null,
+        paragraphs: parsed.paragraphs,
+        sections: parsed.sections,
+        images: parsed.images,
+        tables: parsed.tables,
+        headings: parsed.headings,
+        structureItems: parsed.structure,
+        flowItems: parsed.flow,
+      });
+      expect(detections.map((item: any) => item.ruleId)).toEqual([
+        "FIGURE_CAPTION_POSITION_REVIEW",
+        "TABLE_CAPTION_POSITION_REVIEW",
+      ]);
+    } finally {
+      try { unlinkSync(docxPath); } catch { /* ok */ }
+      try { unlinkSync(pngPath); } catch { /* ok */ }
+    }
+  });
+
+  it("feeds real multi-figure and multi-table anchors into caption detector", () => {
+    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_multi_caption_flow.docx`);
+    const pngPath = path.join(tmpDir, `${uuid().slice(0, 8)}_pixel.png`);
+    writeFileSync(pngPath, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9JwAAAAASUVORK5CYII=", "base64"));
+    execSync(
+      `python3 -c "
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+doc = Document()
+doc.add_paragraph('如图2-1所示，模型效果明显提升。')
+p_img_1 = doc.add_paragraph()
+p_img_1.add_run().add_picture('${pngPath.replace(/\\/g, "\\\\")}')
+fig_caption_1 = doc.add_paragraph('图2-1 中国石油财务结构图')
+fig_caption_1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+p_img_2 = doc.add_paragraph()
+p_img_2.add_run().add_picture('${pngPath.replace(/\\/g, "\\\\")}')
+fig_caption_2 = doc.add_paragraph('图2-2 杜邦分析体系')
+fig_caption_2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+table_caption_1 = doc.add_paragraph('表3-1 财务指标汇总')
+table_caption_1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+table_1 = doc.add_table(rows=1, cols=1)
+table_1.cell(0, 0).text = '表格一'
+table_2 = doc.add_table(rows=1, cols=1)
+table_2.cell(0, 0).text = '表格二'
+table_caption_2 = doc.add_paragraph('表3-2 杜邦指标拆解')
+table_caption_2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+doc.save('${docxPath}')
+"`,
+      { timeout: 10_000 }
+    );
+    try {
+      const parsed = runParser(docxPath);
+      const detections = detectCaptionPosition({
+        doc: { canonical_document_id: "doc-test" } as any,
+        profileId: "cafa",
+        profile: null,
+        paragraphs: parsed.paragraphs,
+        sections: parsed.sections,
+        images: parsed.images,
+        tables: parsed.tables,
+        headings: parsed.headings,
+        structureItems: parsed.structure,
+        flowItems: parsed.flow,
+      });
+      expect(detections).toHaveLength(1);
+      expect(detections[0].ruleId).toBe("TABLE_CAPTION_POSITION_REVIEW");
+      expect(detections[0].snippet).toContain("表3-2");
+      expect(detections[0].evidence?.anchor).toMatchObject({
+        relationType: "caption_wrong_position",
+        captionKind: "table",
+      });
+      expect(detections[0].evidence?.anchor?.fromObjectId).toContain("table_caption");
+      expect(detections[0].evidence?.anchor?.toObjectId).toContain("table:");
+    } finally {
+      try { unlinkSync(docxPath); } catch { /* ok */ }
+      try { unlinkSync(pngPath); } catch { /* ok */ }
     }
   });
 });

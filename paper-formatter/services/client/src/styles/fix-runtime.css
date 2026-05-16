@@ -1,0 +1,146 @@
+@import './fix-runtime/header.css';
+@import './fix-runtime/sidebar.css';
+@import './fix-runtime/paper.css';
+@import './fix-runtime/task-panel.css';
+
+/* Fix runtime page domain styles */
+.fix-runtime-panel {
+  min-height: 0;
+}
+
+.fix-runtime-panel-rules,
+.fix-runtime-panel-task {
+  display: flex;
+  flex-direction: column;
+}
+
+.fix-runtime-shell {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: linear-gradient(180deg, rgba(251,250,246,.94), rgba(244,240,230,.92));
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+}
+
+@media (max-width: 1280px) {
+  .fix-runtime-stage {
+    grid-template-columns: 220px minmax(420px, 1fr) 260px;
+  }
+  .fix-runtime-a4,
+  .fix-runtime-printer-head {
+    width: min(680px, calc((100dvh - 188px) * 210 / 297), calc(100vw - 560px));
+  }
+}
+
+@media (max-width: 960px) {
+  .fix-runtime-stage {
+    grid-template-columns: 1fr;
+  }
+  .fix-runtime-note-left {
+    display: none;
+  }
+  .fix-runtime-note-right {
+    display: none;
+  }
+  .fix-runtime-paperframe {
+    min-height: auto;
+    height: auto;
+    padding: 24px 16px;
+  }
+  .fix-runtime-a4,
+  .fix-runtime-printer-head {
+    width: min(100%, 680px);
+  }
+  .fix-runtime-topbar {
+    grid-template-columns: 1fr;
+    height: auto;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+.fix-runtime-paper-header,
+.fix-runtime-paper-footer {
+  position: absolute;
+  left: 44px;
+  right: 44px;
+  font-size: 8pt;
+  line-height: 1;
+  color: #999999;
+  letter-spacing: 0;
+}
+
+.fix-runtime-paper-header {
+  top: 16px;
+  text-align: center;
+}
+
+.fix-runtime-paper-footer {
+  bottom: 16px;
+  text-align: center;
+}
+
+.pen-cursor {
+  position: fixed;
+  z-index: 9999;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transition: transform 90ms ease-out, opacity 160ms ease-out;
+}
+
+.pen-cursor svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+
+.pen-cursor-body {
+  width: 28px;
+  height: 28px;
+}
+
+.pen-cursor-idle .pen-cursor-body {
+  opacity: 1;
+  animation: penIdleFloat 2.4s ease-in-out infinite;
+}
+
+.pen-cursor-no-float.pen-cursor-idle .pen-cursor-body {
+  animation: none;
+}
+
+.pen-cursor-writing .pen-cursor-body {
+  opacity: 1;
+  animation: none;
+}
+
+.pen-cursor-lifting .pen-cursor-body {
+  opacity: .3;
+  animation: none;
+  transform: translateY(-24px);
+}
+
+.fix-runtime-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(21,23,27,.74);
+  color: rgba(255,255,255,.92);
+  font-size: 10px;
+  letter-spacing: .08em;
+  animation: fixHintFade 3s ease forwards;
+  pointer-events: none;
+}
+
+.fix-runtime-shell.speed-4 .fix-paper-insert.is-fresh,
+.fix-runtime-shell.speed-4 .fix-runtime-action-dot.is-live,
+.fix-runtime-shell.speed-4 .fix-runtime-hint {
+  animation: none;
+}

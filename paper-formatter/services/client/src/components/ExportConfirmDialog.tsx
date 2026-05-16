@@ -1,9 +1,11 @@
 import React from 'react';
 import { Btn } from './Common';
+import type { ContentIntegrityView } from '../utils/contentIntegrityView';
 
 interface ExportConfirmDialogProps {
   effectivePassed: number;
   acceptedCount: number;
+  contentIntegrity: ContentIntegrityView;
   ignoredCount: number;
   exportFileName: string;
   exportFileNameEditing: boolean;
@@ -11,13 +13,14 @@ interface ExportConfirmDialogProps {
   onFileNameEditToggle: () => void;
   onCancel: () => void;
   onConfirm: () => void;
+  onDownloadOriginal?: () => void;
 }
 
 export const ExportConfirmDialog: React.FC<ExportConfirmDialogProps> = ({
-  effectivePassed, acceptedCount, ignoredCount,
+  effectivePassed, acceptedCount, contentIntegrity, ignoredCount,
   exportFileName, exportFileNameEditing,
   onFileNameChange, onFileNameEditToggle,
-  onCancel, onConfirm,
+  onCancel, onConfirm, onDownloadOriginal,
 }) => (
   <div style={{
     padding: '28px 40px', background: 'var(--paper-1)',
@@ -47,9 +50,11 @@ export const ExportConfirmDialog: React.FC<ExportConfirmDialogProps> = ({
           <span style={{ width: 20, height: 20, borderRadius: 10, background: 'var(--leaf-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>✅</span>
           人工确认：{acceptedCount + ignoredCount} 项已经由你亲自过目
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--leaf-700)' }}>
-          <span style={{ width: 20, height: 20, borderRadius: 10, background: 'var(--leaf-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, marginTop: 1 }}>✅</span>
-          <span>正文内容：与原稿完全一致（仅调整了格式，未改动任何文字内容）</span>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: contentIntegrity.toneColor }}>
+          <span style={{ width: 20, height: 20, borderRadius: 10, background: contentIntegrity.toneBackground, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, marginTop: 1 }}>
+            {contentIntegrity.icon}
+          </span>
+          <span>正文内容：{contentIntegrity.detail}</span>
         </div>
         {ignoredCount > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--sun-700)' }}>
@@ -79,7 +84,25 @@ export const ExportConfirmDialog: React.FC<ExportConfirmDialogProps> = ({
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+        {onDownloadOriginal && (
+          <button
+            type="button"
+            onClick={onDownloadOriginal}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 12,
+              color: 'var(--ink-400)',
+              textDecoration: 'underline',
+              padding: '4px 8px',
+              marginRight: 'auto',
+            }}
+          >
+            📎 同时下载原稿对照
+          </button>
+        )}
         <Btn kind="ghost" size="sm" onClick={onCancel}>取消</Btn>
         <Btn kind="primary" size="sm" icon="download" onClick={onConfirm}>
           确认并生成交稿稿件

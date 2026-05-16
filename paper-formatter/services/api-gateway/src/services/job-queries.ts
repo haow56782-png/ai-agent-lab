@@ -6,8 +6,9 @@ import * as docRepo from "../repositories/documents.js";
 import * as findingRepo from "../repositories/findings.js";
 import * as storage from "../storage.js";
 import { FIX_FREE_LIMIT } from "./job-orchestrator.js";
-import type { FindingDiffItem, FindingDiffResult, FixStatusResponse, PublicJobRecord, PublicJobResult } from "../../../../packages/shared-types/src/job-contract";
-import { canDownloadByFindings } from "../../../../packages/shared-types/src/finding-download-guard";
+import type { FindingDiffItem, FindingDiffResult, FixStatusResponse, FixType, PublicJobRecord, PublicJobResult } from "../../../../packages/shared-types/src/job-contract";
+import { canDownloadByFindings } from "./finding-download-guard.js";
+import { buildFixProgressMeta, type CompletedFixStep } from "./jobs/fix-progress-model.js";
 
 function requireJob(job: JobRecord | null): JobRecord {
   if (!job) throw createError(404, ERROR_CODES.NOT_FOUND, "Job not found");
@@ -19,6 +20,19 @@ function requireCompletedJob(job: JobRecord): JobRecord {
     throw createError(400, ERROR_CODES.VALIDATION_ERROR, "Job is not yet completed");
   }
   return job;
+}
+
+function requireDiffJob(job: JobRecord): JobRecord {
+  if (job.job_type !== "format" && job.job_type !== "fix") {
+    throw createError(400, ERROR_CODES.VALIDATION_ERROR, "Job does not produce diff output");
+  }
+  return job;
+}
+
+function getFixTypesFromResult(result: Record<string, any>, completedSteps: CompletedFixStep[]): FixType[] {
+  if (Array.isArray(result.fixTypes)) return result.fixTypes;
+  if (Array.isArray(result.selectedFixes)) return result.selectedFixes;
+  return completedSteps.map((step) => step.type);
 }
 
 export async function getPublicJob(jobId: string): Promise<PublicJobRecord> {
@@ -68,24 +82,46 @@ export async function getPublicFixStatus(jobId: string): Promise<FixStatusRespon
     : job.status === "failed"
     ? "failed"
     : "running";
+  const completedSteps = Array.isArray(result.completedSteps) ? result.completedSteps : [];
+  const artifacts = Array.isArray(result.artifacts) ? result.artifacts : [];
+  const findingTotal = typeof result.findingTotal === "number"
+    ? result.findingTotal
+    : typeof result.result?.totalFindings === "number"
+    ? result.result.totalFindings
+    : undefined;
+  const progressMeta = typeof findingTotal === "number"
+    ? buildFixProgressMeta({
+        artifacts,
+        completedSteps,
+        findingTotal,
+        fixTypes: getFixTypesFromResult(result, completedSteps),
+      })
+    : null;
 
   return {
     status: publicStatus,
-    completedSteps: result.completedSteps || [],
+    completedSteps,
     currentStep: result.currentStep,
     progress: job.progress,
     stage: job.stage,
     message: result.message || job.error_message || undefined,
     errorMessage: job.error_message || undefined,
     events: Array.isArray(result.events) ? result.events : [],
-    artifacts: Array.isArray(result.artifacts) ? result.artifacts : [],
+    artifacts,
     freeFixLimit: FIX_FREE_LIMIT,
+    findingTotal,
+    autoFixableFindingTotal: progressMeta?.autoFixableFindingTotal,
+    fixedFindingTotal: progressMeta?.fixedFindingTotal,
+    needsReviewFindingTotal: progressMeta?.needsReviewFindingTotal,
+    notAutoFixedFindingTotal: progressMeta?.notAutoFixedFindingTotal,
+    actionTotal: progressMeta?.actionTotal ?? (typeof result.actionTotal === "number" ? result.actionTotal : undefined),
+    completedActionTotal: progressMeta?.completedActionTotal ?? (typeof result.completedActionTotal === "number" ? result.completedActionTotal : undefined),
     ...(job.status === "completed" ? { result: result.result } : {}),
   };
 }
 
 export async function getPublicDiff(jobId: string) {
-  const job = requireCompletedJob(requireJob(await jobRepo.getJob(jobId)));
+  const job = requireDiffJob(requireCompletedJob(requireJob(await jobRepo.getJob(jobId))));
   const result = (job.result_json || {}) as Record<string, any>;
 
   if (result.diffPath) {
@@ -137,6 +173,7 @@ function normalizeFindingDiffResult(raw: any): FindingDiffResult {
   return {
     diffs,
     findingDiffs,
+    integrity: raw?.integrity,
     summary: raw?.summary || {
       pages: Math.max(1, ...diffs.map((diff) => diff.page)),
       changeCount: diffs.length,
@@ -195,6 +232,23 @@ export async function writeJobDownload(jobId: string, type: string | undefined, 
       warnings: [],
       errors: [],
     });
+    return;
+  }
+
+  if (type === "original") {
+    const doc = await docRepo.getDocument(job.doc_id);
+    if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, "Original document not found");
+
+    const storagePath = storage.getStoragePath("uploads", doc.doc_id, doc.filename);
+    const originalBuffer = await storage.downloadFile("uploads", storagePath);
+    const ext = doc.filename.split(".").pop()?.toLowerCase() || "docx";
+    const contentTypes: Record<string, string> = {
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      pdf: "application/pdf",
+    };
+    res.setHeader("Content-Type", contentTypes[ext] || "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${doc.filename}"`);
+    res.send(originalBuffer);
     return;
   }
 

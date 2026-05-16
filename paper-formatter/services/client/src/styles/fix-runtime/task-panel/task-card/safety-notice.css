@@ -1,0 +1,21 @@
+/* Fix runtime safety notice styles */
+.fix-runtime-safety-notice {
+  display: grid;
+  gap: 5px;
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(42,77,58,.14);
+  background: linear-gradient(135deg, rgba(232,240,235,.78), rgba(255,255,255,.74));
+}
+
+.fix-runtime-safety-notice strong {
+  color: var(--brand-700);
+  font-size: 12px;
+}
+
+.fix-runtime-safety-notice span {
+  color: var(--ink-600);
+  font-size: 11.5px;
+  line-height: 1.55;
+}

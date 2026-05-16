@@ -77,7 +77,7 @@ def format_document():
         formatter = DocxFormatter(str(input_path), rules, finding_context=finding_context)
         formatter.format()
         formatter.save(str(output_path))
-        diff = formatter.get_diff()
+        diff = formatter.get_diff(str(output_path))
 
         # Save diff for multipart response
         with open(str(diff_path), "w", encoding="utf-8") as f:
@@ -166,7 +166,7 @@ def format_document_simple():
         formatter = DocxFormatter(str(input_path), rules, finding_context=finding_context)
         formatter.format()
         formatter.save(str(output_path))
-        diff = formatter.get_diff()
+        diff = formatter.get_diff(str(output_path))
 
         return send_file(
             str(output_path),

@@ -1,4 +1,4 @@
-import React, { useReducer, useCallback, useState, useMemo, useRef } from 'react';
+import React, { useReducer, useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { AppCtx, initialState } from './components/AppFrame';
 import type { AppState } from './components/AppFrame';
 import { Sidebar } from './components/Sidebar';
@@ -11,6 +11,7 @@ import Step4Fix from './screens/Step4Fix';
 import Step4Diff from './screens/Step4Diff';
 import Step5Output from './screens/Step5Output';
 import { loadBootstrappedAppState } from './test-support/bootstrapAppState';
+import { reviewActions } from './stores/reviewStore';
 
 function reducer(s: AppState, patch: Partial<AppState> | { __reset: true }): AppState {
   if ('__reset' in patch) return { ...initialState };
@@ -38,6 +39,14 @@ const App: React.FC = () => {
     prevStepRef.current = state.step;
   }
 
+  useEffect(() => {
+    window.requestAnimationFrame(() => {
+      document.querySelectorAll<HTMLElement>('[data-step-scroll-root]').forEach((node) => {
+        node.scrollTo({ top: 0, behavior: 'auto' });
+      });
+    });
+  }, [state.step]);
+
   const stepAnim = stepDirRef.current === 'fwd'
     ? 'protoFade .28s var(--ease-emphasized-out), protoSlideIn .32s var(--ease-emphasized)'
     : 'protoFade .28s var(--ease-emphasized-out), protoSlideOut .32s var(--ease-emphasized)';
@@ -56,7 +65,10 @@ const App: React.FC = () => {
           <TopBar
             state={state}
             onStep={(s) => set({ step: s })}
-            onReset={() => dispatch({ __reset: true } as any)}
+            onReset={() => {
+              reviewActions.reset();
+              dispatch({ __reset: true } as any);
+            }}
           />
           <div key={state.step} style={{
             flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, position: 'relative',

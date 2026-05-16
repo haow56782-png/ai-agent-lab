@@ -68,6 +68,10 @@ export function pageParagraphs(texts: string[], page: number): string[] {
 
 export function getRuleDesc(label: string): { current: string; target: string } {
   const ruleDescriptions: Record<string, { current: string; target: string }> = {
+    '图片/印章覆盖正文': {
+      current: '页面中的图片、印章或浮动对象压住了正文文字，影响阅读和版式判断',
+      target: '调整图片环绕方式、图层顺序或锚点位置，确保对象保留但不遮挡正文',
+    },
     '脚注样式不在白名单': { current: '脚注使用了不在学校白名单内的样式', target: '脚注统一切回学校允许的白名单样式' },
     '表 3-1 跨页保持完整': { current: '表格跨页时出现断裂，阅读体验不连贯', target: '跨页时保持表格结构完整，不在中间拆断' },
     '[12] 缺 DOI': { current: '参考文献 [12] 缺少 DOI 字段', target: '补全 DOI，便于学校和数据库准确识别' },

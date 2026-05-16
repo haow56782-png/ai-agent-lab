@@ -4,6 +4,95 @@ import { APP_STATE_BOOTSTRAP_KEY } from '../../src/test-support/bootstrapAppStat
 export const step5StorageKey = 'paper-formatter:step4diff:demo';
 
 const baseParseResults = {
+  findings: [
+    {
+      finding_id: '672fca73-37ac-4276-872f-ca73672fca73',
+      document_id: '11111111-1111-4111-8111-111111111111',
+      document_version: 1,
+      rule_id: 'HEADING_HIERARCHY_REVIEW',
+      rule_group: '标题层级',
+      rule_snapshot: {
+        rule_text: '章节标题编号格式修正',
+        rule_version: 'vAuto',
+        rule_description: '学校要求章节标题层级和编号保持一致。',
+      },
+      severity: 'P1',
+      confidence: 0.88,
+      evidence_spans: [{ page: 3, char_start: 0, char_end: 24, snippet: '第一章 绪论' }],
+      evidence_snapshot: '第一章 绪论',
+      suggestion: {
+        type: 'replace',
+        fix_diff: {
+          before: '第一章 绪论',
+          after: '1 绪论',
+          spans_affected: [{ page: 3, char_start: 0, char_end: 24, snippet: '第一章 绪论' }],
+        },
+        explanation: '将章节标题编号调整为学校模板要求的层级格式。',
+      },
+      status: 'pending',
+      created_at: '2026-05-12T00:00:00.000Z',
+      updated_at: '2026-05-12T00:00:00.000Z',
+      audit_trail: [],
+    },
+    {
+      finding_id: '86255e9e-e9e5-4268-8625-5e9e86255e9e',
+      document_id: '11111111-1111-4111-8111-111111111111',
+      document_version: 1,
+      rule_id: 'FOOTNOTE_STYLE_REVIEW',
+      rule_group: '脚注',
+      rule_snapshot: {
+        rule_text: '脚注格式不在白名单',
+        rule_version: 'vAuto',
+        rule_description: '脚注字号和样式需要回到学校模板允许范围。',
+      },
+      severity: 'P2',
+      confidence: 0.82,
+      evidence_spans: [{ page: 5, char_start: 0, char_end: 18, snippet: '脚注格式不在白名单' }],
+      evidence_snapshot: '脚注格式不在白名单',
+      suggestion: {
+        type: 'replace',
+        fix_diff: {
+          before: '脚注格式不在白名单',
+          after: '脚注切回学校模板允许的样式组合',
+          spans_affected: [{ page: 5, char_start: 0, char_end: 18, snippet: '脚注格式不在白名单' }],
+        },
+        explanation: '脚注切回学校模板允许的样式组合。',
+      },
+      status: 'pending',
+      created_at: '2026-05-12T00:00:00.000Z',
+      updated_at: '2026-05-12T00:00:00.000Z',
+      audit_trail: [],
+    },
+    {
+      finding_id: '09e836f4-4f63-4e90-89e8-36f409e836f4',
+      document_id: '11111111-1111-4111-8111-111111111111',
+      document_version: 1,
+      rule_id: 'RULE-L2-REFERENCE_DOI',
+      rule_group: '参考文献',
+      rule_snapshot: {
+        rule_text: '缺 DOI',
+        rule_version: 'vAuto',
+        rule_description: '参考文献著录需要补齐 DOI。',
+      },
+      severity: 'P2',
+      confidence: 0.84,
+      evidence_spans: [{ page: 7, char_start: 0, char_end: 16, snippet: '参考文献缺少 DOI 信息' }],
+      evidence_snapshot: '参考文献缺少 DOI 信息',
+      suggestion: {
+        type: 'replace',
+        fix_diff: {
+          before: '参考文献缺少 DOI 信息',
+          after: '补齐 DOI，符合学校与国标要求',
+          spans_affected: [{ page: 7, char_start: 0, char_end: 16, snippet: '参考文献缺少 DOI 信息' }],
+        },
+        explanation: '补齐 DOI，符合学校与国标要求。',
+      },
+      status: 'pending',
+      created_at: '2026-05-12T00:00:00.000Z',
+      updated_at: '2026-05-12T00:00:00.000Z',
+      audit_trail: [],
+    },
+  ],
   items: [
     { k: '封面', conf: 0.99 },
     { k: '摘要', conf: 0.98 },
@@ -35,7 +124,7 @@ const baseParseResults = {
   rawHeadings: ['摘要', '第一章 绪论', '第二章 研究方法', '结论'],
 };
 
-export function seedAppStatePatch(step: 3 | 4 | 5) {
+export function seedAppStatePatch(step: 3 | 4 | 5 | 6) {
   return {
     step,
     doc: {
@@ -48,7 +137,9 @@ export function seedAppStatePatch(step: 3 | 4 | 5) {
       legacyDocId: 'demo-doc',
       canonicalDocumentId: '11111111-1111-4111-8111-111111111111',
     },
-    jobId: 'demo',
+    analyzeJobId: 'demo',
+    formatJobId: 'demo',
+    fixJobId: 'demo',
     jobStatus: 'completed',
     uploadPct: 100,
     uploadStage: 'done',

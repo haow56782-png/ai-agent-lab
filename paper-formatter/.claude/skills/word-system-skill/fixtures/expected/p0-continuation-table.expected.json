@@ -1,0 +1,50 @@
+{
+  "metadata": {
+    "sampleName": "p0-continuation-table",
+    "school": "CAFA",
+    "ruleVersion": "2025",
+    "baselineStandard": "GB/T 7713.1-2025",
+    "baselineStatus": "human-curated-v0.1",
+    "sourceDocx": "p0-continuation-table.docx"
+  },
+  "expectedStats": {
+    "headings": 43,
+    "paragraphs": 183,
+    "figures": 47,
+    "tables": 3,
+    "continuationTables": 1,
+    "references": 105,
+    "headersFooters": 3,
+    "warnings": 84
+  },
+  "qualityGate": {
+    "enforceExactStats": true,
+    "requiredWarningCodes": ["LOW_CONFIDENCE_RECOGNITION", "CAPTION_UNBOUND"]
+  },
+  "expectedHeadings": [
+    { "text": "绪论", "level": 1 }
+  ],
+  "expectedParagraphs": [
+    { "minimumCount": 180 }
+  ],
+  "expectedFigures": [
+    { "minimumCount": 40 }
+  ],
+  "expectedTables": [
+    { "minimumCount": 3 }
+  ],
+  "expectedContinuationTables": [
+    { "minimumCount": 1, "decision": "auto_or_suspected_continuation" }
+  ],
+  "expectedReferences": [
+    { "minimumCount": 100 }
+  ],
+  "expectedHeadersFooters": [
+    { "minimumCount": 3 }
+  ],
+  "expectedWarnings": [
+    { "warningCode": "LOW_CONFIDENCE_RECOGNITION" },
+    { "warningCode": "CAPTION_UNBOUND" }
+  ]
+}
+

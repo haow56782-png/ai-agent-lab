@@ -142,6 +142,7 @@ export interface FixJobArtifact {
 export interface FixResult {
   fixedFileId: string;
   totalFixed: number;
+  totalFindings?: number;
   newScore: number;
   contentHash: string;
   originalHash: string;
@@ -162,9 +163,40 @@ export interface FindingDiffItem {
   rule_group?: string;
 }
 
+export interface ContentIntegrityMismatch {
+  blockIndex: number;
+  original?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
+}
+
+export interface ContentIntegrityResult {
+  match: boolean;
+  originalBlockCount: number;
+  outputBlockCount: number;
+  originalContentHash: string;
+  outputContentHash: string;
+  mismatchCount: number;
+  mismatches: ContentIntegrityMismatch[];
+  method?: string;
+  note?: string;
+}
+
+export interface PackageIntegrityResult {
+  match: boolean;
+  originalHash: string;
+  outputHash: string;
+  note?: string;
+}
+
+export interface FormatterIntegrityResult {
+  contentLevel?: ContentIntegrityResult;
+  packageLevel?: PackageIntegrityResult;
+}
+
 export interface FindingDiffResult {
   diffs: FindingDiffItem[];
   findingDiffs: FindingDiffItem[];
+  integrity?: FormatterIntegrityResult;
   summary: {
     pages: number;
     changeCount: number;
@@ -184,6 +216,13 @@ export interface FixStatusResponse {
   events?: FixJobEvent[];
   artifacts?: FixJobArtifact[];
   freeFixLimit?: number;
+  findingTotal?: number;
+  autoFixableFindingTotal?: number;
+  fixedFindingTotal?: number;
+  needsReviewFindingTotal?: number;
+  notAutoFixedFindingTotal?: number;
+  actionTotal?: number;
+  completedActionTotal?: number;
   result?: FixResult;
 }
 

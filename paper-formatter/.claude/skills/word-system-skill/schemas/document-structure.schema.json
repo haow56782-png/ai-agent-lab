@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WordSystemDocumentStructure",
+  "type": "object",
+  "required": ["metadata", "headings", "paragraphs", "figures", "tables", "references", "headersFooters", "warnings"],
+  "properties": {
+    "metadata": { "type": "object" },
+    "headings": { "type": "array" },
+    "paragraphs": { "type": "array" },
+    "figures": { "type": "array" },
+    "tables": { "type": "array" },
+    "references": { "type": "array" },
+    "headersFooters": { "type": "array" },
+    "warnings": { "type": "array" }
+  }
+}
+

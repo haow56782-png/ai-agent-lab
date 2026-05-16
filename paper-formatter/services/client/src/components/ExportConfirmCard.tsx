@@ -1,4 +1,5 @@
 import React from 'react';
+import type { ContentIntegrityView } from '../utils/contentIntegrityView';
 
 const SUBMISSION_CHECKLIST = [
   '确认页已经逐项过目，标题层级、页码和目录符合预期',
@@ -13,6 +14,7 @@ interface ExportConfirmCardProps {
   withChangelog: boolean;
   withReport: boolean;
   canDownloadRealOutput: boolean;
+  contentIntegrity: ContentIntegrityView;
   downloadError: string | null;
   onFileNameChange: (name: string) => void;
   onEditingNameChange: (editing: boolean) => void;
@@ -26,7 +28,7 @@ interface ExportConfirmCardProps {
 
 export const ExportConfirmCard: React.FC<ExportConfirmCardProps> = ({
   fileName, editingName, withOriginal, withChangelog, withReport,
-  canDownloadRealOutput, downloadError,
+  canDownloadRealOutput, contentIntegrity, downloadError,
   onFileNameChange, onEditingNameChange,
   onWithOriginalChange, onWithChangelogChange, onWithReportChange,
   onExportAll, onShare, onPrintPreview,
@@ -61,8 +63,9 @@ export const ExportConfirmCard: React.FC<ExportConfirmCardProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
         <span style={{ color: 'var(--leaf-600)' }}>✓</span> 查重预处理：3 项已优化
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
-        <span style={{ color: 'var(--leaf-600)' }}>✓</span> 正文内容：与原稿完全一致
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '3px 0', color: contentIntegrity.toneColor }}>
+        <span>{contentIntegrity.icon}</span>
+        <span>正文内容：{contentIntegrity.detail}</span>
       </div>
     </div>
 

@@ -1,0 +1,14 @@
+/* Fix runtime current task rule footer styles */
+.fix-runtime-action-rule {
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: var(--rust-700);
+  line-height: 1.45;
+}
+
+.fix-runtime-progress-explain {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-500);
+}

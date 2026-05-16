@@ -1,0 +1,38 @@
+/* Fix runtime current task evidence styles */
+.fix-runtime-progress-explain {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-500);
+}
+
+.fix-runtime-action-safe {
+  margin-top: 8px;
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: rgba(42,77,58,.07);
+  color: var(--brand-700);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.fix-runtime-evidence-box {
+  display: grid;
+  gap: 5px;
+  margin-top: 9px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(42,77,58,.16);
+  background: rgba(255,255,255,.78);
+}
+
+.fix-runtime-evidence-box strong {
+  font-size: 11px;
+  color: var(--brand-700);
+}
+
+.fix-runtime-evidence-box span {
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--ink-600);
+}

@@ -1,0 +1,50 @@
+{
+  "metadata": {
+    "sampleName": "p0-basic-thesis",
+    "school": "CAFA",
+    "ruleVersion": "2025",
+    "baselineStandard": "GB/T 7713.1-2025",
+    "baselineStatus": "human-curated-v0.1",
+    "sourceDocx": "p0-basic-thesis.docx"
+  },
+  "expectedStats": {
+    "headings": 37,
+    "paragraphs": 103,
+    "figures": 3,
+    "tables": 4,
+    "continuationTables": 0,
+    "references": 0,
+    "headersFooters": 6,
+    "warnings": 20
+  },
+  "qualityGate": {
+    "enforceExactStats": true,
+    "requiredWarningCodes": ["LOW_CONFIDENCE_RECOGNITION", "CAPTION_UNBOUND", "CONTINUATION_AMBIGUOUS"]
+  },
+  "expectedHeadings": [
+    { "text": "第一章 标题（三号黑体）", "level": 1 },
+    { "text": "第二章 标题（三号黑体）", "level": 1 },
+    { "text": "第三章 标题（三号黑体）", "level": 1 }
+  ],
+  "expectedParagraphs": [
+    { "styleName": "正文", "minimumCount": 100 }
+  ],
+  "expectedFigures": [
+    { "imageType": "inline", "minimumCount": 1 },
+    { "imageType": "floating", "minimumCount": 1 }
+  ],
+  "expectedTables": [
+    { "minimumCount": 4 }
+  ],
+  "expectedContinuationTables": [],
+  "expectedReferences": [],
+  "expectedHeadersFooters": [
+    { "minimumCount": 6 }
+  ],
+  "expectedWarnings": [
+    { "warningCode": "LOW_CONFIDENCE_RECOGNITION" },
+    { "warningCode": "CAPTION_UNBOUND" },
+    { "warningCode": "CONTINUATION_AMBIGUOUS" }
+  ]
+}
+

@@ -20,6 +20,9 @@ interface ParseResultsProps {
   scoreTone: string;
   scoreBg: string;
   issueGroups: IssueGroup[];
+  findingSourceGroups: Array<{ label: string; count: number; hint: string }>;
+  evidenceHighlights: Array<{ label: string; snippet: string }>;
+  coveredPageCount: number;
   school: SchoolOption | null;
   elapsedStr: string;
   logs: { t: 'phase' | 'ok' | 'warn'; text: string }[];
@@ -28,13 +31,6 @@ interface ParseResultsProps {
   onCloseShare: () => void;
   onShareClick: () => void;
 }
-
-const PARSE_PHASES_DONE = [
-  { k: 'PRS', label: '解析 DOCX', sub: 'Open XML · 样式表 · 节' },
-  { k: 'STR', label: '识别结构', sub: '封面 / 摘要 / 目录 / 正文' },
-  { k: 'REF', label: '识别图表 + 文献', sub: 'OCR · LayoutLM · 候选打分' },
-  { k: 'CHK', label: '规则预匹配', sub: '清华 · v2024.09 · 145 条' },
-];
 
 const DUPLICATION_ITEMS = [
   { icon: '📋', title: '目录未使用自动生成', desc: '手打的目录会被知网当成正文内容', fixable: true },
@@ -48,7 +44,7 @@ import ShareModal from './ShareModal';
 export const ParseResults: React.FC<ParseResultsProps> = ({
   legacyDocWarning, totalIssues, fixableIssues,
   animatedScore, scoreTone, scoreBg,
-  issueGroups, school, elapsedStr, logs,
+  issueGroups, findingSourceGroups, evidenceHighlights, coveredPageCount, school, elapsedStr, logs,
   showShare, onStep, onCloseShare, onShareClick,
 }) => (
   <>
@@ -219,21 +215,26 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
           color: 'var(--paper-0)',
         }}>
           <div className="mono" style={{ fontSize: 10, letterSpacing: '.16em', color: 'rgba(255,255,255,.55)', marginBottom: 10 }}>
-            PIPELINE · DONE · {elapsedStr}
+            FINDING MAP · {elapsedStr}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {PARSE_PHASES_DONE.map((p, i) => (
-              <div key={p.k} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ fontSize: 14, lineHeight: 1.6, color: 'rgba(255,255,255,.86)', marginBottom: 14 }}>
+            这次体检已经整理出 <strong style={{ color: '#fff' }}>{totalIssues}</strong> 项发现，
+            覆盖 <strong style={{ color: '#fff' }}>{coveredPageCount || 1}</strong> 个证据位置，
+            {school ? `并按 ${school.name} ${school.version} 的规则包归档。` : '并按当前规则基线归档。'}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {findingSourceGroups.map((group) => (
+              <div key={group.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <span style={{
                   width: 18, height: 18, borderRadius: 9,
-                  background: 'var(--leaf-500)', color: '#fff',
+                  background: 'rgba(98, 163, 127, .18)', color: '#9ee6b7',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700,
-                }}>✓</span>
+                  fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700, marginTop: 1,
+                }}>{group.count}</span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: 'var(--paper-0)' }}>{p.label}</div>
+                  <div style={{ fontSize: 13, color: 'var(--paper-0)' }}>{group.label}</div>
                   <div className="mono" style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginTop: 1 }}>
-                    {i === 3 && school ? `${school.name} · ${school.version}` : i === 3 && !school ? '自动检测模式' : p.sub}
+                    {group.hint}
                   </div>
                 </div>
               </div>
@@ -245,9 +246,26 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
           background: 'var(--paper-0)', borderRadius: 6, border: '1px solid var(--hair)',
           padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
         }}>
-          <div className="mono" style={{ fontSize: 10, letterSpacing: '.16em', color: 'var(--ink-400)', marginBottom: 10 }}>LOG</div>
+          <div className="mono" style={{ fontSize: 10, letterSpacing: '.16em', color: 'var(--ink-400)', marginBottom: 10 }}>EVIDENCE</div>
           <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {logs.map((l, i) => (
+            {evidenceHighlights.map((item, i) => (
+              <div
+                key={`${item.label}-${i}`}
+                style={{
+                  borderBottom: i < evidenceHighlights.length - 1 ? '1px dashed var(--hair)' : 'none',
+                  paddingBottom: 10,
+                  marginBottom: i < evidenceHighlights.length - 1 ? 2 : 0,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-900)', marginBottom: 4 }}>
+                  {item.label}
+                </div>
+                <div style={{ fontSize: 12, lineHeight: 1.55, color: 'var(--ink-600)' }}>
+                  {item.snippet}
+                </div>
+              </div>
+            ))}
+            {evidenceHighlights.length === 0 && logs.map((l, i) => (
               <div key={i} className="mono" style={{
                 fontSize: 11.5, lineHeight: 1.5,
                 color: l.t === 'warn' ? 'var(--sun-700)' : l.t === 'phase' ? 'var(--ink-500)' : 'var(--ink-700)',
@@ -258,7 +276,7 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
             ))}
             <div className="mono" style={{ fontSize: 11.5, color: 'var(--leaf-700)', marginTop: 4 }}>
               <span style={{ color: 'var(--ink-400)' }}>{`> `}</span>
-              ✓ 解析完成 · {elapsedStr} · 已进入交稿前整理阶段
+              已整理成可逐条确认的发现项工作台
             </div>
           </div>
         </div>

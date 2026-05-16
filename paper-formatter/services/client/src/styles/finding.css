@@ -1,0 +1,292 @@
+/* Finding workspace domain styles */
+.finding-rule-pane {
+  background: rgba(247,245,240,.86);
+  border-right: 1px solid var(--rule-line);
+  min-width: 0;
+}
+
+.finding-rule-sticky {
+  position: sticky;
+  top: 200px;
+  padding: 24px;
+  max-height: calc(100vh - 232px);
+  overflow: auto;
+}
+
+.finding-rule-title {
+  font-size: var(--text-xs);
+  color: var(--ink-tertiary);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+
+.finding-rule-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.finding-rule-group-title {
+  font-size: var(--text-xs);
+  color: var(--ink-secondary);
+  margin-bottom: 8px;
+}
+
+.finding-rule-card {
+  width: 100%;
+  border: 1px solid var(--rule-line);
+  border-radius: var(--radius-md);
+  background: rgba(253,252,250,.78);
+  padding: 14px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: border-color .2s var(--ease-standard), box-shadow .2s var(--ease-standard), opacity .2s var(--ease-standard), transform .2s var(--ease-standard);
+}
+
+.finding-rule-card + .finding-rule-card { margin-top: 10px; }
+.finding-rule-card span { font-family: var(--font-mono); font-size: 10px; color: var(--ink-primary); }
+.finding-rule-card strong { font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--ink-text); }
+.finding-rule-card small { font-size: var(--text-xs); color: var(--ink-tertiary); }
+.finding-rule-card.is-active { border-color: var(--ink-primary); box-shadow: var(--shadow-card-hover); transform: translateY(-1px); }
+.finding-rule-card.is-processed { opacity: .5; }
+
+.finding-rule-empty,
+.finding-canvas-empty {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ink-tertiary);
+  font-size: var(--text-sm);
+}
+
+.finding-rule-focus-path {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  color: var(--ink-tertiary);
+  font-size: var(--text-xs);
+}
+
+.finding-rule-focus-path b { color: var(--ink-primary); font-weight: 600; }
+
+.finding-canvas {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 0 96px;
+  overflow: auto;
+  background: var(--bg-canvas);
+  scroll-behavior: auto;
+}
+
+.finding-canvas-stack {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  will-change: transform;
+}
+
+.finding-paper-wrap { position: relative; margin-bottom: 24px; }
+
+.finding-paper {
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  max-width: 720px;
+  background: var(--paper);
+  box-shadow: var(--shadow-paper);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.finding-paper-body {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+}
+
+.finding-paper-header,
+.finding-paper-footer {
+  text-align: center;
+  color: #999;
+  font-size: 8pt;
+  line-height: 1.2;
+}
+
+.finding-paper-header { margin-bottom: 18px; }
+.finding-paper-footer { margin-top: 16px; }
+
+.finding-paper-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--ink-text);
+  margin: 0 0 28px;
+  font-weight: 600;
+}
+
+.finding-paper-chapter {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  color: var(--ink-text);
+  margin: 0 0 20px;
+  font-weight: 500;
+}
+
+.finding-paper-paragraphs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--ink-text);
+}
+
+.finding-paper-paragraph {
+  position: relative;
+  margin: 0;
+  border-radius: var(--radius-sm);
+  transition: background .24s var(--ease-standard), opacity .24s var(--ease-standard), box-shadow .24s var(--ease-standard);
+}
+
+.finding-paper-paragraph.has-finding { padding: 10px 12px; background: rgba(200,56,56,.055); }
+.finding-paper-paragraph.is-focus { background: rgba(200,56,56,.09); box-shadow: 0 0 0 2px rgba(200,56,56,.18); }
+.finding-paper-paragraph.is-dimmed, .finding-margin-note.is-dimmed { opacity: .3; }
+.finding-paper-paragraph.is-processed, .finding-margin-note.is-processed { opacity: .5; }
+
+.finding-anchor {
+  position: absolute;
+  inset-block-start: 0;
+  height: 100%;
+  border-bottom: 2px wavy var(--pen-red);
+  pointer-events: none;
+}
+
+.finding-inline-note {
+  margin-left: 6px;
+  color: var(--pen-red);
+  font-size: 70%;
+  vertical-align: super;
+}
+
+.finding-paper-figure {
+  margin-top: 28px;
+  border: 1px solid rgba(0,0,0,.08);
+  height: 110px;
+  background: linear-gradient(180deg, rgba(247,245,240,.1), rgba(247,245,240,.45));
+}
+
+.finding-paper-caption {
+  text-align: center;
+  margin-top: 10px;
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  color: var(--ink-text);
+}
+
+.finding-margin-note {
+  position: absolute;
+  right: -12mm;
+  width: 120px;
+  color: var(--pen-red);
+  font-family: var(--font-serif);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  transition: opacity .24s var(--ease-standard), transform .24s var(--ease-standard);
+}
+
+.finding-margin-note.is-focus { transform: translateX(2px); }
+.finding-margin-line { position: absolute; left: -54px; top: 12px; width: 46px; border-top: 1px dashed rgba(200,56,56,.6); }
+.finding-margin-dot { position: absolute; left: -58px; top: 10px; width: 5px; height: 5px; border-radius: 999px; background: var(--pen-red); }
+
+.finding-paper-watermark {
+  position: absolute;
+  right: 10px;
+  bottom: -18px;
+  color: var(--ink-tertiary);
+  font-size: var(--text-xs);
+  letter-spacing: .08em;
+}
+
+.finding-pane { width: 400px; display: flex; justify-content: center; background: transparent; }
+
+.finding-pane-inner {
+  position: sticky;
+  top: 200px;
+  width: 400px;
+  background: var(--paper);
+  border-left: 1px solid var(--rule-line);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - 232px);
+}
+
+.finding-pane-head {
+  min-height: 80px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rule-line);
+}
+
+.finding-pane-kicker { font-size: var(--text-xs); color: var(--ink-tertiary); margin-bottom: 10px; }
+.finding-pane-count { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.finding-pane-count strong { font-size: var(--text-2xl); color: var(--ink-primary); }
+.finding-pane-count span { font-size: var(--text-md); color: var(--ink-secondary); }
+.finding-pane-dots { display: flex; gap: 8px; }
+
+.finding-pane-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finding-compare-toggle {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: var(--ink-primary);
+  padding: 8px 0 0;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.finding-inline-compare {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.finding-inline-compare div {
+  border: 1px solid var(--rule-line);
+  background: rgba(247,245,240,.68);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.finding-inline-compare span { display: block; font-size: 10px; color: var(--ink-tertiary); margin-bottom: 5px; }
+.finding-inline-compare p { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--ink-text); }

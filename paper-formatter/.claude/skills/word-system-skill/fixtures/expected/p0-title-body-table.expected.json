@@ -1,0 +1,54 @@
+{
+  "metadata": {
+    "sampleName": "p0-title-body-table",
+    "school": "CAFA",
+    "ruleVersion": "2025",
+    "baselineStandard": "GB/T 7713.1-2025",
+    "baselineStatus": "human-curated-v0.1",
+    "sourceDocx": "p0-title-body-table.docx"
+  },
+  "expectedStats": {
+    "headings": 87,
+    "paragraphs": 246,
+    "figures": 17,
+    "tables": 10,
+    "continuationTables": 2,
+    "references": 161,
+    "headersFooters": 33,
+    "warnings": 24
+  },
+  "qualityGate": {
+    "enforceExactStats": true,
+    "requiredWarningCodes": ["LOW_CONFIDENCE_RECOGNITION", "CAPTION_UNBOUND", "CONTINUATION_AMBIGUOUS", "CONTINUATION_CONFLICT"]
+  },
+  "expectedHeadings": [
+    { "text": "摘 要", "level": 1 },
+    { "text": "ABSTRACT", "level": 1 },
+    { "text": "表 目 录", "level": 1 }
+  ],
+  "expectedParagraphs": [
+    { "minimumCount": 240 }
+  ],
+  "expectedFigures": [
+    { "minimumCount": 17 }
+  ],
+  "expectedTables": [
+    { "minimumCount": 10 }
+  ],
+  "expectedContinuationTables": [
+    { "minimumCount": 2 }
+  ],
+  "expectedReferences": [
+    { "minimumCount": 150 }
+  ],
+  "expectedHeadersFooters": [
+    { "minimumCount": 30 }
+  ],
+  "expectedWarnings": [
+    { "warningCode": "LOW_CONFIDENCE_RECOGNITION" },
+    { "warningCode": "CAPTION_UNBOUND" },
+    { "warningCode": "CONTINUATION_AMBIGUOUS" },
+    { "warningCode": "CONTINUATION_CONFLICT" }
+  ]
+}
+

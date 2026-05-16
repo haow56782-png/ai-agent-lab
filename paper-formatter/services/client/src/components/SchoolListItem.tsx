@@ -1,26 +1,35 @@
 import React from 'react';
 import { Icon } from './Common';
 import type { SchoolOption } from './AppFrame';
+import { getProfileSourceMeta } from './profileSourceMeta';
 
 interface SchoolListItemProps {
   school: SchoolOption;
   selected: boolean;
-  uploadCount: number;
   showBorder: boolean;
   effectiveFromLabel: string | null;
   onSelect: () => void;
 }
 
 export const SchoolListItem: React.FC<SchoolListItemProps> = ({
-  school: s, selected, uploadCount, showBorder, effectiveFromLabel, onSelect,
+  school: s, selected, showBorder, effectiveFromLabel, onSelect,
 }) => {
+  const sourceMeta = getProfileSourceMeta(s);
+  const hasRecentUsage = (s.recentUsageCount7d || 0) > 0;
+  const recentUsageLabel = hasRecentUsage
+    ? `近7天 ${s.recentUsageCount7d} 次命中`
+    : '近7天暂无命中';
+  const lastUsedLabel = s.lastUsedAt
+    ? `最近使用 ${new Date(s.lastUsedAt).toISOString().slice(0, 10).replace(/-/g, '/')}`
+    : null;
   return (
     <button onClick={onSelect} style={{
       padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14,
-      borderBottom: showBorder ? '1px solid var(--hair)' : 'none',
       background: selected ? 'var(--brand-50)' : 'transparent',
       position: 'relative', textAlign: 'left',
-      border: 'none',
+      borderTopWidth: 0,
+      borderLeftWidth: 0,
+      borderRightWidth: 0,
       borderBottomColor: showBorder ? 'var(--hair)' : 'transparent',
       borderBottomStyle: 'solid', borderBottomWidth: showBorder ? 1 : 0,
       cursor: 'pointer', fontFamily: 'var(--sans)',
@@ -39,13 +48,17 @@ export const SchoolListItem: React.FC<SchoolListItemProps> = ({
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-900)' }}>{s.name}</div>
         <div style={{ fontSize: 12, color: 'var(--ink-500)', marginTop: 2 }}>{s.faculty}</div>
-        {uploadCount > 0 && (
+        {(s.uploadCount || 0) > 0 && (
           <div style={{ fontSize: 10.5, color: 'var(--ink-400)', marginTop: 1, letterSpacing: '.02em' }}>
-            {uploadCount} 篇已上传
+            {s.uploadCount} 篇已上传
           </div>
         )}
+        <div style={{ fontSize: 10.5, color: hasRecentUsage ? 'var(--leaf-700)' : 'var(--ink-400)', marginTop: 1, letterSpacing: '.02em' }}>
+          {recentUsageLabel}
+          {lastUsedLabel ? ` · ${lastUsedLabel}` : ''}
+        </div>
         <div className="mono" style={{ fontSize: 10, color: 'var(--ink-400)', marginTop: 3 }}>
-          {s.baseStandardVersion || 'GB/T 7713.1-2006'} · {s.sourceType === 'learned' ? '自动学习' : '官方规则'}
+          {s.baseStandardVersion || 'GB/T 7713.1-2006'} · {sourceMeta.description}
         </div>
       </div>
       <div style={{ textAlign: 'right', position: 'relative' }}>
@@ -72,7 +85,7 @@ export const SchoolListItem: React.FC<SchoolListItemProps> = ({
         <div style={{ fontSize: 10, color: 'var(--ink-400)', letterSpacing: '.04em' }}>规则覆盖</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-        {s.sourceType === 'learned' ? <span className="chip sun">学习规则</span> : <span className="chip leaf">官方规则</span>}
+        <span className={`chip ${sourceMeta.chipClassName}`}>{sourceMeta.label}</span>
         {effectiveFromLabel && <span className="mono" style={{ fontSize: 9.5, color: 'var(--ink-400)' }}>{effectiveFromLabel}</span>}
       </div>
       {selected && <Icon name="check" size={16} color="var(--brand-700)" />}

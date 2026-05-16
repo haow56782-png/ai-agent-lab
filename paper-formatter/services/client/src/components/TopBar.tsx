@@ -6,8 +6,21 @@ export const TopBar: React.FC<{
   onStep: (s: number) => void;
   onReset: () => void;
 }> = ({ state, onStep, onReset }) => {
-  const steps = ['上传', '学校', '体检', '修复', '确认', '下载'];
+  const steps = ['上传论文', '学校', '正在检查…', '查看修改', '确认', '下载定稿'];
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const headerRef = React.useRef<HTMLElement | null>(null);
+  const [headerWidth, setHeaderWidth] = React.useState(1200);
+
+  React.useEffect(() => {
+    const node = headerRef.current;
+    if (!node || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => {
+      setHeaderWidth(entry.contentRect.width);
+    });
+    observer.observe(node);
+    setHeaderWidth(node.getBoundingClientRect().width);
+    return () => observer.disconnect();
+  }, []);
 
   const reachable = (index: number) => {
     if (index === 0) return true;
@@ -20,24 +33,31 @@ export const TopBar: React.FC<{
   };
 
   const avatarText = '陈';
+  const compact = headerWidth < 980;
+  const tight = headerWidth < 760;
 
   return (
-    <header data-testid="topbar" style={{
+    <header ref={headerRef} data-testid="topbar" style={{
       position: 'sticky',
       top: 0,
       zIndex: 120,
-      height: 56,
-      paddingLeft: 32,
-      paddingRight: 32,
+      minHeight: tight ? 62 : 56,
+      paddingLeft: tight ? 14 : compact ? 20 : 32,
+      paddingRight: tight ? 14 : compact ? 20 : 32,
       display: 'grid',
-      gridTemplateColumns: 'minmax(150px, 1fr) minmax(440px, auto) minmax(220px, 1fr)',
-      columnGap: 24,
+      gridTemplateColumns: tight
+        ? 'minmax(48px, auto) minmax(300px, 1fr) minmax(44px, auto)'
+        : compact
+        ? 'minmax(92px, .7fr) minmax(330px, 1.4fr) minmax(96px, .7fr)'
+        : 'minmax(150px, 1fr) minmax(440px, auto) minmax(220px, 1fr)',
+      columnGap: tight ? 8 : compact ? 12 : 24,
       alignItems: 'center',
       background: 'rgba(253, 252, 250, 0.88)',
       backdropFilter: 'blur(8px)',
       WebkitBackdropFilter: 'blur(8px)',
       borderBottom: '1px solid var(--rule-line)',
       flex: '0 0 auto',
+      overflow: 'visible',
     }}>
       <div data-testid="topbar-brand" style={{
         display: 'flex',
@@ -69,6 +89,7 @@ export const TopBar: React.FC<{
           color: 'var(--ink-text)',
           fontWeight: 600,
           letterSpacing: '.02em',
+          display: tight ? 'none' : 'block',
         }}>
           案前
         </div>
@@ -93,10 +114,10 @@ export const TopBar: React.FC<{
             <React.Fragment key={label}>
               {index > 0 && (
                 <span style={{
-                  width: 32,
+                  width: tight ? 18 : compact ? 24 : 32,
                   height: 1,
                   background: 'var(--rule-line)',
-                  margin: '0 6px',
+                  margin: tight ? '0 3px' : compact ? '0 4px' : '0 6px',
                   flexShrink: 0,
                 }} />
               )}
@@ -111,8 +132,8 @@ export const TopBar: React.FC<{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 4,
-                  minWidth: 36,
+                  gap: tight ? 3 : 4,
+                  minWidth: tight ? 30 : compact ? 32 : 36,
                   cursor: canClick ? 'pointer' : 'not-allowed',
                   opacity: canClick ? 1 : 0.58,
                 }}
@@ -136,7 +157,7 @@ export const TopBar: React.FC<{
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 10,
+                  fontSize: tight ? 9 : 10,
                   fontWeight: active ? 700 : 600,
                   lineHeight: 1,
                 }}>
@@ -147,6 +168,8 @@ export const TopBar: React.FC<{
                   color: active ? 'var(--ink-primary)' : future ? 'var(--ink-tertiary)' : 'var(--ink-secondary)',
                   fontWeight: active ? 700 : 500,
                   lineHeight: 1,
+                  transform: tight ? 'scale(.9)' : undefined,
+                  transformOrigin: 'center top',
                 }}>
                   {label}
                 </span>
@@ -166,13 +189,14 @@ export const TopBar: React.FC<{
         position: 'relative',
       }}>
         <div data-testid="topbar-doc-name" title={state.doc?.name || '2026毕业论文.docx'} style={{
-          maxWidth: 'min(260px, 22vw)',
+          maxWidth: tight ? 0 : compact ? 'clamp(78px, 14vw, 180px)' : 'min(260px, 22vw)',
           minWidth: 0,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
           fontSize: 'var(--text-sm)',
           color: 'var(--ink-secondary)',
+          display: tight ? 'none' : 'block',
         }}>
           {state.doc?.name || '2026毕业论文.docx'}
         </div>

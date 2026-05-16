@@ -18,6 +18,14 @@ import {
 
 export const jobRoutes = Router();
 
+jobRoutes.use((_req, res, next) => {
+  if (typeof res.setHeader === "function") {
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+  }
+  next();
+});
+
 // HTTP edge only: validate request shape, delegate orchestration to services,
 // and keep response contracts stable for the client.
 jobRoutes.post("/analyze", async (req, res, next) => {

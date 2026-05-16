@@ -1,0 +1,55 @@
+/* Fix runtime summary styles */
+.fix-runtime-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+
+.fix-runtime-summary-card {
+  min-width: 0;
+  padding: 8px 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(21,23,27,.1);
+  background: rgba(255,255,255,.72);
+  color: var(--ink-700);
+  text-align: left;
+  cursor: pointer;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+
+.fix-runtime-summary-card:hover,
+.fix-runtime-summary-card.is-active {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -18px rgba(21,23,27,.4);
+}
+
+.fix-runtime-summary-card.tone-done {
+  background: rgba(232,240,235,.74);
+}
+
+.fix-runtime-summary-card.tone-review {
+  background: rgba(255,255,255,.82);
+}
+
+.fix-runtime-summary-card.tone-manual {
+  background: rgba(248,238,218,.72);
+}
+
+.fix-runtime-summary-card.is-active {
+  border-color: rgba(42,77,58,.55);
+}
+
+.fix-runtime-summary-card span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  color: var(--ink-500);
+  letter-spacing: .04em;
+}
+
+.fix-runtime-summary-card strong {
+  font-size: 19px;
+  line-height: 1;
+  color: var(--brand-700);
+}

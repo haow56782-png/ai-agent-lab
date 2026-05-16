@@ -27,6 +27,8 @@ COPY --from=build /app/services/api-gateway/dist/services/api-gateway/src/ ./ser
 # Copy the Python parser scripts
 COPY --from=build /app/services/api-gateway/src/parser/parse.py ./services/api-gateway/parser/parse.py
 COPY --from=build /app/services/api-gateway/src/parser/detect_school.py ./services/api-gateway/parser/detect_school.py
+COPY --from=build /app/services/api-gateway/src/fixtures/canonical-school-registry.json ./services/api-gateway/fixtures/canonical-school-registry.json
+COPY --from=build /app/services/api-gateway/src/fixtures/canonical-school-registry.json ./services/api-gateway/dist/fixtures/canonical-school-registry.json
 
 ENV PORT=4000
 ENV DOCX_PARSER_SCRIPT=/app/services/api-gateway/parser/parse.py

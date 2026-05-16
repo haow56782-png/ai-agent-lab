@@ -142,6 +142,25 @@
   line-height: 1.5;
 }
 
+.fix-runtime-rule-field {
+  display: grid;
+  gap: 3px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(21,23,27,.06);
+}
+
+.fix-runtime-rule-field span {
+  font-size: 10px;
+  color: var(--ink-400);
+}
+
+.fix-runtime-rule-field b {
+  font-size: 12px;
+  color: var(--ink-900);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 .fix-runtime-rule-hitcount {
   margin-top: 9px;
   font-size: 10.5px;

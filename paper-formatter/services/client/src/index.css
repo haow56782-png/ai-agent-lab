@@ -229,6 +229,7 @@ button:disabled {
 @keyframes fixHintFade { 0%, 100% { opacity: 0; transform: translateY(6px); } 15%, 80% { opacity: .88; transform: translateY(0); } }
 @keyframes fixInkTargetPulse { 0% { color: #2a4d3a; text-shadow: 0 0 0 rgba(42,77,58,0); } 45% { color: #1f3a2c; text-shadow: 0 0 12px rgba(42,77,58,.28); } 100% { color: #1a1a1a; text-shadow: none; } }
 @keyframes fixInkUnderline { 0% { transform: scaleX(0); opacity: 0; } 28% { opacity: .9; } 100% { transform: scaleX(1); opacity: 0; } }
+@keyframes fixLayoutFocusPulse { 0%, 100% { opacity: .72; } 50% { opacity: 1; } }
 @keyframes fixLiveCardStream { 0% { transform: translateX(-110%); opacity: 0; } 20% { opacity: .85; } 100% { transform: translateX(110%); opacity: 0; } }
 @keyframes fixLiveDotStep { 0%, 100% { opacity: .24; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-1px); } }
 @keyframes diffBannerComplete { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }

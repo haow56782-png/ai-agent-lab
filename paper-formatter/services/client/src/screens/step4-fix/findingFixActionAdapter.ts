@@ -20,6 +20,7 @@ interface RuntimeFixActionInput {
 
 type FindingLinkedArtifact = FixJobArtifact & { finding_id?: string; related_finding_ids?: string[] };
 type FindingLinkedEvent = FixJobEvent & { finding_id?: string; related_finding_ids?: string[] };
+type FindingPaperTarget = 'page_layout' | 'heading' | 'paragraph' | 'reference' | 'generic_text';
 
 export function collectRuntimeFindings({
   state,
@@ -31,11 +32,33 @@ function isTextBlock(block: PaperBlock): boolean {
   return block.type === 'h1' || block.type === 'h2' || block.type === 'h3' || block.type === 'p' || block.type === 'reference';
 }
 
-function findParagraphIndex(page: PaperPage, snippet: string, fallbackIndex: number): number {
-  const blocks = getPageTextBlocks(page).filter(item => isTextBlock(item.block));
+function resolveFindingPaperTarget(finding: FindingContract): FindingPaperTarget {
+  const signal = `${finding.rule_group || ''} ${finding.rule_id} ${finding.rule_snapshot.rule_text} ${finding.rule_snapshot.rule_description || ''}`;
+  if (/页边距|版芯|版心|页面|纸张|装订线|page_canvas|margin/i.test(signal)) return 'page_layout';
+  if (/参考文献|著录|DOI|7714/i.test(signal)) return 'reference';
+  if (/标题|题名|章节|层级|heading/i.test(signal)) return 'heading';
+  if (/正文|段落|字体|字号|行距|缩进|首行|body|paragraph/i.test(signal)) return 'paragraph';
+  return 'generic_text';
+}
+
+function isTargetBlock(block: PaperBlock, target: FindingPaperTarget): boolean {
+  if (target === 'heading') return block.type === 'h1' || block.type === 'h2' || block.type === 'h3';
+  if (target === 'paragraph') return block.type === 'p';
+  if (target === 'reference') return block.type === 'reference';
+  if (target === 'page_layout') return block.type === 'p';
+  return isTextBlock(block);
+}
+
+function findParagraphIndex(page: PaperPage, snippet: string, fallbackIndex: number, target: FindingPaperTarget): number {
+  const allTextBlocks = getPageTextBlocks(page).filter(item => isTextBlock(item.block));
+  const targetBlocks = allTextBlocks.filter(item => isTargetBlock(item.block, target));
+  const blocks = targetBlocks.length > 0 ? targetBlocks : allTextBlocks;
   if (blocks.length === 0) return 0;
   const normalizedSnippet = snippet.replace(/\s+/g, '');
-  const direct = blocks.find(item => item.block.content.replace(/\s+/g, '').includes(normalizedSnippet.slice(0, 18)));
+  const snippetNeedle = normalizedSnippet.slice(0, 18);
+  const direct = snippetNeedle
+    ? blocks.find(item => item.block.content.replace(/\s+/g, '').includes(snippetNeedle))
+    : null;
   if (direct) return direct.paragraphIndex;
   return blocks[Math.abs(fallbackIndex) % blocks.length]?.paragraphIndex ?? 0;
 }
@@ -157,7 +180,8 @@ export function createFixActionsFromFindings({
       const evidence = finding.evidence_spans[0];
       const pageNumber = Math.min(Math.max(evidence?.page ?? 1, 1), Math.max(paperContent.pages.length, 1));
       const page = paperContent.pages[pageNumber - 1] ?? paperContent.pages[0];
-      const paragraphIndex = page ? findParagraphIndex(page, evidence?.snippet || finding.evidence_snapshot, index) : 0;
+      const paperTarget = resolveFindingPaperTarget(finding);
+      const paragraphIndex = page ? findParagraphIndex(page, evidence?.snippet || finding.evidence_snapshot, index, paperTarget) : 0;
       const baseType = resolveActionType(finding);
       const actionType: FixAction['type'] = baseType === 'annotate'
         ? (index % 3 === 0 ? 'annotate' : index % 3 === 1 ? 'replace' : 'delete')

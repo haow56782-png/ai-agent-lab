@@ -65,6 +65,66 @@ const overlapFinding: FindingContract = {
   audit_trail: [],
 };
 
+const bodyStyleFinding: FindingContract = {
+  finding_id: '33333333-3333-4333-8333-333333333333',
+  document_id: 'doc-canonical',
+  document_version: 1,
+  rule_id: 'body_fonts',
+  rule_group: '正文段落',
+  rule_snapshot: {
+    rule_text: '正文字体槽 宋体/Times',
+    rule_version: 'vAuto',
+    rule_description: '正文段落字体需要按学校模板统一',
+  },
+  severity: 'P2',
+  confidence: 0.88,
+  evidence_spans: [{ page: 1, char_start: 0, char_end: 12, snippet: '论文标题也可能出现在证据文本里' }],
+  evidence_snapshot: '论文标题也可能出现在证据文本里',
+  suggestion: {
+    type: 'replace',
+    fix_diff: {
+      before: '正文局部字体未统一',
+      after: '中文宋体，英文与数字 Times New Roman',
+      spans_affected: [{ page: 1, char_start: 0, char_end: 12, snippet: '正文局部字体未统一' }],
+    },
+    explanation: '统一正文段落字体',
+  },
+  status: 'pending',
+  created_at: now,
+  updated_at: now,
+  audit_trail: [],
+};
+
+const headingFinding: FindingContract = {
+  finding_id: '44444444-4444-4444-8444-444444444444',
+  document_id: 'doc-canonical',
+  document_version: 1,
+  rule_id: 'heading_hierarchy',
+  rule_group: '标题层级',
+  rule_snapshot: {
+    rule_text: '章节标题层级',
+    rule_version: 'vAuto',
+    rule_description: '标题层级需要按学校模板统一',
+  },
+  severity: 'P2',
+  confidence: 0.91,
+  evidence_spans: [{ page: 1, char_start: 0, char_end: 8, snippet: '正文段落' }],
+  evidence_snapshot: '正文段落',
+  suggestion: {
+    type: 'replace',
+    fix_diff: {
+      before: '标题样式不一致',
+      after: '标题层级按模板统一',
+      spans_affected: [{ page: 1, char_start: 0, char_end: 8, snippet: '标题样式不一致' }],
+    },
+    explanation: '统一标题层级',
+  },
+  status: 'pending',
+  created_at: now,
+  updated_at: now,
+  audit_trail: [],
+};
+
 test.describe('Step4Fix finding/action adapter', () => {
   test('links fix status events and artifacts back to finding_id', () => {
     const status: FixStatusResponse = {
@@ -142,6 +202,44 @@ test.describe('Step4Fix finding/action adapter', () => {
   test('derives fix job selected types from canonical findings instead of all static fix steps', () => {
     expect(resolveFixTypeForFinding(referenceFinding)).toBe('reference_format');
     expect(resolveFixTypeForFinding(overlapFinding)).toBe('image_format');
+  });
+
+  test('binds body findings to body paragraphs instead of title blocks', () => {
+    const paperContent = createMockPaperContent({
+      title: '论文标题也可能出现在证据文本里',
+      header: '本科毕业论文',
+      totalPages: 1,
+      headings: ['摘要'],
+      paragraphs: ['正文局部字体未统一，需要只高亮正文段落。'],
+    });
+
+    const actions = createFixActionsFromFindings({
+      findings: [bodyStyleFinding],
+      paperContent,
+      schoolRuleName: '学校规则 vAuto',
+      baselineRuleName: 'GB/T 7713.1-2025',
+    });
+
+    expect(actions[0].locator.paragraphIndex).toBeGreaterThanOrEqual(2);
+  });
+
+  test('binds heading findings to heading blocks instead of body paragraphs', () => {
+    const paperContent = createMockPaperContent({
+      title: '论文标题',
+      header: '本科毕业论文',
+      totalPages: 1,
+      headings: ['第一章 绪论'],
+      paragraphs: ['正文段落里也可能出现标题规则证据，但不应该成为标题修复高亮。'],
+    });
+
+    const actions = createFixActionsFromFindings({
+      findings: [headingFinding],
+      paperContent,
+      schoolRuleName: '学校规则 vAuto',
+      baselineRuleName: 'GB/T 7713.1-2025',
+    });
+
+    expect(actions[0].locator.paragraphIndex).toBeLessThan(2);
   });
 
 });

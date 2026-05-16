@@ -15,8 +15,6 @@ interface Props {
   onStartFix?: () => void;
 }
 
-const SPEEDS: Array<1 | 2 | 4> = [1, 2, 4];
-
 export const FixRuntimeTopbar: React.FC<Props> = ({
   runtimeStore,
   findingStatusSummary,
@@ -25,7 +23,6 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
   displayedChapter,
   activeFinding,
   onPauseToggle,
-  onSpeedChange,
   onJumpToComplete,
   onStartFix,
 }) => {
@@ -74,17 +71,17 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
         </div>
         <div className="fix-runtime-progress-meta">
           <span className="fix-runtime-finding-meta" data-testid="fix-runtime-topbar-finding">
-            当前正在修复：{activeFixLabel}
+            当前正在修复 {findingProgressLabel}：{activeFixLabel}
           </span>
           <span data-testid="fix-runtime-topbar-page">
-            对象：{activeTargetLabel} · 写回进度 {findingProgressLabel}
+            {activeTargetLabel} · 写回进度 {findingProgressLabel}
           </span>
           <span data-testid="fix-runtime-topbar-remaining">
             {remainingLabel}
           </span>
         </div>
         <div className="fix-runtime-progress-explain" data-testid="fix-runtime-topbar-explain">
-          依据：{compactRuleLabel} · 仅调整字体、字号、段前段后与版式，不改正文语义。
+          依据：{compactRuleLabel} · 本次只调整页面格式，不改变正文语义。
         </div>
       </div>
 
@@ -96,26 +93,13 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
         ) : (
           <button
             type="button"
-            className="fix-control-button"
+            className="fix-control-button is-subtle"
             onClick={onPauseToggle}
             disabled={isCompleted}
           >
             {isPaused ? '继续' : '暂停'}
           </button>
         )}
-        <div className="fix-speed-switch" aria-label="修复速度">
-          {SPEEDS.map((speed) => (
-            <button
-              key={speed}
-              type="button"
-              className={runtimeStore.speed === speed ? 'is-active' : ''}
-              onClick={() => onSpeedChange(speed)}
-              aria-pressed={runtimeStore.speed === speed}
-            >
-              {speed}x
-            </button>
-          ))}
-        </div>
         <button
           type="button"
           className="fix-control-button"

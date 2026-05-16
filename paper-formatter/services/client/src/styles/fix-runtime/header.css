@@ -10,7 +10,7 @@
 }
 
 .fix-runtime-topbar {
-  grid-template-columns: minmax(220px, 1.2fr) minmax(320px, 1.8fr) auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(420px, 2.2fr) auto;
   border-bottom: 1px solid var(--hair);
   padding-top: 10px;
   padding-bottom: 10px;
@@ -65,13 +65,14 @@
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 8px 12px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--ink-500);
 }
 
 .fix-runtime-finding-meta {
   color: var(--brand-700);
   font-weight: 700;
+  font-size: 12px;
 }
 
 .fix-runtime-progress-meta span:last-child {
@@ -79,7 +80,7 @@
 }
 
 .fix-runtime-progress-explain {
-  font-size: 10.5px;
+  font-size: 11px;
   line-height: 1.45;
   color: var(--ink-500);
 }
@@ -110,6 +111,12 @@
   border: 1px solid rgba(21,23,27,.14);
   background: var(--paper-0);
   color: var(--ink-700);
+}
+
+.fix-control-button.is-subtle {
+  padding: 0 12px;
+  color: var(--ink-400);
+  background: rgba(255,255,255,.48);
 }
 
 .fix-control-button:disabled,

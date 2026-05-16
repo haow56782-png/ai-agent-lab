@@ -53,7 +53,7 @@ export const FixRuntimeRulesAside: React.FC<Props> = ({
   const activeRuleSummary = currentRule?.summary || '系统会按当前命中的规则定位问题，其他检查项放到确认页统一复核。';
   return (
   <aside className={`fix-runtime-panel fix-runtime-panel-rules fix-runtime-note fix-runtime-note-left ${isPageFlipping ? 'is-page-flipping' : ''}`}>
-    <div className="fix-runtime-note-head">检测规则</div>
+    <div className="fix-runtime-note-head">规则依据</div>
     <div className="fix-runtime-note-stack is-quiet">
       <article
         className={[
@@ -62,20 +62,32 @@ export const FixRuntimeRulesAside: React.FC<Props> = ({
           currentRule && ruleFlashId === (currentRule.source === '学校规则' ? 'school' : 'baseline') ? 'is-rule-hit' : '',
         ].filter(Boolean).join(' ')}
       >
-        <div className="fix-runtime-note-kicker">当前命中</div>
-        <strong>{subsetLabel}</strong>
+        <div className="fix-runtime-note-kicker">依据来源</div>
+        <strong>学校模板规范 + GB/T 7713.1</strong>
         <div className="fix-runtime-rule-sources fix-runtime-rule-sources-inline">
           <span>学校模板规范</span>
           <span>GB/T 7713.1-2025</span>
         </div>
         {currentRule ? (
           <>
-            <div className="fix-runtime-note-anchor">{currentRule.name}</div>
+            <div className="fix-runtime-rule-field">
+              <span>当前命中问题</span>
+              <b>{subsetLabel}</b>
+            </div>
+            <div className="fix-runtime-rule-field">
+              <span>本次修复范围</span>
+              <b>{currentRule.name}</b>
+            </div>
             <div className="fix-runtime-note-detail">{activeRuleSummary}</div>
-            <div className="fix-runtime-rule-status">修复中</div>
           </>
         ) : (
-          <div className="fix-runtime-note-detail">{activeRuleSummary}</div>
+          <>
+            <div className="fix-runtime-rule-field">
+              <span>当前命中问题</span>
+              <b>{subsetLabel}</b>
+            </div>
+            <div className="fix-runtime-note-detail">{activeRuleSummary}</div>
+          </>
         )}
       </article>
       {hiddenRuleCount > 0 ? (

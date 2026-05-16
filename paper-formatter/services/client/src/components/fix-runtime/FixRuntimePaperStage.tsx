@@ -21,7 +21,12 @@ function formatPaperRevisionLabel(payload: string): string {
   if (/参考文献|DOI|著录/.test(normalized)) return '著录格式';
   if (/图片|印章|水印|图层|浮动/.test(normalized)) return '图层顺序';
   if (/正文|字体|行距|段落/.test(normalized)) return '正文格式';
-  return '格式修正';
+  return '格式检查';
+}
+
+function isPageLayoutAction(action: FixAction): boolean {
+  const signal = `${action.findingLabel} ${action.rule.name} ${action.payload}`.toLowerCase();
+  return /页边距|页面|版心|纸张|装订线|page|margin|canvas/.test(signal);
 }
 
 interface Props {
@@ -68,6 +73,10 @@ export const FixRuntimePaperStage: React.FC<Props> = ({
   penTransitionMs,
 }) => {
   const [openPopoverKey, setOpenPopoverKey] = useState<string | null>(null);
+  const activeSceneAction = currentPageActions.find((action) => activeActionSet.has(action.id))
+    || currentPageActions[0]
+    || null;
+  const hasActivePageLayoutAction = Boolean(activeSceneAction && isPageLayoutAction(activeSceneAction));
 
   // Auto-scroll to the highlighted paragraph when the user clicks a right card.
   useEffect(() => {
@@ -111,17 +120,20 @@ export const FixRuntimePaperStage: React.FC<Props> = ({
     const nodes: React.ReactNode[] = [];
     const paragraphReviewKey = `${currentPaperPage.pageNumber}:${paragraphIndex}`;
     const activeActionsInParagraph = currentPageActions.filter((action) =>
+      !isPageLayoutAction(action) &&
       activeActionSet.has(action.id) &&
       action.locator.page === currentPaperPage.pageNumber &&
       action.locator.paragraphIndex === paragraphIndex
     );
     const hasRecentHighlight = currentPageActions.some((action) => {
+      if (isPageLayoutAction(action)) return false;
       if (action.locator.page !== currentPaperPage.pageNumber || action.locator.paragraphIndex !== paragraphIndex) return false;
       const meta = recentActionMeta[action.id];
       return activeActionSet.has(action.id) || (meta ? Date.now() - meta.completedAt <= 1500 : false);
     });
     const issueAction = activeActionsInParagraph[0]
       || currentPageActions.find((action) => {
+        if (isPageLayoutAction(action)) return false;
         if (action.locator.page !== currentPaperPage.pageNumber || action.locator.paragraphIndex !== paragraphIndex) return false;
         const meta = recentActionMeta[action.id];
         return Boolean(meta && Date.now() - meta.completedAt <= 1500);
@@ -165,7 +177,7 @@ export const FixRuntimePaperStage: React.FC<Props> = ({
               className={replacement.active ? 'fix-paper-replace-note is-live' : 'fix-paper-replace-note'}
               title={replacement.payload}
             >
-              {formatPaperRevisionLabel(replacement.payload)}
+              {replacement.active ? '正在修复' : '已修复'}
             </sup>
           )}
         </span>,
@@ -227,7 +239,11 @@ export const FixRuntimePaperStage: React.FC<Props> = ({
     return (
       <div
         ref={live ? livePageRef : null}
-        className={live ? 'fix-runtime-page-panel fix-runtime-page-panel-live' : 'fix-runtime-page-panel'}
+        className={[
+          'fix-runtime-page-panel',
+          live ? 'fix-runtime-page-panel-live' : '',
+          live && activeActionSet.size > 0 ? 'has-active-action' : '',
+        ].filter(Boolean).join(' ')}
         key={`page-${page.pageNumber}-${live ? 'live' : 'static'}`}
         data-testid={live ? 'fix-runtime-live-page' : undefined}
         data-page-number={page.pageNumber}
@@ -326,6 +342,7 @@ export const FixRuntimePaperStage: React.FC<Props> = ({
             </span>
           </div>
         )}
+        {hasActivePageLayoutAction ? <div className="fix-paper-layout-highlight" aria-hidden="true" /> : null}
         <div className="fix-runtime-page-viewport">
           <div className={`fix-runtime-page-stack ${isPageFlipping ? 'is-flipping' : ''}`}>
             {isPageFlipping && previousPage && renderPaperPage(previousPage, false)}

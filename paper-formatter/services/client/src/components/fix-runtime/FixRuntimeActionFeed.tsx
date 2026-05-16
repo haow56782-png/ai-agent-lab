@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FixBeforeAfterModal } from './FixBeforeAfterModal';
 import { FixProcessDrawer } from './FixProcessDrawer';
 import { FixSafetyNotice } from './FixSafetyNotice';
-import { FixSummaryCards } from './FixSummaryCards';
 import type { TimelineRow, FixRuntimeStore, FixFindingStatusSummary, FixTaskFilter } from './types';
 
 interface Props {
@@ -18,7 +17,6 @@ interface Props {
 }
 
 export const FixRuntimeActionFeed: React.FC<Props> = ({
-  runtimeStore,
   findingStatusSummary,
   timelineRows,
   viewDiffEnabled,
@@ -28,21 +26,9 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
   onJumpToAction,
   onViewDiff,
 }) => {
-  const statusLabelMap: Record<TimelineRow['status'], string> = {
-    live: '正在写回',
-    'needs-review': '待确认',
-    done: '已写回',
-  };
-  const statusToneClassMap: Record<TimelineRow['status'], string> = {
-    live: 'is-live',
-    'needs-review': 'is-needs-review',
-    done: 'is-done',
-  };
-  const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FixTaskFilter>('all');
-  const [expandedEvidenceRowId, setExpandedEvidenceRowId] = useState<string | null>(null);
   const [compareRow, setCompareRow] = useState<TimelineRow | null>(null);
-  const [processDrawerOpen, setProcessDrawerOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FixTaskFilter>('all');
+  const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
   const focusTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -61,8 +47,12 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
 
   const jumpAndFrameCard = (row: TimelineRow, node: HTMLElement) => {
     clearFocusHighlight();
+
     setFocusedRowId(row.id);
-    focusTimerRef.current = window.setTimeout(() => setFocusedRowId(null), 2000);
+    focusTimerRef.current = window.setTimeout(() => {
+      setFocusedRowId(null);
+      focusTimerRef.current = null;
+    }, 2000);
 
     onJumpToAction(row);
     requestAnimationFrame(() => {
@@ -80,19 +70,16 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
     if (activeFilter === 'review') return row.status === 'needs-review';
     return false;
   });
-  const currentRow = timelineRows.find((row) => row.status === 'live') || timelineRows[0] || null;
-  const readableRuleLabel = (row: TimelineRow) => {
-    if (/国标|GB\/T|7713/.test(row.ruleLabel)) return '学校规则 + GB/T 7713.1';
-    if (/学校规则|vAuto/.test(row.ruleLabel)) return '学校规则 + GB/T 7713.1';
-    return '学校规则 + 国标基线';
+  const compareCandidate = filteredRows.find((row) => row.status === 'live')
+    || filteredRows.find((row) => row.status === 'done')
+    || filteredRows[0]
+    || null;
+  const locateCompareCandidate = () => {
+    if (!compareCandidate) return;
+    const node = rightFeedRef.current?.querySelector<HTMLElement>(`[data-testid="fix-runtime-action-card-${compareCandidate.id}"]`);
+    jumpAndFrameCard(compareCandidate, node || rightFeedRef.current || document.body);
   };
-  const setFilterAndOpenDrawer = (filter: FixTaskFilter) => {
-    setActiveFilter((current) => {
-      const next = current === filter ? 'all' : filter;
-      setProcessDrawerOpen(true);
-      return next;
-    });
-  };
+
   const ctaCopy = (() => {
     if (!viewDiffEnabled) {
       return {
@@ -120,133 +107,45 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
       data-testid="fix-runtime-action-feed"
     >
       <div className="fix-runtime-note-head" data-testid="fix-runtime-action-count">
-        当前修复
-      </div>
-      <FixSummaryCards
-        summary={findingStatusSummary}
-        activeFilter={activeFilter}
-        onFilterChange={setFilterAndOpenDrawer}
-      />
-      <div className="fix-runtime-current-task-wrap">
-        {!currentRow ? (
-          <div className="fix-runtime-empty-state">
-            <strong>当前没有需要自动修复的发现项</strong>
-            <span>你可以进入确认页查看检测摘要，或返回重新选择学校规则。</span>
-          </div>
-        ) : (
-          <article
-            key={currentRow.id}
-            data-testid={`fix-runtime-action-card-${currentRow.id}`}
-            data-finding-id={currentRow.findingId}
-            data-page-number={currentRow.page}
-            className={[
-              'fix-runtime-current-task-card',
-              'fix-runtime-action-card',
-              statusToneClassMap[currentRow.status],
-              focusedRowId === currentRow.id ? 'is-user-focus' : '',
-            ].filter(Boolean).join(' ')}
-            onClick={(event) => jumpAndFrameCard(currentRow, event.currentTarget)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpAndFrameCard(currentRow, e.currentTarget); } }}
-            role="button"
-            tabIndex={0}
-            aria-label={`跳转到发现项 ${currentRow.findingTitle}，状态：${currentRow.stateLabel}`}
-          >
-            <div className="fix-runtime-action-meta">
-              <span>{currentRow.timestamp}</span>
-              <span className="fix-runtime-action-anchor">证据 · {currentRow.chapter}</span>
-            </div>
-            <div className="fix-runtime-action-finding">{currentRow.findingTitle}</div>
-            {currentRow.status === 'live' ? (
-              <div className="fix-runtime-action-live-strip" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-                <b>正在写入纸面</b>
-              </div>
-            ) : null}
-            <div className="fix-runtime-action-before">
-              <span className={`fix-runtime-action-dot ${statusToneClassMap[currentRow.status]}`} />
-              {statusLabelMap[currentRow.status]}
-            </div>
-            <div className="fix-runtime-action-after">
-              <strong>证据</strong>
-              <span>{currentRow.stateSummary}</span>
-            </div>
-            <div className="fix-runtime-action-after">
-              <strong>修复动作</strong>
-              <span>{currentRow.recentActionSummary}</span>
-            </div>
-            <div className="fix-runtime-action-safe">
-              安全说明：只修改格式属性，不改变论文语义。
-            </div>
-            {currentRow.progressSummary ? (
-              <div className="fix-runtime-action-after">
-                <strong>进展</strong>
-                <span>{currentRow.progressSummary}</span>
-              </div>
-            ) : null}
-            <div className="fix-runtime-action-rule">规则依据：{readableRuleLabel(currentRow)}</div>
-            {expandedEvidenceRowId === currentRow.id ? (
-              <div className="fix-runtime-evidence-box">
-                <strong>识别依据</strong>
-                <span>系统在第 {currentRow.page} 页定位到该段落/对象，并按学校规则与国标基线比对字体、字号、标题层级、图题或段落属性。</span>
-                <span>状态：{currentRow.status === 'needs-review' ? '存在上下文歧义，建议人工确认后再应用。' : '已写回修复稿，最终确认页可复核并撤回。'}</span>
-              </div>
-            ) : null}
-            <div className="fix-runtime-card-actions">
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setExpandedEvidenceRowId((current) => current === currentRow.id ? null : currentRow.id);
-                }}
-              >
-                查看识别依据
-              </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setCompareRow(currentRow);
-                }}
-              >
-                查看修复前后对比
-              </button>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  jumpAndFrameCard(currentRow, event.currentTarget.closest('.fix-runtime-action-card') as HTMLElement || event.currentTarget);
-                }}
-              >
-                跳转到该位置
-              </button>
-            </div>
-          </article>
-        )}
+        完整修复过程 · 当前修复现场
       </div>
 
-      <div className="fix-runtime-bottom-meta">
-        <span className={`fix-runtime-status-dot status-${runtimeStore.status}`} />
-        <span>
-          已自动修复 {findingStatusSummary.writtenBack} 项 ·
-          待你确认 {findingStatusSummary.needsReview} 项 ·
-          暂未处理 {findingStatusSummary.notAutoFixed} 项
-        </span>
+      <FixProcessDrawer
+        rows={filteredRows}
+        activeFilter={activeFilter}
+        open={true}
+        onClose={() => {}}
+        onJumpToRow={jumpAndFrameCard}
+        focusedRowId={focusedRowId}
+      />
+
+      <div className="fix-runtime-process-actions">
+        <button
+          type="button"
+          className="fix-runtime-compare-current"
+          onClick={() => compareCandidate && setCompareRow(compareCandidate)}
+          disabled={!compareCandidate}
+        >
+          查看修复前后对比
+        </button>
+        <button
+          type="button"
+          className="fix-runtime-locate-current"
+          onClick={locateCompareCandidate}
+          disabled={!compareCandidate}
+        >
+          定位到文档位置
+        </button>
+        <button
+          type="button"
+          className="fix-runtime-process-filter"
+          onClick={() => setActiveFilter(activeFilter === 'all' ? 'review' : 'all')}
+        >
+          {activeFilter === 'all' ? `只看待确认 ${findingStatusSummary.needsReview}` : '查看全部过程'}
+        </button>
       </div>
 
       <FixSafetyNotice />
-
-      <button
-        type="button"
-        className="fix-runtime-process-toggle"
-        onClick={() => {
-          setActiveFilter('all');
-          setProcessDrawerOpen(true);
-        }}
-      >
-        查看修复过程
-      </button>
 
       <button
         type="button"
@@ -271,14 +170,8 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
           ↑
         </button>
       </div>
+
       <FixBeforeAfterModal row={compareRow} onClose={() => setCompareRow(null)} />
-      <FixProcessDrawer
-        rows={filteredRows}
-        activeFilter={activeFilter}
-        open={processDrawerOpen}
-        onClose={() => setProcessDrawerOpen(false)}
-        onJumpToRow={jumpAndFrameCard}
-      />
     </aside>
   );
 };

@@ -8,10 +8,10 @@ test.describe('Step4Fix interaction optimisations', () => {
 
     // Jump to completion so all cards are visible and stable
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('完整修复过程');
 
     const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');
-    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toBeVisible();
 
     // Click the first card
     const targetCard = cards.first();
@@ -55,7 +55,7 @@ test.describe('Step4Fix interaction optimisations', () => {
     await page.goto('/');
 
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('完整修复过程');
 
     const feed = page.getByTestId('fix-runtime-action-feed');
     const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');
@@ -67,7 +67,6 @@ test.describe('Step4Fix interaction optimisations', () => {
 
     // Click the last card (furthest from top)
     const targetCard = cards.last();
-    const targetTestId = await targetCard.getAttribute('data-testid');
     await targetCard.click();
 
     // The current-task card should remain visible without forcing a dense list to the top.

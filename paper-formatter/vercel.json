@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd services/client && npm install && npm run vercel-build",
+  "outputDirectory": "services/client/dist",
+  "installCommand": ""
+}

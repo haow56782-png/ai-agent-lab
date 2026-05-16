@@ -103,12 +103,9 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(pageMeta).toContainText('第 3 页');
     await expect(findingMeta).toContainText('当前正在修复');
     await expect(pageMeta).toContainText('写回进度 0/3');
-    await expect(actionCount).toContainText('当前修复');
+    await expect(actionCount).toContainText('完整修复过程');
     await expect(livePage).toHaveAttribute('data-page-number', '3');
 
-    await expect(page.getByTestId('fix-runtime-finding-status-written')).toContainText('已自动修复0');
-    await expect(page.getByTestId('fix-runtime-finding-status-review')).toContainText('待你确认0');
-    await expect(page.getByTestId('fix-runtime-finding-status-manual')).toContainText('暂未处理0');
     await expect(remainingMeta).not.toContainText('剩余 0s');
 
     await expect(livePage).toHaveAttribute('data-page-number', '3');
@@ -180,7 +177,7 @@ test.describe('Step4 baseline behaviors', () => {
     await bootstrapState(page, state);
     await page.goto('/');
 
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('完整修复过程');
     await expect(page.getByTestId('fix-runtime-topbar-page')).toContainText('写回进度 0/3');
     await expect(page.getByTestId('fix-runtime-topbar-remaining')).not.toContainText('已完成');
     await expect(page.getByRole('button', { name: /写回中 · 0\/3/ })).toBeDisabled();
@@ -193,11 +190,11 @@ test.describe('Step4 baseline behaviors', () => {
     await page.goto('/');
 
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('完整修复过程');
 
     const feed = page.getByTestId('fix-runtime-action-feed');
     const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');
-    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toBeVisible();
 
     await feed.evaluate((node) => {
       node.scrollTop = node.scrollHeight;
@@ -238,11 +235,8 @@ test.describe('Step4 baseline behaviors', () => {
 
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
     const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');
-    await expect(cards).toHaveCount(1);
-    await expect(cards.first()).toContainText('修复动作');
-    await expect(cards.first()).toContainText(/已写回|正在写回/);
-    await expect(cards.first()).toContainText('安全说明：只修改格式属性，不改变论文语义。');
-    await page.getByRole('button', { name: '查看修复过程' }).click();
+    await expect(cards).toHaveCount(3);
+    await expect(cards.first()).toContainText(/已完成|正在修复|等待处理/);
     await expect(page.getByTestId('fix-process-drawer')).toBeVisible();
     await expect(page.locator('.fix-process-row')).toHaveCount(3);
   });

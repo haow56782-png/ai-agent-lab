@@ -1,13 +1,253 @@
 ---
 name: swarm-advanced
 description: Advanced swarm orchestration patterns for research, development, testing, and complex distributed workflows
-version: 2.0.0
 category: orchestration
-tags: [swarm, distributed, parallel, research, testing, development, coordination]
-author: Claude Flow Team
+version: 2.0.0
+owner: platform-team
+
+inputs:
+  - name: task
+    type: string
+    required: true
+    description: "Swarm 执行的任务描述"
+  - name: topology
+    type: string
+    required: false
+    description: "Swarm 拓扑类型 (mesh/hierarchical/star/ring)"
+  - name: maxAgents
+    type: number
+    required: false
+    description: "最大 agent 数量"
+  - name: strategy
+    type: string
+    required: false
+    description: "Agent 策略 (adaptive/balanced/specialized/parallel)"
+
+outputs:
+  - name: swarm_results
+    type: object
+    description: "Swarm 执行结果"
+    alwaysPresent: true
+  - name: metrics
+    type: object
+    description: "Swarm 性能指标"
+    alwaysPresent: false
+  - name: error
+    type: object
+    description: "错误信息"
+    alwaysPresent: false
+
+tools:
+  - name: claude-flow
+    purpose: "Swarm 初始化、agent 生成、任务编排、状态监控"
+    required: true
+  - name: cli
+    purpose: "CLI fallback 模式下的 swarm 操作"
+    required: false
+
+memory:
+  required:
+    - "swarm_state (当前 swarm 的拓扑和 agent 状态)"
+    - "task_history (任务分配和执行历史)"
+    - "knowledge_graph (跨会话的知识图谱)"
+  ttl: "会话级别 — 跨会话持久化通过 memory_backup 实现"
+
+workflow:
+  steps:
+    - "Swarm Initialization — 根据任务选择拓扑并初始化"
+    - "Agent Spawning — 创建专业化 agent 并分配能力"
+    - "Task Distribution — 并行或顺序分配任务"
+    - "Execution Monitoring — 实时监控执行状态"
+    - "Result Synthesis — 汇总并验证结果"
+    - "Report Generation — 输出最终报告"
+
+verification:
+  - id: "gate-swarm-healthy"
+    description: "确认 swarm 所有 agent 健康"
+    type: invariant
+    severity: critical
+  - id: "gate-tasks-complete"
+    description: "确认所有任务已执行完毕"
+    type: invariant
+    severity: critical
+  - id: "gate-quality"
+    description: "确认输出质量达标"
+    type: invariant
+    severity: major
+
+failure_modes:
+  - when: "Agent 通信失败"
+    code: "AGENT_COMM_FAILURE"
+    recoverable: true
+    recovery: "启用 fault tolerance 自动恢复"
+  - when: "任务执行超时"
+    code: "TASK_TIMEOUT"
+    recoverable: true
+    recovery: "重试或重新分配任务"
+  - when: "Swarm 初始化失败"
+    code: "SWARM_INIT_FAILURE"
+    recoverable: true
+    recovery: "检查配置后重试"
+  - when: "Memory 持久化失败"
+    code: "MEMORY_PERSIST_FAILURE"
+    recoverable: false
+    recovery: "通知用户手动备份"
+
+fallback:
+  strategy: degrade
+  plan: "MCP 工具不可用时使用 CLI 命令替代；agent 不可用时降级为单 agent 执行；memory 不可用时降级为无状态执行"
+
+handoff:
+  - to: "verification-gate"
+    when: "Swarm 任务完成"
+    payload: "输出数据和 gate 配置"
+  - to: "failure-analysis"
+    when: "不可恢复错误"
+    payload: "错误上下文和 trace ID"
+
+cost_tracking:
+  estimatedTokens: 8000
+  estimatedTimeMs: 60000
+  recordFields:
+    - field: "agentsSpawned"
+      description: "创建的 agent 数"
+    - field: "tasksExecuted"
+      description: "执行的任务数"
+    - field: "errorsEncountered"
+      description: "遇到的错误数"
 ---
 
 # Advanced Swarm Orchestration
+
+## 1. Purpose
+
+Master advanced swarm patterns for distributed research, development, and testing workflows. This skill covers comprehensive orchestration strategies using both MCP tools and CLI commands, enabling coordinated multi-agent execution for complex distributed tasks.
+
+## 2. References
+
+- [Claude Flow Documentation](https://github.com/ruvnet/claude-flow)
+- [Swarm Orchestration Guide](https://github.com/ruvnet/claude-flow/wiki/swarm)
+- [MCP Tools Reference](https://github.com/ruvnet/claude-flow/wiki/mcp)
+- [Performance Optimization](https://github.com/ruvnet/claude-flow/wiki/performance)
+
+## 3. Core Principles / Architecture
+
+### Swarm Topologies
+
+- **Mesh** — Peer-to-peer communication, best for research and analysis
+- **Hierarchical** — Coordinator with subordinates, best for development
+- **Star** — Central coordinator, best for testing
+- **Ring** — Sequential processing chain for pipelines
+
+### Agent Strategies
+
+- **Adaptive** — Dynamic adjustment based on task complexity
+- **Balanced** — Equal distribution of work across agents
+- **Specialized** — Task-specific agent assignment
+- **Parallel** — Maximum concurrent execution
+
+## 4. Workflow
+
+Standard swarm execution follows: Swarm Initialization → Agent Spawning → Task Distribution → Execution Monitoring → Result Synthesis → Report Generation. Four primary workflow patterns are defined: Research Swarm (mesh topology for parallel information gathering and analysis), Development Swarm (hierarchical topology for full-stack development), Testing Swarm (star topology for comprehensive QA), and Analysis Swarm (mesh topology for deep code and system analysis).
+
+## 5. Data Boundaries
+
+Swarm agents share context through structured memory stores. Each agent has access only to the namespaces assigned to it. Cross-agent data sharing is explicit via `memory_store`, `memory_search`, and `memory_retrieve` — never implicit. Agents must not share secrets, credentials, or PII through shared memory. Namespace organization (e.g., "research", "development/design", "testing/plans") enforces access boundaries.
+
+## 6. Failure Modes
+
+| code | 异常 | 可恢复 | 恢复路径 |
+|------|------|--------|----------|
+| `AGENT_COMM_FAILURE` | Agent 通信失败 | 是 | 启用 fault tolerance 自动恢复 |
+| `TASK_TIMEOUT` | 任务执行超时 | 是 | 重试或重新分配任务 |
+| `SWARM_INIT_FAILURE` | Swarm 初始化失败 | 是 | 检查配置后重试 |
+| `MEMORY_PERSIST_FAILURE` | Memory 持久化失败 | 否 | 通知用户手动备份 |
+| — | 并行执行失败 | 是 | 检查依赖关系、验证资源限制、实施错误处理 |
+| — | 性能下降 | 是 | 优化拓扑、减少 agent 数量、分析瓶颈 |
+
+## 7. Inputs
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `task` | string | 是 | Swarm 执行的任务描述 |
+| `topology` | string | 否 | 拓扑类型 (mesh/hierarchical/star/ring) |
+| `maxAgents` | number | 否 | 最大 agent 数量 |
+| `strategy` | string | 否 | Agent 策略 (adaptive/balanced/specialized/parallel) |
+
+## 8. Outputs
+
+| 输出 | 类型 | 说明 |
+|------|------|------|
+| `swarm_results` | object | Swarm 执行结果 |
+| `metrics` | object | 性能指标（吞吐量、延迟、成功率） |
+| `error` | object | 错误信息 |
+
+## 9. When to Use
+
+Use the swarm-advanced skill when you need coordinated multi-agent execution for research, development, testing, or analysis tasks that benefit from parallel processing and specialized agent roles. Ideal for complex distributed workflows beyond single-agent capability. Requires claude-flow installed and MCP server configured.
+
+## 10. Verification
+
+- [ ] Swarm topology initialized and all agents reachable (gate-swarm-healthy)
+- [ ] All tasks executed with expected results (gate-tasks-complete)
+- [ ] Output quality meets defined thresholds (gate-quality)
+- [ ] Metrics collected and within acceptable range
+
+## 11. Forbidden Behaviors
+
+| 行为 | 后果 |
+|------|------|
+| 跳过 topology 初始化直接 spawn agent | 导致 agent 通信和协调失败 |
+| 忽略 fault tolerance 配置 | 单个 agent 失败导致整个 swarm 任务失败 |
+| 在共享内存中存储 secrets | 敏感信息泄露，跨 agent 扩散 |
+| 不设置任务超时 | 可能导致任务无限等待，耗尽资源 |
+| 并行执行不检查依赖关系 | 数据竞争和状态不一致 |
+
+## 12. Output Template
+
+```yaml
+swarm_execution:
+  topology: "mesh | hierarchical | star | ring"
+  agents_spawned: N
+  tasks_executed: N
+  tasks_failed: N
+  duration_ms: N
+  status: "success | partial | failed"
+  metrics:
+    throughput: N
+    latency_avg_ms: N
+    success_rate: N
+    agent_utilization: N
+```
+
+## 13. Example
+
+### 场景：AI 研究项目
+
+初始化 mesh 拓扑 swarm（6 agents），spawn 2 个 researcher + 2 个 analyst + 1 个 synthesizer + 1 个 documenter。并行信息收集 → 模式分析 → 综合 → 报告生成。agent 通过命名空间隔离研究领域，最终输出综合研究报告。
+
+### 场景：全栈应用开发
+
+初始化 hierarchical 拓扑 swarm（8 agents），spawn 架构师 + 前后端开发者 + 数据库工程师 + 测试 + 代码审查 + 技术写作 + DevOps。设计 → 并行实现 → 测试 → 审查 → 部署。
+
+## 14. Fallback Strategy
+
+| 场景 | 策略 | 行为 |
+|------|------|------|
+| MCP 工具不可用 | degrade | 使用 CLI 命令替代 |
+| Agent 不可用 | degrade | 降级为单 agent 执行 |
+| Memory 服务不可用 | degrade | 降级为无状态执行，记录警告 |
+| 并行任务超时 | retry | 指数退避重试后重新分配 |
+| 不可恢复错误 | abort | 保留已有结果，通知用户 |
+
+## 15. Handoff Protocol
+
+| 接收方 | 触发条件 | 传递内容 |
+|--------|---------|---------|
+| verification-gate | Swarm 任务完成 | 输出数据 + gate 配置 |
+| failure-analysis | 不可恢复错误 | 错误上下文 + trace ID |
+
+---
 
 Master advanced swarm patterns for distributed research, development, and testing workflows. This skill covers comprehensive orchestration strategies using both MCP tools and CLI commands.
 

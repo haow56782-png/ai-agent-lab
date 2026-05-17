@@ -1,16 +1,128 @@
 ---
 name: stream-chain
 description: Stream-JSON chaining for multi-agent pipelines, data transformation, and sequential workflows
-version: 1.0.0
 category: workflow
-tags: [streaming, pipeline, chaining, multi-agent, workflow]
+version: "1.0.0"
+owner: platform-team
+
+inputs:
+  - name: prompts
+    type: array
+    required: true
+    description: "Array of prompt strings, each defining a chain step"
+  - name: timeout
+    type: number
+    required: false
+    description: "Timeout per step in seconds (default 30)"
+  - name: verbose
+    type: boolean
+    required: false
+    description: "Enable detailed execution information"
+  - name: debug
+    type: boolean
+    required: false
+    description: "Enable debug mode with full logging"
+
+outputs:
+  - name: chain_result
+    type: object
+    description: "Final output after all chain steps complete"
+    alwaysPresent: true
+  - name: step_results
+    type: array
+    description: "Per-step execution results with timing"
+    alwaysPresent: false
+  - name: error
+    type: object
+    description: "Error information (stepIndex, message, recoverable)"
+    alwaysPresent: false
+
+tools:
+  - name: execute
+    purpose: "Run chain steps sequentially with context passing"
+    required: true
+  - name: read
+    purpose: "Read pipeline configuration files"
+    required: false
+
+memory:
+  required:
+    - "chain_context (Cross-step context accumulation for sequential execution)"
+    - "pipeline_config (Predefined pipeline definitions from .claude-flow/config.json)"
+  ttl: "会话级别 — 链完成后清除中间状态"
+
+workflow:
+  steps:
+    - "Prompt接收 — 接收链中各步的prompt序列"
+    - "Step Execution — 按序执行每步，前步输出作为后步上下文"
+    - "Context Flow — 管理跨步上下文传递和累积"
+    - "Result Aggregation — 汇总每步结果和执行时序"
+    - "Output Generation — 生成最终结果和摘要"
+  states:
+    - "INIT → PROMPTS_RECEIVED → STEP_EXECUTING → CONTEXT_FLOWING → RESULT_AGGREGATING → OUTPUT_GENERATED"
+    - "→ STEP_FAILED → RECOVERY"
+
+verification:
+  - id: "gate-minimum-prompts"
+    description: "确认最少有2个prompts"
+    type: existence
+    severity: critical
+  - id: "gate-step-timeout"
+    description: "每步不超过timeout限制"
+    type: invariant
+    severity: major
+  - id: "gate-context-flow"
+    description: "确认上下文在步间正确传递"
+    type: invariant
+    severity: major
+
+failure_modes:
+  - when: "单步执行超时"
+    code: "STEP_TIMEOUT"
+    recoverable: true
+    recovery: "增加timeout值（--timeout 120）重试"
+  - when: "上下文未正确传递到后续步骤"
+    code: "CONTEXT_LOSS"
+    recoverable: true
+    recovery: "启用--debug模式诊断上下文流"
+  - when: "pipeline名称不存在"
+    code: "PIPELINE_NOT_FOUND"
+    recoverable: true
+    recovery: "检查.claude-flow/config.json中的pipeline定义"
+  - when: "prompt数量不足"
+    code: "INSUFFICIENT_PROMPTS"
+    recoverable: true
+    recovery: "至少提供2个prompt"
+
+fallback:
+  strategy: degrade
+  plan: "单步失败时可跳过该步继续执行后续步骤；超时时可增加timeout值重试；context丢失时使用--debug诊断"
+
+handoff:
+  - to: "verification-quality"
+    when: "链完成执行"
+    payload: "步结果和时序数据"
+  - to: "failure-analysis"
+    when: "链执行失败"
+    payload: "错误上下文和失败步索引"
+
+cost_tracking:
+  estimatedTokens: 3500
+  estimatedTimeMs: 30000
+  recordFields:
+    - field: "stepsCompleted"
+      description: "完成的步数"
+    - field: "totalTimeMs"
+      description: "总执行时间"
+    - field: "errorsEncountered"
+      description: "遇到的错误数"
 ---
 
 # Stream-Chain Skill
 
-Execute sophisticated multi-step workflows where each agent's output flows into the next, enabling complex data transformations and sequential processing pipelines.
+## 1. Purpose
 
-## Overview
+Execute sophisticated multi-step workflows where each agent's output flows into the next, enabling complex data transformations and sequential processing pipelines.
 
 Stream-Chain provides two powerful modes for orchestrating multi-agent workflows:
 
@@ -19,11 +131,122 @@ Stream-Chain provides two powerful modes for orchestrating multi-agent workflows
 
 Each step in a chain receives the complete output from the previous step, enabling sophisticated multi-agent coordination through streaming data flow.
 
----
+## 2. References
 
-## Quick Start
+### Related Skills
 
-### Run a Custom Chain
+- **SPARC Methodology**: Systematic development workflow
+- **Swarm Coordination**: Multi-agent orchestration
+- **Memory Management**: Persistent context storage
+- **Neural Patterns**: Adaptive learning
+
+### Integration with Claude Flow
+
+Combine with Swarm Coordination:
+
+```bash
+# Initialize swarm for coordination
+claude-flow swarm init --topology mesh
+
+# Execute stream chain with swarm agents
+claude-flow stream-chain run \
+  "Agent 1: Research task" \
+  "Agent 2: Implement solution" \
+  "Agent 3: Test implementation" \
+  "Agent 4: Review and refine"
+```
+
+Memory Integration:
+
+Stream chains automatically store context in memory for cross-session persistence:
+
+```bash
+# Execute chain with memory
+claude-flow stream-chain run \
+  "Analyze requirements" \
+  "Design architecture" \
+  --verbose
+
+# Results stored in .claude-flow/memory/stream-chain/
+```
+
+Neural Pattern Training:
+
+Successful chains train neural patterns for improved performance:
+
+```bash
+# Enable neural training
+claude-flow stream-chain pipeline optimize --debug
+
+# Patterns learned and stored for future optimizations
+```
+
+## 3. Core Principles
+
+1. **Sequential Processing**: Each step builds on previous results
+2. **Context Preservation**: Full output history flows through chain
+3. **Flexible Orchestration**: Custom chains or predefined pipelines
+4. **Agent Coordination**: Natural multi-agent collaboration pattern
+5. **Data Transformation**: Complex processing through simple steps
+
+### Best Practices
+
+1. **Clear and Specific Prompts**
+
+**Good:**
+```bash
+"Analyze authentication.js for SQL injection vulnerabilities"
+```
+
+**Avoid:**
+```bash
+"Check security"
+```
+
+2. **Logical Progression**
+
+Order prompts to build on previous outputs:
+```bash
+1. "Identify the problem"
+2. "Analyze root causes"
+3. "Design solution"
+4. "Implement solution"
+5. "Verify implementation"
+```
+
+3. **Appropriate Timeouts**
+
+- Simple tasks: 30 seconds (default)
+- Analysis tasks: 45-60 seconds
+- Implementation tasks: 60-90 seconds
+- Complex workflows: 90-120 seconds
+
+4. **Verification Steps**
+
+Include validation in your chains:
+```bash
+claude-flow stream-chain run \
+  "Implement feature X" \
+  "Write tests for feature X" \
+  "Verify tests pass and cover edge cases"
+```
+
+5. **Iterative Refinement**
+
+Use chains for iterative improvement:
+```bash
+claude-flow stream-chain run \
+  "Generate initial implementation" \
+  "Review and identify issues" \
+  "Refine based on issues found" \
+  "Final quality check"
+```
+
+## 4. Workflow
+
+### Quick Start
+
+#### Run a Custom Chain
 
 ```bash
 claude-flow stream-chain run \
@@ -32,19 +255,17 @@ claude-flow stream-chain run \
   "Generate action plan"
 ```
 
-### Execute a Pipeline
+#### Execute a Pipeline
 
 ```bash
 claude-flow stream-chain pipeline analysis
 ```
 
----
-
-## Custom Chains (`run`)
+### Custom Chains (`run`)
 
 Execute custom stream chains with your own prompts for maximum flexibility.
 
-### Syntax
+#### Syntax
 
 ```bash
 claude-flow stream-chain run <prompt1> <prompt2> [...] [options]
@@ -55,7 +276,7 @@ claude-flow stream-chain run <prompt1> <prompt2> [...] [options]
 - Each prompt becomes a step in the chain
 - Output flows sequentially through all steps
 
-### Options
+#### Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -63,7 +284,7 @@ claude-flow stream-chain run <prompt1> <prompt2> [...] [options]
 | `--timeout <seconds>` | Timeout per step | `30` |
 | `--debug` | Enable debug mode with full logging | `false` |
 
-### How Context Flows
+#### How Context Flows
 
 Each step receives the previous output as context:
 
@@ -84,9 +305,9 @@ Step 3 receives:
   Next task: Optimize performance"
 ```
 
-### Examples
+#### Examples
 
-#### Basic Development Chain
+**Basic Development Chain**
 
 ```bash
 claude-flow stream-chain run \
@@ -95,7 +316,7 @@ claude-flow stream-chain run \
   "Create unit tests with edge cases"
 ```
 
-#### Security Audit Workflow
+**Security Audit Workflow**
 
 ```bash
 claude-flow stream-chain run \
@@ -107,7 +328,7 @@ claude-flow stream-chain run \
   --verbose
 ```
 
-#### Code Refactoring Chain
+**Code Refactoring Chain**
 
 ```bash
 claude-flow stream-chain run \
@@ -118,7 +339,7 @@ claude-flow stream-chain run \
   --debug
 ```
 
-#### Data Processing Pipeline
+**Data Processing Pipeline**
 
 ```bash
 claude-flow stream-chain run \
@@ -128,21 +349,19 @@ claude-flow stream-chain run \
   "Generate data quality report"
 ```
 
----
-
-## Predefined Pipelines (`pipeline`)
+### Predefined Pipelines (`pipeline`)
 
 Execute battle-tested workflows optimized for common development tasks.
 
-### Syntax
+#### Syntax
 
 ```bash
 claude-flow stream-chain pipeline <type> [options]
 ```
 
-### Available Pipelines
+#### Available Pipelines
 
-#### 1. Analysis Pipeline
+**1. Analysis Pipeline**
 
 Comprehensive codebase analysis and improvement identification.
 
@@ -161,7 +380,7 @@ claude-flow stream-chain pipeline analysis
 - Architecture review
 - Code quality audits
 
-#### 2. Refactor Pipeline
+**2. Refactor Pipeline**
 
 Systematic code refactoring with prioritization.
 
@@ -180,7 +399,7 @@ claude-flow stream-chain pipeline refactor
 - Legacy code modernization
 - Design pattern implementation
 
-#### 3. Test Pipeline
+**3. Test Pipeline**
 
 Comprehensive test generation with coverage analysis.
 
@@ -199,7 +418,7 @@ claude-flow stream-chain pipeline test
 - Regression test creation
 - Quality assurance
 
-#### 4. Optimize Pipeline
+**4. Optimize Pipeline**
 
 Performance optimization with profiling and implementation.
 
@@ -218,7 +437,7 @@ claude-flow stream-chain pipeline optimize
 - Scalability enhancement
 - Latency reduction
 
-### Pipeline Options
+#### Pipeline Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -226,48 +445,37 @@ claude-flow stream-chain pipeline optimize
 | `--timeout <seconds>` | Timeout per step | `30` |
 | `--debug` | Enable debug mode | `false` |
 
-### Pipeline Examples
+#### Pipeline Examples
 
-#### Quick Analysis
+**Quick Analysis**
 
 ```bash
 claude-flow stream-chain pipeline analysis
 ```
 
-#### Extended Refactoring
+**Extended Refactoring**
 
 ```bash
 claude-flow stream-chain pipeline refactor --timeout 60 --verbose
 ```
 
-#### Debug Test Generation
+**Debug Test Generation**
 
 ```bash
 claude-flow stream-chain pipeline test --debug
 ```
 
-#### Comprehensive Optimization
+**Comprehensive Optimization**
 
 ```bash
 claude-flow stream-chain pipeline optimize --timeout 90 --verbose
 ```
 
-### Pipeline Output
-
-Each pipeline execution provides:
-
-- **Progress**: Step-by-step execution status
-- **Results**: Success/failure per step
-- **Timing**: Total and per-step execution time
-- **Summary**: Consolidated results and recommendations
-
----
-
-## Custom Pipeline Definitions
+### Custom Pipeline Definitions
 
 Define reusable pipelines in `.claude-flow/config.json`:
 
-### Configuration Format
+#### Configuration Format
 
 ```json
 {
@@ -298,18 +506,148 @@ Define reusable pipelines in `.claude-flow/config.json`:
 }
 ```
 
-### Execute Custom Pipeline
+#### Execute Custom Pipeline
 
 ```bash
 claude-flow stream-chain pipeline security
 claude-flow stream-chain pipeline documentation
 ```
 
----
+## 5. Data Boundaries
 
-## Advanced Use Cases
+Stream chains operate on text-based prompt and output data. Each step can pass up to ~100K tokens of context to the next step. Sensitive data should be handled with appropriate precautions as it flows through the chain.
 
-### Multi-Agent Coordination
+### Performance Characteristics
+
+- **Throughput**: 2-5 steps per minute (varies by complexity)
+- **Context Size**: Up to 100K tokens per step
+- **Memory Usage**: ~50MB per active chain
+- **Concurrency**: Supports parallel chain execution
+
+## 6. Failure Modes
+
+| Code | 异常 | 可恢复 | 恢复路径 |
+|------|------|--------|----------|
+| `STEP_TIMEOUT` | 单步执行超时 | 是 | 增加timeout值（--timeout 120）重试 |
+| `CONTEXT_LOSS` | 上下文未正确传递到后续步骤 | 是 | 启用--debug模式诊断上下文流 |
+| `PIPELINE_NOT_FOUND` | pipeline名称不存在 | 是 | 检查.claude-flow/config.json中的pipeline定义 |
+| `INSUFFICIENT_PROMPTS` | prompt数量不足 | 是 | 至少提供2个prompt |
+
+### Troubleshooting
+
+**Chain Timeout**
+
+If steps timeout, increase timeout value:
+
+```bash
+claude-flow stream-chain run "complex task" --timeout 120
+```
+
+**Context Loss**
+
+If context not flowing properly, use `--debug`:
+
+```bash
+claude-flow stream-chain run "step 1" "step 2" --debug
+```
+
+**Pipeline Not Found**
+
+Verify pipeline name and custom definitions:
+
+```bash
+# Check available pipelines
+cat .claude-flow/config.json | grep -A 10 "streamChain"
+```
+
+## 7. Inputs
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `prompts` | array[string] | 是 | 链中各步的prompt，最少2个 |
+| `timeout` | number | 否 | 每步超时限制，默认30秒 |
+| `verbose` | boolean | 否 | 显示详细执行信息 |
+| `debug` | boolean | 否 | 启用debug模式和完整日志 |
+
+### Custom Chains Input Syntax
+
+```bash
+claude-flow stream-chain run <prompt1> <prompt2> [...] [options]
+```
+
+### Pipeline Input Syntax
+
+```bash
+claude-flow stream-chain pipeline <type> [options]
+```
+
+## 8. Outputs
+
+### Pipeline Output
+
+Each pipeline execution provides:
+
+- **Progress**: Step-by-step execution status
+- **Results**: Success/failure per step
+- **Timing**: Total and per-step execution time
+- **Summary**: Consolidated results and recommendations
+
+| 输出 | 类型 | 说明 |
+|------|------|------|
+| `chain_result` | object | 所有步完成后的最终输出 |
+| `step_results` | array | 每步执行结果和执行时间 |
+| `error` | object | 错误信息（stepIndex, message） |
+
+## 9. When to Use
+
+| 场景 | 说明 |
+|------|------|
+| 多步数据处理流水线 | 需要将一个agent的输出传入下一个agent |
+| 代码审查工作流 | 分析→审查→报告 |
+| 代码重构 | 识别→计划→实施→验证 |
+| 数据转换 | 提取→转换→验证→报告 |
+| 代码库迁移 | 分析→计划→实施→测试→文档 |
+
+Use `run` for custom workflows and `pipeline` for battle-tested solutions.
+
+## 10. Verification
+
+- [ ] Minimum 2 prompts provided
+- [ ] Timeout per step within limits
+- [ ] Context flowing properly between steps
+- [ ] Pipeline name valid (for predefined pipelines)
+- [ ] Each step produces expected output
+- [ ] Verification steps included in chain
+
+## 11. Forbidden Behaviors
+
+| 行为 | 后果 |
+|------|------|
+| 使用模糊的prompt | 输出质量低下，不能满足下游需求 |
+| 跳过验证步骤 | 无法确保结果正确性 |
+| 不设置适当timeout | 复杂任务中途超时失败 |
+| 忽略上下文流 | 下游步骤缺失关键信息 |
+| 单步prompt执行 | 最少需要2个prompt |
+
+## 12. Output Template
+
+```yaml
+chain_result:
+  final_output: "..."
+  steps_completed: N
+  total_time_ms: NNNNN
+step_results:
+  - step: 1
+    status: "success | failed"
+    time_ms: NNNN
+    output: "..."
+```
+
+## 13. VIB Example
+
+### Advanced Use Cases
+
+**Multi-Agent Coordination**
 
 Chain different agent types for complex workflows:
 
@@ -323,7 +661,7 @@ claude-flow stream-chain run \
   "Write deployment documentation"
 ```
 
-### Data Transformation Pipeline
+**Data Transformation Pipeline**
 
 Process and transform data through multiple stages:
 
@@ -336,7 +674,7 @@ claude-flow stream-chain run \
   "Create visualization code"
 ```
 
-### Code Migration Workflow
+**Code Migration Workflow**
 
 Systematic code migration with validation:
 
@@ -349,7 +687,7 @@ claude-flow stream-chain run \
   "Document migration steps and rollback procedures"
 ```
 
-### Quality Assurance Chain
+**Quality Assurance Chain**
 
 Comprehensive code quality workflow:
 
@@ -360,156 +698,9 @@ claude-flow stream-chain pipeline test
 claude-flow stream-chain pipeline optimize
 ```
 
----
+### Examples Repository
 
-## Best Practices
-
-### 1. Clear and Specific Prompts
-
-**Good:**
-```bash
-"Analyze authentication.js for SQL injection vulnerabilities"
-```
-
-**Avoid:**
-```bash
-"Check security"
-```
-
-### 2. Logical Progression
-
-Order prompts to build on previous outputs:
-```bash
-1. "Identify the problem"
-2. "Analyze root causes"
-3. "Design solution"
-4. "Implement solution"
-5. "Verify implementation"
-```
-
-### 3. Appropriate Timeouts
-
-- Simple tasks: 30 seconds (default)
-- Analysis tasks: 45-60 seconds
-- Implementation tasks: 60-90 seconds
-- Complex workflows: 90-120 seconds
-
-### 4. Verification Steps
-
-Include validation in your chains:
-```bash
-claude-flow stream-chain run \
-  "Implement feature X" \
-  "Write tests for feature X" \
-  "Verify tests pass and cover edge cases"
-```
-
-### 5. Iterative Refinement
-
-Use chains for iterative improvement:
-```bash
-claude-flow stream-chain run \
-  "Generate initial implementation" \
-  "Review and identify issues" \
-  "Refine based on issues found" \
-  "Final quality check"
-```
-
----
-
-## Integration with Claude Flow
-
-### Combine with Swarm Coordination
-
-```bash
-# Initialize swarm for coordination
-claude-flow swarm init --topology mesh
-
-# Execute stream chain with swarm agents
-claude-flow stream-chain run \
-  "Agent 1: Research task" \
-  "Agent 2: Implement solution" \
-  "Agent 3: Test implementation" \
-  "Agent 4: Review and refine"
-```
-
-### Memory Integration
-
-Stream chains automatically store context in memory for cross-session persistence:
-
-```bash
-# Execute chain with memory
-claude-flow stream-chain run \
-  "Analyze requirements" \
-  "Design architecture" \
-  --verbose
-
-# Results stored in .claude-flow/memory/stream-chain/
-```
-
-### Neural Pattern Training
-
-Successful chains train neural patterns for improved performance:
-
-```bash
-# Enable neural training
-claude-flow stream-chain pipeline optimize --debug
-
-# Patterns learned and stored for future optimizations
-```
-
----
-
-## Troubleshooting
-
-### Chain Timeout
-
-If steps timeout, increase timeout value:
-
-```bash
-claude-flow stream-chain run "complex task" --timeout 120
-```
-
-### Context Loss
-
-If context not flowing properly, use `--debug`:
-
-```bash
-claude-flow stream-chain run "step 1" "step 2" --debug
-```
-
-### Pipeline Not Found
-
-Verify pipeline name and custom definitions:
-
-```bash
-# Check available pipelines
-cat .claude-flow/config.json | grep -A 10 "streamChain"
-```
-
----
-
-## Performance Characteristics
-
-- **Throughput**: 2-5 steps per minute (varies by complexity)
-- **Context Size**: Up to 100K tokens per step
-- **Memory Usage**: ~50MB per active chain
-- **Concurrency**: Supports parallel chain execution
-
----
-
-## Related Skills
-
-- **SPARC Methodology**: Systematic development workflow
-- **Swarm Coordination**: Multi-agent orchestration
-- **Memory Management**: Persistent context storage
-- **Neural Patterns**: Adaptive learning
-
----
-
-## Examples Repository
-
-### Complete Development Workflow
+**Complete Development Workflow**
 
 ```bash
 # Full feature development chain
@@ -524,7 +715,7 @@ claude-flow stream-chain run \
   --verbose
 ```
 
-### Code Review Pipeline
+**Code Review Pipeline**
 
 ```bash
 # Automated code review workflow
@@ -536,7 +727,7 @@ claude-flow stream-chain run \
   "Generate code review report with recommendations"
 ```
 
-### Migration Assistant
+**Migration Assistant**
 
 ```bash
 # Framework migration helper
@@ -547,6 +738,22 @@ claude-flow stream-chain run \
   "Generate migration scripts" \
   "Provide updated code examples"
 ```
+
+## 14. Fallback Strategy
+
+| 场景 | 策略 | 行为 |
+|------|------|------|
+| 单步超时 | degrade | 增加timeout重试或跳过该步继续 |
+| 上下文丢失 | degrade | 启用--debug模式诊断问题 |
+| Pipeline未找到 | abort | 检查配置中pipeline定义 |
+| Prompt不足 | abort | 提示至少提供2个prompt |
+
+## 15. Handoff Protocol
+
+| 接收方 | 触发条件 | 传递内容 |
+|--------|---------|---------|
+| verification-quality | 链完成执行 | 步结果和时序数据 |
+| failure-analysis | 链执行失败 | 错误上下文和失败步索引 |
 
 ---
 

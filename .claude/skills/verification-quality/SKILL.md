@@ -1,14 +1,133 @@
 ---
 name: "Verification & Quality Assurance"
 description: "Comprehensive truth scoring, code quality verification, and automatic rollback system with 0.95 accuracy threshold for ensuring high-quality agent outputs and codebase reliability."
-version: "2.0.0"
 category: "quality-assurance"
-tags: ["verification", "truth-scoring", "quality", "rollback", "metrics", "ci-cd"]
+version: "2.0.0"
+owner: "platform-team"
+
+inputs:
+  - name: file_path
+    type: string
+    required: false
+    description: "Path to file for verification"
+  - name: directory
+    type: string
+    required: false
+    description: "Directory to verify recursively"
+  - name: threshold
+    type: number
+    required: false
+    description: "Verification threshold (0.0-1.0), defaults to 0.95"
+  - name: task_id
+    type: string
+    required: false
+    description: "Task identifier for task verification"
+  - name: period
+    type: string
+    required: false
+    description: "Time period for metrics (e.g. 24h, 7d, 30d)"
+
+outputs:
+  - name: overall_score
+    type: number
+    description: "Overall truth score (0.0-1.0)"
+    alwaysPresent: true
+  - name: passed
+    type: boolean
+    description: "Whether verification passed threshold"
+    alwaysPresent: true
+  - name: checks
+    type: array
+    description: "Individual check results with scores"
+    alwaysPresent: true
+  - name: report
+    type: object
+    description: "Detailed verification report with metrics and visualizations"
+    alwaysPresent: false
+
+tools:
+  - name: read
+    purpose: "Read source files for verification analysis"
+    required: true
+  - name: execute
+    purpose: "Run verification commands and tests"
+    required: true
+
+memory:
+  required:
+    - "truth_score_history (历史 truth score 记录，用于趋势分析)"
+    - "rollback_records (回滚操作历史)"
+    - "verification_results (当前验证结果)"
+  ttl: "会话级别 — 验证完成后保留摘要"
+
+workflow:
+  steps:
+    - "Truth Scoring — 计算代码和任务的可靠性指标"
+    - "Verification Check — 执行自动化验证检查"
+    - "Report Generation — 生成验证报告"
+    - "Rollback Decision — 验证失败时自动回滚"
+  states:
+    - "INIT → SCORING → CHECKING → REPORTING → ROLLBACK_DECISION → COMPLETE"
+    - "→ FAILED"
+
+verification:
+  - id: "gate-verify-threshold"
+    description: "整体 truth score 达到设定的阈值"
+    type: comparison
+    severity: critical
+  - id: "gate-no-critical-issues"
+    description: "没有严重的安全或正确性错误"
+    type: invariant
+    severity: critical
+
+failure_modes:
+  - when: "truth score 低于阈值"
+    code: "LOW_TRUTH_SCORE"
+    recoverable: true
+    recovery: "自动回滚变更，或降低阈值允许通过"
+  - when: "Git 回滚失败"
+    code: "ROLLBACK_FAILURE"
+    recoverable: true
+    recovery: "记录错误上下文，提示用户手动回滚"
+  - when: "验证超时"
+    code: "VERIFICATION_TIMEOUT"
+    recoverable: true
+    recovery: "分批验证或增加超时时间"
+  - when: "配置文件语法错误"
+    code: "CONFIG_ERROR"
+    recoverable: true
+    recovery: "提示用户修正配置语法"
+
+fallback:
+  strategy: degrade
+  plan: "核心验证工具不可用时降低验证严格度（如降低阈值或跳过非关键检查）；Git 回滚不可用时提示用户手动操作；Dashboard 不可用时使用命令行输出替代"
+
+handoff:
+  - to: "pair-programming"
+    when: "验证结果显示需要代码修改"
+    payload: "验证结果、失败项列表和建议修复路径"
+  - to: "verification-gate"
+    when: "需要 gate 级别的验证确认"
+    payload: "验证报告和证据记录"
+  - to: "failure-analysis"
+    when: "连续验证失败且无法自动恢复"
+    payload: "失败上下文、trace ID 和验证历史"
+
+cost_tracking:
+  estimatedTokens: 2000
+  estimatedTimeMs: 5000
+  recordFields:
+    - field: "checksExecuted"
+      description: "执行的验证检查次数"
+    - field: "checksPassed"
+      description: "通过的检查次数"
+    - field: "rollbacksPerformed"
+      description: "执行的回滚次数"
 ---
 
 # Verification & Quality Assurance Skill
 
-## What This Skill Does
+## 1. Purpose
 
 This skill provides a comprehensive verification and quality assurance system that ensures code quality and correctness through:
 
@@ -19,31 +138,233 @@ This skill provides a comprehensive verification and quality assurance system th
 - **CI/CD Integration**: Export capabilities for continuous integration pipelines
 - **Real-time Monitoring**: Live dashboards and watch modes for ongoing verification
 
-## Prerequisites
+## 2. References
+
+### Prerequisites
 
 - Claude Flow installed (`npx claude-flow@alpha`)
 - Git repository (for rollback features)
 - Node.js 18+ (for dashboard features)
 
-## Quick Start
+### Additional Resources
+
+- Truth Scoring Algorithm: See `/docs/truth-scoring.md`
+- Verification Criteria: See `/docs/verification-criteria.md`
+- Integration Examples: See `/examples/verification/`
+- API Reference: See `/docs/api/verification.md`
+
+## 3. Core Principles
+
+1. **Set Appropriate Thresholds**: Use 0.99 for critical code, 0.95 for standard, 0.90 for experimental
+2. **Enable Auto-rollback**: Prevent bad code from persisting
+3. **Monitor Trends**: Track improvement over time, not just current scores
+4. **Integrate with CI/CD**: Make verification part of your pipeline
+5. **Use Watch Mode**: Get immediate feedback during development
+6. **Export Metrics**: Track quality metrics in your monitoring system
+7. **Review Rollbacks**: Understand why changes were rejected
+8. **Train Agents**: Use verification feedback to improve agent performance
+
+## 4. Workflow
+
+The verification and quality assurance workflow follows a continuous cycle:
+
+1. **Truth Scoring** — Calculate reliability metrics for code, agents, and tasks
+2. **Verification Check** — Execute automated checks for correctness, security, and best practices
+3. **Report Generation** — Generate detailed reports with metrics and visualizations
+4. **Rollback Decision** — Automatically revert changes that fail verification
+
+### Continuous Verification
+
+Monitor codebase continuously during development:
 
 ```bash
-# View current truth scores
-npx claude-flow@alpha truth
+# Watch directory for changes
+npx claude-flow@alpha verify watch --directory src/
 
-# Run verification check
-npx claude-flow@alpha verify check
+# Watch with auto-fix
+npx claude-flow@alpha verify watch --directory src/ --auto-fix
 
-# Verify specific file with custom threshold
-npx claude-flow@alpha verify check --file src/app.js --threshold 0.98
-
-# Rollback last failed verification
-npx claude-flow@alpha verify rollback --last-good
+# Watch with notifications
+npx claude-flow@alpha verify watch --notify --threshold 0.95
 ```
 
----
+## 5. Data Boundaries
 
-## Complete Guide
+**Data Read:**
+- Source code files, configuration files, test results
+- Project metadata (file paths, task IDs, agent names)
+- Git history (commit hashes, rollback targets)
+
+**Data Written:**
+- Truth score metrics and trend data
+- Verification reports (JSON, HTML, CSV, Markdown)
+- Rollback records and audit trails
+- Dashboard visualization data
+
+**Data NOT Accessed:**
+- Authentication credentials, API keys, secrets
+- Personal user data (PII)
+- Financial or payment information
+
+## 6. Failure Modes
+
+### Troubleshooting
+
+**Low Truth Scores:**
+```bash
+# Get detailed breakdown
+npx claude-flow@alpha truth --verbose --threshold 0.0
+
+# Check specific criteria
+npx claude-flow@alpha verify check --verbose
+
+# View agent-specific issues
+npx claude-flow@alpha truth --agent <agent-name> --format json
+```
+
+**Rollback Failures:**
+```bash
+# Check git status
+git status
+
+# View rollback history
+npx claude-flow@alpha verify rollback --history
+
+# Manual rollback
+git reset --hard HEAD~1
+```
+
+**Verification Timeouts:**
+```bash
+# Increase timeout
+npx claude-flow@alpha verify check --timeout 60s
+
+# Verify in batches
+npx claude-flow@alpha verify batch --batch-size 10
+```
+
+| Failure Code | Description | Recoverable |
+|-------------|-------------|-------------|
+| `LOW_TRUTH_SCORE` | Truth score falls below configured threshold | Yes -- auto-rollback or threshold reduction |
+| `ROLLBACK_FAILURE` | Git rollback operation fails | Yes -- manual rollback with guidance |
+| `VERIFICATION_TIMEOUT` | Verification check exceeds timeout | Yes -- increase timeout or batch verification |
+| `CONFIG_ERROR` | Configuration syntax or validation error | Yes -- fix configuration syntax |
+
+### Exit Codes
+
+Verification commands return standard exit codes:
+
+- `0`: Verification passed (score >= threshold)
+- `1`: Verification failed (score < threshold)
+- `2`: Error during verification (invalid input, system error)
+
+## 7. Inputs
+
+The verification system accepts the following inputs via command-line parameters:
+
+### File Verification Inputs
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `--file` / `-f` | string | — | File path to be verified |
+| `--directory` | string | — | Directory to verify recursively |
+| `--threshold` | number | 0.95 | Verification threshold (0.0-1.0) |
+| `--task` | string | — | Task identifier for task verification |
+| `--period` | string | 24h | Time period for metrics |
+| `--format` | string | table | Output format (table/json/csv/html) |
+| `--timeout` | string | 30s | Verification timeout |
+| `--auto-fix` | boolean | false | Enable auto-fix mode |
+| `--verbose` | boolean | false | Verbose output for debugging |
+| `--parallel` | boolean | false | Run verification in parallel |
+
+### Task Verification Inputs
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `--task-id` | string | — | Task identifier |
+| `--threshold` | number | 0.95 | Custom verification threshold |
+| `--verbose` | boolean | false | Verbose debugging output |
+
+## 8. Outputs
+
+### JSON Output for CI/CD
+
+```bash
+# Get structured JSON output
+npx claude-flow@alpha verify check --json > verification.json
+
+# Example JSON structure:
+{
+  "overallScore": 0.947,
+  "passed": true,
+  "threshold": 0.95,
+  "checks": [
+    {
+      "name": "code-correctness",
+      "score": 0.98,
+      "passed": true
+    },
+    {
+      "name": "security",
+      "score": 0.91,
+      "passed": false,
+      "issues": [...]
+    }
+  ]
+}
+```
+
+### Report Outputs
+
+**Report Formats:**
+```bash
+# JSON report
+npx claude-flow@alpha verify report --format json
+
+# HTML report with charts
+npx claude-flow@alpha verify report --export metrics.html --format html
+
+# CSV for data analysis
+npx claude-flow@alpha verify report --format csv --export metrics.csv
+
+# Markdown summary
+npx claude-flow@alpha verify report --format markdown
+```
+
+**Time-based Reports:**
+```bash
+# Last 24 hours
+npx claude-flow@alpha verify report --period 24h
+
+# Last 7 days
+npx claude-flow@alpha verify report --period 7d
+
+# Last 30 days with trends
+npx claude-flow@alpha verify report --period 30d --include-trends
+
+# Custom date range
+npx claude-flow@alpha verify report --from 2025-01-01 --to 2025-01-31
+```
+
+**Report Content:**
+- Overall truth scores
+- Per-agent performance metrics
+- Task completion quality
+- Verification pass/fail rates
+- Rollback frequency
+- Quality improvement trends
+- Statistical confidence intervals
+
+## 9. When to Use
+
+Use the Verification & Quality Assurance skill in these scenarios:
+
+- **Code Quality Gates**: Before merging code changes to ensure quality thresholds are met
+- **Agent Output Verification**: Verify outputs from AI agents meet reliability standards
+- **Continuous Monitoring**: Watch codebase for quality regressions during development
+- **CI/CD Pipelines**: Integrate verification into automated deployment pipelines
+- **Performance Analysis**: Track quality metrics and improvement trends over time
+- **Pre-commit Validation**: Automatically verify before commits to prevent bad code
+
+## 10. Verification
 
 ### Truth Scoring System
 
@@ -213,113 +534,6 @@ The verification system evaluates:
    - API documentation
    - Code comments quality
 
-#### JSON Output for CI/CD
-
-```bash
-# Get structured JSON output
-npx claude-flow@alpha verify check --json > verification.json
-
-# Example JSON structure:
-{
-  "overallScore": 0.947,
-  "passed": true,
-  "threshold": 0.95,
-  "checks": [
-    {
-      "name": "code-correctness",
-      "score": 0.98,
-      "passed": true
-    },
-    {
-      "name": "security",
-      "score": 0.91,
-      "passed": false,
-      "issues": [...]
-    }
-  ]
-}
-```
-
-### Automatic Rollback
-
-#### Rollback Failed Changes
-
-Automatically revert changes that fail verification checks.
-
-**Basic Rollback:**
-```bash
-# Rollback to last known good state
-npx claude-flow@alpha verify rollback --last-good
-
-# Rollback to specific commit
-npx claude-flow@alpha verify rollback --to-commit abc123
-
-# Interactive rollback with preview
-npx claude-flow@alpha verify rollback --interactive
-```
-
-**Smart Rollback:**
-```bash
-# Rollback only failed files (preserve good changes)
-npx claude-flow@alpha verify rollback --selective
-
-# Rollback with automatic backup
-npx claude-flow@alpha verify rollback --backup-first
-
-# Dry-run mode (preview without executing)
-npx claude-flow@alpha verify rollback --dry-run
-```
-
-**Rollback Performance:**
-- Git-based rollback: <1 second
-- Selective file rollback: <500ms
-- Backup creation: Automatic before rollback
-
-### Verification Reports
-
-#### Generate Reports
-
-Create detailed verification reports with metrics and visualizations.
-
-**Report Formats:**
-```bash
-# JSON report
-npx claude-flow@alpha verify report --format json
-
-# HTML report with charts
-npx claude-flow@alpha verify report --export metrics.html --format html
-
-# CSV for data analysis
-npx claude-flow@alpha verify report --format csv --export metrics.csv
-
-# Markdown summary
-npx claude-flow@alpha verify report --format markdown
-```
-
-**Time-based Reports:**
-```bash
-# Last 24 hours
-npx claude-flow@alpha verify report --period 24h
-
-# Last 7 days
-npx claude-flow@alpha verify report --period 7d
-
-# Last 30 days with trends
-npx claude-flow@alpha verify report --period 30d --include-trends
-
-# Custom date range
-npx claude-flow@alpha verify report --from 2025-01-01 --to 2025-01-31
-```
-
-**Report Content:**
-- Overall truth scores
-- Per-agent performance metrics
-- Task completion quality
-- Verification pass/fail rates
-- Rollback frequency
-- Quality improvement trends
-- Statistical confidence intervals
-
 ### Interactive Dashboard
 
 #### Launch Dashboard
@@ -349,74 +563,75 @@ npx claude-flow@alpha verify dashboard --refresh 5s
 - Export to PDF/HTML
 - Filter by time period/agent/score
 
-### Configuration
+### Performance Metrics
 
-#### Default Configuration
+**Verification Speed:**
+- Single file check: <100ms
+- Directory scan: <500ms (per 100 files)
+- Full codebase analysis: <5s (typical project)
+- Truth score calculation: <50ms
 
-Set verification preferences in `.claude-flow/config.json`:
+**Rollback Speed:**
+- Git-based rollback: <1s
+- Selective file rollback: <500ms
+- Backup creation: <2s
 
-```json
-{
-  "verification": {
-    "threshold": 0.95,
-    "autoRollback": true,
-    "gitIntegration": true,
-    "hooks": {
-      "preCommit": true,
-      "preTask": true,
-      "postEdit": true
-    },
-    "checks": {
-      "codeCorrectness": true,
-      "security": true,
-      "performance": true,
-      "documentation": true,
-      "bestPractices": true
-    }
-  },
-  "truth": {
-    "defaultFormat": "table",
-    "defaultPeriod": "24h",
-    "warningThreshold": 0.85,
-    "criticalThreshold": 0.75,
-    "autoExport": {
-      "enabled": true,
-      "path": ".claude-flow/metrics/truth-daily.json"
-    }
-  }
-}
+**Dashboard Performance:**
+- Initial load: <1s
+- Real-time updates: <100ms latency (WebSocket)
+- Chart rendering: 60 FPS
+
+## 11. Forbidden Behaviors
+
+| Behavior | Consequence |
+|----------|-------------|
+| Disabling verification for critical code paths | Production bugs may go undetected |
+| Ignoring low truth scores without review | Quality degradation over time |
+| Using auto-fix without reviewing changes | Unintended side effects from automated fixes |
+| Running verification without proper threshold | False passes or excessive failures |
+| Skipping rollback when verification fails | Bad code persists in the codebase |
+| Manually overriding verification results without evidence | Undermines the quality assurance system |
+
+## 12. Output Template
+
+```yaml
+verification_result:
+  overall_score: 0.0-1.0
+  passed: true | false
+  threshold: 0.95
+  checks:
+    - name: "code-correctness"
+      score: 0.0-1.0
+      passed: true | false
+    - name: "security"
+      score: 0.0-1.0
+      passed: true | false
+      issues: ["issue1", "issue2"]
+  report:
+    format: "json | html | csv | markdown"
+    period: "24h | 7d | 30d"
+    include_trends: true | false
 ```
 
-#### Threshold Configuration
+## 13. VIB Example
 
-**Adjust verification strictness:**
+### Quick Start
+
 ```bash
-# Strict mode (99% accuracy required)
-npx claude-flow@alpha verify check --threshold 0.99
+# View current truth scores
+npx claude-flow@alpha truth
 
-# Lenient mode (90% acceptable)
-npx claude-flow@alpha verify check --threshold 0.90
+# Run verification check
+npx claude-flow@alpha verify check
 
-# Set default threshold
-npx claude-flow@alpha config set verification.threshold 0.98
+# Verify specific file with custom threshold
+npx claude-flow@alpha verify check --file src/app.js --threshold 0.98
+
+# Rollback last failed verification
+npx claude-flow@alpha verify rollback --last-good
 ```
 
-**Per-environment thresholds:**
-```json
-{
-  "verification": {
-    "thresholds": {
-      "production": 0.99,
-      "staging": 0.95,
-      "development": 0.90
-    }
-  }
-}
-```
-
-### Integration Examples
-
-#### CI/CD Integration
+### CI/CD Integration
 
 **GitHub Actions:**
 ```yaml
@@ -471,7 +686,7 @@ verify:
       junit: verification.json
 ```
 
-#### Swarm Integration
+### Swarm Integration
 
 Run verification automatically during swarm operations:
 
@@ -486,7 +701,7 @@ npx claude-flow@alpha hive-mind --verify --rollback-on-fail
 npx claude-flow@alpha train --verify --threshold 0.99
 ```
 
-#### Pair Programming Integration
+### Pair Programming Integration
 
 Enable real-time verification during collaborative development:
 
@@ -498,24 +713,7 @@ npx claude-flow@alpha pair --verify --real-time
 npx claude-flow@alpha pair --verify --threshold 0.97 --auto-fix
 ```
 
-### Advanced Workflows
-
-#### Continuous Verification
-
-Monitor codebase continuously during development:
-
-```bash
-# Watch directory for changes
-npx claude-flow@alpha verify watch --directory src/
-
-# Watch with auto-fix
-npx claude-flow@alpha verify watch --directory src/ --auto-fix
-
-# Watch with notifications
-npx claude-flow@alpha verify watch --notify --threshold 0.95
-```
-
-#### Monitoring Integration
+### Monitoring Integration
 
 Send metrics to external monitoring systems:
 
@@ -538,7 +736,7 @@ npx claude-flow@alpha truth --format json | \
   -d @-
 ```
 
-#### Pre-commit Hooks
+### Pre-commit Hooks
 
 Automatically verify before commits:
 
@@ -560,68 +758,113 @@ fi
 echo "✅ Verification passed with score: $score"
 ```
 
-### Performance Metrics
+## 14. Fallback Strategy
 
-**Verification Speed:**
-- Single file check: <100ms
-- Directory scan: <500ms (per 100 files)
-- Full codebase analysis: <5s (typical project)
-- Truth score calculation: <50ms
+### Default Configuration
 
-**Rollback Speed:**
-- Git-based rollback: <1s
+Set verification preferences in `.claude-flow/config.json`:
+
+```json
+{
+  "verification": {
+    "threshold": 0.95,
+    "autoRollback": true,
+    "gitIntegration": true,
+    "hooks": {
+      "preCommit": true,
+      "preTask": true,
+      "postEdit": true
+    },
+    "checks": {
+      "codeCorrectness": true,
+      "security": true,
+      "performance": true,
+      "documentation": true,
+      "bestPractices": true
+    }
+  },
+  "truth": {
+    "defaultFormat": "table",
+    "defaultPeriod": "24h",
+    "warningThreshold": 0.85,
+    "criticalThreshold": 0.75,
+    "autoExport": {
+      "enabled": true,
+      "path": ".claude-flow/metrics/truth-daily.json"
+    }
+  }
+}
+```
+
+### Threshold Configuration
+
+**Adjust verification strictness:**
+```bash
+# Strict mode (99% accuracy required)
+npx claude-flow@alpha verify check --threshold 0.99
+
+# Lenient mode (90% acceptable)
+npx claude-flow@alpha verify check --threshold 0.90
+
+# Set default threshold
+npx claude-flow@alpha config set verification.threshold 0.98
+```
+
+**Per-environment thresholds:**
+```json
+{
+  "verification": {
+    "thresholds": {
+      "production": 0.99,
+      "staging": 0.95,
+      "development": 0.90
+    }
+  }
+}
+```
+
+### Automatic Rollback
+
+#### Rollback Failed Changes
+
+Automatically revert changes that fail verification checks.
+
+**Basic Rollback:**
+```bash
+# Rollback to last known good state
+npx claude-flow@alpha verify rollback --last-good
+
+# Rollback to specific commit
+npx claude-flow@alpha verify rollback --to-commit abc123
+
+# Interactive rollback with preview
+npx claude-flow@alpha verify rollback --interactive
+```
+
+**Smart Rollback:**
+```bash
+# Rollback only failed files (preserve good changes)
+npx claude-flow@alpha verify rollback --selective
+
+# Rollback with automatic backup
+npx claude-flow@alpha verify rollback --backup-first
+
+# Dry-run mode (preview without executing)
+npx claude-flow@alpha verify rollback --dry-run
+```
+
+**Rollback Performance:**
+- Git-based rollback: <1 second
 - Selective file rollback: <500ms
-- Backup creation: <2s
+- Backup creation: Automatic before rollback
 
-**Dashboard Performance:**
-- Initial load: <1s
-- Real-time updates: <100ms latency (WebSocket)
-- Chart rendering: 60 FPS
+## 15. Handoff Protocol
 
-### Troubleshooting
-
-#### Common Issues
-
-**Low Truth Scores:**
-```bash
-# Get detailed breakdown
-npx claude-flow@alpha truth --verbose --threshold 0.0
-
-# Check specific criteria
-npx claude-flow@alpha verify check --verbose
-
-# View agent-specific issues
-npx claude-flow@alpha truth --agent <agent-name> --format json
-```
-
-**Rollback Failures:**
-```bash
-# Check git status
-git status
-
-# View rollback history
-npx claude-flow@alpha verify rollback --history
-
-# Manual rollback
-git reset --hard HEAD~1
-```
-
-**Verification Timeouts:**
-```bash
-# Increase timeout
-npx claude-flow@alpha verify check --timeout 60s
-
-# Verify in batches
-npx claude-flow@alpha verify batch --batch-size 10
-```
-
-### Exit Codes
-
-Verification commands return standard exit codes:
-
-- `0`: Verification passed (score ≥ threshold)
-- `1`: Verification failed (score < threshold)
-- `2`: Error during verification (invalid input, system error)
+| Receiving Skill | Trigger Condition | Payload |
+|----------------|-------------------|---------|
+| pair-programming | Verification shows code needs fixes | Verification results, failed items, suggested fixes |
+| verification-gate | Gate-level verification confirmation needed | Verification report and evidence records |
+| failure-analysis | Continuous verification failures, auto-recovery exhausted | Failure context, trace ID, verification history |
 
 ### Related Commands
 
@@ -629,21 +872,3 @@ Verification commands return standard exit codes:
 - `npx claude-flow@alpha train` - Training with verification feedback
 - `npx claude-flow@alpha swarm` - Multi-agent coordination with quality checks
 - `npx claude-flow@alpha report` - Generate comprehensive project reports
-
-### Best Practices
-
-1. **Set Appropriate Thresholds**: Use 0.99 for critical code, 0.95 for standard, 0.90 for experimental
-2. **Enable Auto-rollback**: Prevent bad code from persisting
-3. **Monitor Trends**: Track improvement over time, not just current scores
-4. **Integrate with CI/CD**: Make verification part of your pipeline
-5. **Use Watch Mode**: Get immediate feedback during development
-6. **Export Metrics**: Track quality metrics in your monitoring system
-7. **Review Rollbacks**: Understand why changes were rejected
-8. **Train Agents**: Use verification feedback to improve agent performance
-
-### Additional Resources
-
-- Truth Scoring Algorithm: See `/docs/truth-scoring.md`
-- Verification Criteria: See `/docs/verification-criteria.md`
-- Integration Examples: See `/examples/verification/`
-- API Reference: See `/docs/api/verification.md`

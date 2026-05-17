@@ -1,198 +1,136 @@
-# VIB AI Agent Platform
+# Paper Formatter · 正稿
 
-> AI-driven game prediction platform with intelligent agents.
-> Architecture: **Claude (planner) + DeepSeek (executor) + OpenClaw (skills) + Node.js/TS (runtime)**
+AI Agent 驱动的论文排版修复工作台。系统围绕「上传论文 → 选择学校规则 → 体检发现项 → 自动修复 → 人工确认 → 下载定稿」构建，目标是把已经写好的论文，按学校规则与 GB/T 7713.1 基线透明地检查、修复、确认并导出。
 
----
+> 核心原则：只修排版与格式，不改正文语义；所有修改都保留证据，并在最终确认页由用户点头。
 
-## Architecture
+## 当前产品形态
 
+| 能力 | 说明 |
+|---|---|
+| Word 排版修复 | 上传 `.docx`，生成修正版 Word，保留原文语义 |
+| PDF 格式检测 | 上传 `.pdf`，生成格式检测报告，不直接修改 PDF |
+| 学校规则识别 | 根据文档封面、文件名和规则包别名识别学校规范 |
+| Finding 工作台 | 以发现项为业务事实，不以页码作为主状态 |
+| 修复现场 | Step4 展示当前正在修什么、为什么修、修到哪里 |
+| 最终确认 | Step5 汇总所有修复项，支持接受、拒绝、自改、下载守门 |
+| 规则落表 | 学校规则、规则快照、检测命中与下载门禁逐步表结构化 |
+
+## 产品主线
+
+```text
+Step1 上传
+  └─ Word 排版修复 / PDF 格式检测
+Step2 学校规则
+  └─ 官方规则优先，待补规则显式标识
+Step3 体检发现
+  └─ 生成 Finding，展示规则依据与证据
+Step4 自动修复
+  └─ 论文修复现场：当前动作、纸面定位、证据与安全说明
+Step5 人工确认
+  └─ 逐项确认修改，下载前受 Finding Guard 约束
+Step6 下载定稿
+  └─ 仅在修复任务与确认状态满足条件后开放
 ```
-你的 Mac
-├── Claude Code        → 架构推理 / 复杂规划
-├── DeepSeek API       → 低成本批量生成 / 执行
-├── OpenClaw           → Skills / 工具编排 / 本地任务
-├── Node.js / TS       → Agent 后端骨架
-├── .env               → 管理 API Key
-└── 本地项目目录        → 代码、Prompt、Skill、记忆文件
+
+## 架构基线
+
+Paper Formatter 不是普通 PDF/Word 阅读器，而是 finding-centric 的论文格式修复系统。
+
+- **Finding 是业务事实**：`finding_id` 是 Step3/Step4/Step5 的主线，页码只是定位容器。
+- **规则与证据优先**：学校规则、GB 标准、对象锚点、规则快照共同构成判断依据。
+- **DOCX 是主要编辑载体**：Word 文档用于真实写回；PDF 当前定位为检测与报告能力。
+- **安全修复**：格式化器只调整格式属性，内容级 integrity checker 用于发现文本语义风险。
+- **下载守门**：未完成修复、未确认 finding、任务类型不匹配时，不允许直接下载。
+
+## 代码结构
+
+```text
+ai-agent-lab/
+├── paper-formatter/
+│   ├── services/
+│   │   ├── client/            # React + Vite 前端工作台
+│   │   ├── api-gateway/       # TypeScript API、任务编排、规则检测
+│   │   └── docx-parser/       # Python DOCX 解析与格式化入口
+│   ├── packages/
+│   │   └── shared-types/      # 跨端共享 DTO / Finding / Guard 类型
+│   ├── docs/                  # 架构、API、审计、规则与部署文档
+│   ├── deploy/                # Nginx、systemd、部署脚本
+│   └── .github/workflows/     # 行为测试、视觉基线、回归 CI
+├── docs/agent-os/             # Agent OS 协作协议与架构
+└── AGENTS.md                  # 本仓库 Agent 执行规范
 ```
 
-## Quick Start
+## 技术栈
+
+| 层 | 技术 | 职责 |
+|---|---|---|
+| Client | React 19 / Vite / Playwright | 六步工作台、finding 联动、视觉回归 |
+| API Gateway | Node.js / TypeScript / Express | 文档、规则、任务、finding、下载守门 |
+| Parser / Formatter | Python / python-docx / XML extractor | DOCX 结构解析、对象图、格式写回 |
+| Storage | PostgreSQL / MinIO | 文档元数据、规则集、产物、任务结果 |
+| Cache / Queue | Redis optional | 异步任务与轮询优化 |
+| Deployment | Nginx / Certbot / systemd | 轻量服务器前后端一体部署 |
+
+## 本地运行
 
 ```bash
-# 1. Install dependencies
+# API Gateway
+cd paper-formatter/services/api-gateway
 npm install
-
-# 2. Configure API keys (edit .env)
-DEEPSEEK_API_KEY=sk-your-key-here
-
-# 3. Start interactive REPL
 npm run dev
 
-# 4. Or run a one-shot prompt
-npm run dev once "分析当前项目的设计系统结构"
-
-# 5. Or run the workflow engine
-npm run dev workflow "生成一个 VIB 主题的按钮组件"
-
-# 6. Check connectivity
-npm run dev check
+# Client
+cd ../client
+npm install
+npm run dev
 ```
 
-## Project Structure
+默认本地入口：
 
-```
-ai-agent-lab/
-├── CLAUDE.md                  # Claude Code 项目指令
-├── docs/                      # 产品定义文档
-│   ├── vision.md              #   产品愿景 + 成功标准
-│   ├── personas.md            #   用户画像
-│   ├── domain-model.md        #   领域模型 (Game/Prediction/Metrics)
-│   └── roadmap.md             #   路线图 + 优先级矩阵
-│
-├── design-system/             # Figma 驱动设计系统
-│   ├── brand.md               #   品牌规范
-│   ├── tokens/                #   设计 Token (CSS)
-│   ├── preview.html           #   可视化预览
-│   └── pages/                 #   页面指南
-│
-├── tasks/                     # 任务注册表
-│   ├── catalog.json           #   所有 Agent 任务的清单
-│   ├── TASK-gemini.md         #   游戏预测任务定义
-│   ├── TASK-design-token.md   #   设计 Token 任务定义
-│   ├── TASK-component-css.md  #   组件 CSS 任务定义
-│   └── TASK-workflow.md       #   工作流任务定义
-│
-├── evals/                     # 评测框架
-│   ├── runner.ts              #   评测运行器
-│   ├── metrics.ts             #   指标定义 (accuracy/latency/completeness)
-│   ├── scenarios/             #   评测场景
-│   │   ├── prediction-basic.ts
-│   │   ├── prediction-edge.ts
-│   │   ├── design-system.ts
-│   │   └── load-test.ts       #   负载测试
-│   └── reports/               #   评测报告
-│
-├── src/                       # Agent 后端
-│   ├── index.ts               #   入口 (repl/once/workflow/eval/tasks/check/log/metrics/trace)
-│   ├── agent.ts               #   Agent 核心 (ReAct 循环 + 追踪 + 日志)
-│   ├── llm.ts                 #   LLM 客户端 (DeepSeek + 重试 + 超时 + 监控)
-│   ├── config.ts              #   配置管理器 (env > config.yaml > defaults)
-│   ├── logger.ts              #   结构化 JSON 日志 (stderr)
-│   ├── tracer.ts              #   执行追踪 (span 嵌套)
-│   ├── telemetry.ts           #   指标收集 (LLM/Tool 调用统计)
-│   ├── domain/                #   领域逻辑
-│   │   ├── game.ts            #     Game 实体 + Enums
-│   │   ├── prediction.ts      #     预测服务
-│   │   └── metrics.ts         #     指标聚合服务
-│   ├── tools/                 #   工具注册表
-│   │   ├── index.ts           #     注册 + 调用引擎
-│   │   ├── design-system.ts   #     设计系统工具
-│   │   └── game-prediction.ts #     游戏预测工具
-│   └── workflow.ts            #   工作流引擎
-│
-├── skills/                    # OpenClaw 技能系统
-│   ├── manifest.json          #   技能清单
-│   ├── design-token.ts        #   设计 Token 技能
-│   ├── figma-import.ts        #   Figma 导入技能
-│   └── game-prediction.ts     #   游戏预测技能
-│
-├── prompts/                   # 提示词
-│   ├── agent-system.md        #   Agent 系统提示词
-│   ├── planner.md             #   规划阶段提示词
-│   ├── executor.md            #   执行阶段提示词
-│   └── game-prediction.md     #   游戏预测领域提示词
-│
-├── tests/                     # 测试 (36 tests)
-│   ├── capabilities/          #   能力验证测试
-│   │   ├── prediction.test.ts
-│   │   ├── design-system.test.ts
-│   │   └── workflow.test.ts
-│   ├── evals/                 #   评测框架测试
-│   │   └── runner.test.ts
-│   ├── observability.test.ts  #   可观测性层测试
-│   ├── llm.test.ts
-│   ├── agent.test.ts
-│   ├── tools.test.ts
-│   └── workflow.test.ts
-│
-├── tutorial-screenshots/      # CLD 安装教程
-├── config.yaml                 # 默认配置 (可被 env 覆盖)
-├── .env                       # API 密钥 (不提交)
-├── .env.example               # 环境变量模板
-├── package.json               # 依赖管理
-├── tsconfig.json              # TypeScript 配置
-└── vitest.config.ts           # Vitest 配置
+- Client: `http://localhost:5173`
+- API: `http://localhost:4000/api/v1`
+- Health: `http://localhost:4000/api/v1/health`
+
+## 常用验证
+
+```bash
+# API Gateway
+cd paper-formatter/services/api-gateway
+npm run build
+npm test
+
+# Client
+cd paper-formatter/services/client
+npm run typecheck
+npm run test:behavior -- --reporter=line
+npm run test:visual
 ```
 
-## Scripts
+## 关键文档
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start interactive REPL |
-| `npm run dev once <prompt>` | Run one-shot prompt |
-| `npm run dev workflow <task>` | Plan→Execute→Review→Refine |
-| `npm run dev eval <scenario>` | Run evaluation scenario (`all` for all, `load-test` for load test) |
-| `npm run dev tasks` | List registered tasks |
-| `npm run dev check` | Verify LLM connectivity |
-| `npm run dev log <prompt>` | Run prompt and view structured logs |
-| `npm run dev metrics` | Show session metrics (LLM calls, tool calls, latency) |
-| `npm run dev trace` | Show execution trace tree |
-| `npm run dev:server` | Start API server (port 3000) |
-| `npm run build` | Compile TypeScript to dist/ |
-| `npm test` | Run all tests (1076+) |
-| `npm run typecheck` | TypeScript type checking |
-| `npm run test:server` | Run API server tests only |
+- [系统架构](paper-formatter/docs/system-architecture.md)
+- [API 规范](paper-formatter/docs/api-spec.md)
+- [数据模型](paper-formatter/docs/data-model.md)
+- [部署说明](paper-formatter/docs/deployment.md)
+- [论文排版项目 README](paper-formatter/README.md)
 
-## API Server
+## 部署方向
 
-The API server exposes agent capabilities via HTTP. Start it with `npm run dev:server`.
+当前目标部署形态：
 
-### Endpoints
+- 香港轻量服务器，2 核 4G，Ubuntu 22.04
+- Nginx + Certbot HTTPS
+- 前端静态资源 + API Gateway 一体部署
+- PostgreSQL、MinIO、Redis 按服务拆分
+- systemd 管理 `api-gateway` / `formatter` / 静态站点
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check |
-| POST | `/api/agent/analyze` | Submit URL for AI analysis |
-| GET | `/api/tasks/:taskId` | Poll task status |
-| GET | `/api/signals/:signalId` | Get signal details |
-| GET | `/api/reports/:reportId` | Get report details |
+## 项目状态
 
-### Idempotency & Billing Declaration
+项目正在从 Demo 形态收敛为可验证、可回归、可部署的论文排版系统。当前重点是：
 
-| Endpoint | Idempotent | Charges Credits | Mechanism |
-|----------|-----------|----------------|-----------|
-| `POST /api/agent/analyze` | **No** | No | Each call creates a new taskId. Billing happens downstream. |
-| `GET /api/tasks/:id` | Yes | No | Read-only. |
-| `GET /api/signals/:id` | Yes | No | Read-only. |
-| Signal generation | — | Yes (see [#2](https://github.com/haow56782-png/ai-agent-lab/issues/2)) | State machine lock: ANALYZING → COMPLETED transition fires once. |
-| Report generation | — | Yes (see [#1](https://github.com/haow56782-png/ai-agent-lab/issues/1)) | COMPLETED transition lock (方案A). |
-| Credits insufficient | — | N/A (see [#3](https://github.com/haow56782-png/ai-agent-lab/issues/3)) | Task enters CREDITS_REQUIRED state, resume after top-up. |
-
-**Core rule**: `/analyze` is intentionally non-idempotent because it does not charge. Every charging point uses either a state-machine transition lock (fires at most once) or an idempotency-key pattern to prevent double-charge under network retry / PWA wake / double-click scenarios. See billing architecture notes in `src/server/services/task.service.ts` for details.
-
-## Design System
-
-The design system lives in `design-system/` and was extracted from the Figma file **"AI Agent 游戏预测"** (`ShtkcPpmxmu6ThHTc2nn3s`) via API.
-
-| File | Description |
-|------|-------------|
-| `tokens/colors.css` | Color tokens (dark default, light override) |
-| `tokens/typography.css` | HarmonyOS Sans SC + Inter |
-| `tokens/spacing.css` | Spacing scale, layout, radii |
-| `brand.md` | Brand identity guidelines |
-| `preview.html` | Visual preview with dark/light toggle |
-| `pages/mobile-h5.md` | Mobile H5 guidelines |
-| `pages/admin-dashboard.md` | Admin dashboard guidelines |
-| `pages/data-collection-annotation.md` | Data pipeline docs |
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| Runtime | Node.js v25, TypeScript |
-| LLM API | DeepSeek (OpenAI-compatible) |
-| Agent Framework | Claude Code + Custom Agent |
-| Skills | OpenClaw |
-| Test | Vitest |
-| Design | Figma → CSS Tokens → Tailwind |
+- 学校规则落表与 canonical ruleId 映射
+- Step3/Step4/Step5 的 finding-centric 链路稳定性
+- Word object graph、图题/表题/续表识别回归
+- Step4 修复现场交互体验与真实写回反馈
+- Step6 下载守门与最终产物一致性

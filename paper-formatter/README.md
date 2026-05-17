@@ -28,6 +28,12 @@ Paper Formatter 是一个 AI Agent 驱动的论文排版修复系统，面向“
 | 下载守门 | Step6 基于任务类型、修复状态、确认状态判断下载按钮可用性 |
 | 视觉回归 | Step5 视觉基线与 Step4/Step5 行为测试逐步接入 CI |
 
+## 修复现场截图
+
+Step4 用来呈现“系统正在逐项修复论文”的现场感：论文纸面居中，当前 finding 高亮，右侧展示证据、修复动作和写回状态，所有修改最终进入确认页复核。
+
+![Step4 论文修复现场](docs/assets/step4-repair-workbench.png)
+
 ## 服务结构
 
 ```text

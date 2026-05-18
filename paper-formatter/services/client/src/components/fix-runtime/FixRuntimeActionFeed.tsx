@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FixBeforeAfterModal } from './FixBeforeAfterModal';
 import { FixProcessDrawer } from './FixProcessDrawer';
-import { FixSafetyNotice } from './FixSafetyNotice';
 import type { TimelineRow, FixRuntimeStore, FixFindingStatusSummary, FixTaskFilter } from './types';
 
 interface Props {
@@ -144,8 +143,6 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
           {activeFilter === 'all' ? `只看待确认 ${findingStatusSummary.needsReview}` : '查看全部过程'}
         </button>
       </div>
-
-      <FixSafetyNotice />
 
       <button
         type="button"

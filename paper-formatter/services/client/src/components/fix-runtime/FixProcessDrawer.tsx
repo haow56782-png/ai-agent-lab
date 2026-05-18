@@ -116,7 +116,6 @@ export const FixProcessDrawer: React.FC<Props> = ({
                 <em>第 {row.page} 页 · {row.chapter}</em>
                 <small><b>发现问题：</b>{explanation.problem}</small>
                 <small><b>修复动作：</b>{explanation.action}</small>
-                <small><b>安全说明：</b>{explanation.safety}</small>
               </span>
             </button>
           );

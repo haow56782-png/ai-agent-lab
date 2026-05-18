@@ -111,12 +111,10 @@ export function useFixFlowController({
     if (autoStartTriggeredRef.current) return;
     if (runtime.unsupportedLegacyDoc || fixing || fixJobId || playback.demoPlayback || runtime.doneCount > 0 || showPaywall) return;
     autoStartTriggeredRef.current = true;
-    if (!runtime.canLaunchRealFix) {
-      playback.startDemoPlayback();
-      setFixMessage('当前是浏览模式，已切换到本地修复演示，不会触发真实写回。');
-      return;
-    }
-    polling.onStartFix();
+    // Use demo playback by default for visual preview
+    // Real fix requires the formatter service (not yet deployed)
+    playback.startDemoPlayback();
+    setFixMessage('修复预览模式 · 跳过动画直接查看所有修改效果');
   }, [
     fixing,
     fixJobId,

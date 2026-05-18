@@ -57,15 +57,35 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 5;
   background:
     linear-gradient(90deg, transparent 0 14%, rgba(255,255,255,.26) 34%, transparent 58%),
     radial-gradient(circle at 50% 10%, rgba(42,77,58,.05), transparent 32%);
   opacity: 0;
-  transition: opacity 180ms ease-out;
+  transition: opacity 280ms ease-out;
+}
+
+/* Glass morphism overlay on paper */
+.fix-runtime-a4::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(0px);
+  transition: backdrop-filter 400ms ease, opacity 300ms ease;
+  opacity: 0;
+}
+
+/* Glass effect when modifications are being applied */
+.fix-runtime-paperframe.is-writing-now .fix-runtime-a4::before {
+  backdrop-filter: blur(0.6px);
+  opacity: 0.4;
 }
 
 .fix-runtime-paperframe.is-writing-now .fix-runtime-a4::after {
-  opacity: 1;
+  opacity: 0.7;
 }
 
 .fix-runtime-paper-scanner {

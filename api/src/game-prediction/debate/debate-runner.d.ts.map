@@ -1,0 +1,1 @@
+{"version":3,"file":"debate-runner.d.ts","sourceRoot":"","sources":["../../../../src/game-prediction/debate/debate-runner.ts"],"names":[],"mappings":"AAAA;;;;;;;;mEAQmE;AAInE,OAAO,KAAK,EAAE,iBAAiB,EAAE,WAAW,EAAE,iBAAiB,EAAE,MAAM,YAAY,CAAC;AAEpF;;;GAGG;AACH,wBAAgB,SAAS,CAAC,KAAK,EAAE,WAAW,GAAG;IAC7C,MAAM,EAAE,iBAAiB,EAAE,CAAC;IAC5B,OAAO,EAAE,iBAAiB,CAAC;CAC5B,CAIA"}

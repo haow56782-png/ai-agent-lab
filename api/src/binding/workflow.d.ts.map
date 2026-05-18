@@ -1,0 +1,1 @@
+{"version":3,"file":"workflow.d.ts","sourceRoot":"","sources":["../../../src/binding/workflow.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAKH,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,mBAAmB,CAAC;AACpD,OAAO,EAIL,KAAK,aAAa,EAClB,KAAK,cAAc,EAIpB,MAAM,YAAY,CAAC;AA4EpB;;;;;GAKG;AACH,wBAAsB,kBAAkB,CACtC,OAAO,EAAE,cAAc,EACvB,KAAK,CAAC,EAAE,UAAU,GACjB,OAAO,CAAC,aAAa,CAAC,CAiUxB"}

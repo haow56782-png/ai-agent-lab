@@ -1,0 +1,19 @@
+/** ============================================================
+ *  Debate Runner — Orchestrates the multi-agent debate
+ *
+ *  1. Probability Analyst reviews signal statistics
+ *  2. Risk Manager reviews risk and bankroll
+ *  3. Strategy Critic reviews strategy consistency
+ *  4. Learning Auditor reviews calibration drift
+ *  5. Final Arbiter synthesizes all reviews
+ *  ============================================================ */
+import type { AgentDebateOutput, DebateInput, FinalDebateOutput } from "./types.js";
+/**
+ * Run the full multi-agent debate pipeline.
+ * Returns individual agent outputs + the arbiter's final verdict.
+ */
+export declare function runDebate(input: DebateInput): {
+    agents: AgentDebateOutput[];
+    verdict: FinalDebateOutput;
+};
+//# sourceMappingURL=debate-runner.d.ts.map

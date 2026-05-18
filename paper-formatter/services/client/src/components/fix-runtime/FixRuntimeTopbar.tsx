@@ -40,6 +40,11 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
     ? `剩余 ${formatDuration(runtimeStore.estimatedRemainingMs)}`
     : '服务写回中';
   const findingProgressLabel = `${findingStatusSummary.writtenBack}/${findingStatusSummary.autoFixableTotal}`;
+  const statusLabel = isCompleted
+    ? `已完成 ${findingProgressLabel}`
+    : isPaused
+    ? `已暂停 ${findingProgressLabel}`
+    : `正在修复 ${findingProgressLabel}`;
   const activeRuleLabel = activeFinding?.ruleLabel || '学校规则 + 国标基线';
   const compactRuleLabel = /学校规则|GB\/T|7713|vAuto/i.test(activeRuleLabel)
     ? '学校规则 + GB/T 7713.1'
@@ -71,13 +76,13 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
         </div>
         <div className="fix-runtime-progress-meta">
           <span className="fix-runtime-finding-meta" data-testid="fix-runtime-topbar-finding">
-            当前正在修复 {findingProgressLabel}：{activeFixLabel}
+            当前{statusLabel}：{activeFixLabel}
           </span>
           <span data-testid="fix-runtime-topbar-page">
-            {activeTargetLabel} · 写回进度 {findingProgressLabel}
+            {activeTargetLabel}{isCompleted ? '' : ` · 写回进度 ${findingProgressLabel}`}
           </span>
           <span data-testid="fix-runtime-topbar-remaining">
-            {remainingLabel}
+            {isCompleted ? '已完成' : remainingLabel}
           </span>
         </div>
         <div className="fix-runtime-progress-explain" data-testid="fix-runtime-topbar-explain">

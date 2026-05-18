@@ -8,7 +8,6 @@
     "dev": "tsx src/index.ts",
     "vib-flow-demo": "STATE_STORE_ENABLED=true tsx src/index.ts vib-flow-demo",
     "start": "node dist/index.js",
-    "build": "npx tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

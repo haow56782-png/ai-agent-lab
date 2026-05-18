@@ -1,0 +1,2 @@
+import type { Request, Response, NextFunction } from "express";
+export declare function requestLogger(req: Request, _res: Response, next: NextFunction): void;

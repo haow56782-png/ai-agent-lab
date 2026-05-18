@@ -12,7 +12,10 @@ import type {
   P1ExemptionResponse,
 } from '../../../../packages/shared-types/src/finding-contract';
 
-const API = '/api/v1';
+const API_BASE_URL: string =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
+  '';
+const API = `${API_BASE_URL}/api/v1`;
 const RECENT_REQUEST_TTL_MS = 1200;
 
 export type {

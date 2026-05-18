@@ -1,4 +1,7 @@
-const ANALYTICS_ENDPOINT = '/api/v1/analytics/track';
+const VITE_API_BASE_URL: string =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
+  '';
+const ANALYTICS_ENDPOINT = `${VITE_API_BASE_URL}/api/v1/analytics/track`;
 
 export type ShareSource = 'result_page' | 'fix_complete' | 'export_page';
 

@@ -26,6 +26,20 @@ export function createApp() {
     app.use(requestLogger);
     // Routes
     app.use(healthRouter);
+    app.get("/", (_req, res) => {
+      res.json({
+        status: "ok",
+        service: "vib-ai-agent-api",
+        version: "1.0.0",
+        endpoints: {
+          health: "/health",
+          agent: "/api/agent",
+          tasks: "/api/tasks",
+          signals: "/api/signals",
+          reports: "/api/reports"
+        }
+      });
+    });
     app.use("/api/agent", createAgentRoutes(taskStore));
     app.use("/api/tasks", createTaskRoutes(taskStore));
     app.use("/api/signals", createSignalRoutes(signalStore));

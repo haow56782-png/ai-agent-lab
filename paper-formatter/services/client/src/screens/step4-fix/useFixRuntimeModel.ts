@@ -152,7 +152,7 @@ export function useFixRuntimeModel({
     allDone,
     activeLiveFrame,
     canLaunchRealFix,
-    documentTitle: state.doc?.name || `${documentTitle}.docx`,
+    documentTitle: (state.doc?.name || documentTitle).replace(/\.(docx|doc|pdf)$/i, ''),
     doneCount,
     fixActions,
     paperContent,

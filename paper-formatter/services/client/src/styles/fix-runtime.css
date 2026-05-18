@@ -27,7 +27,7 @@
 
 @media (max-width: 1280px) {
   .fix-runtime-stage {
-    grid-template-columns: 220px minmax(420px, 1fr) 260px;
+    grid-template-columns: 220px minmax(420px, 1fr) 220px;
   }
   .fix-runtime-a4,
   .fix-runtime-printer-head {

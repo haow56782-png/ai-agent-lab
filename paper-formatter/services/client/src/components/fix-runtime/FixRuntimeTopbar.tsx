@@ -47,7 +47,7 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
   const activeTargetLabel = activeFinding
     ? `第 ${activeFinding.page} 页 · ${activeFinding.chapter}`
     : `第 ${displayedPageNumber} 页 · ${displayedChapter}`;
-  const activeFixLabel = activeFinding?.label || '等待修复队列';
+  const activeFixLabel = activeFinding?.ruleLabel || activeFinding?.label || '等待修复队列';
 
   return (
     <header className="fix-runtime-topbar">

@@ -20,6 +20,17 @@ const upload = multer({
     },
 });
 export const documentRoutes = Router();
+documentRoutes.get("/", (_req, res) => {
+  res.json({
+    endpoint: "/api/v1/documents",
+    methods: {
+      GET: "/:docId — 获取文档详情",
+      POST: "/ — 上传文档（multipart/form-data, field: file）"
+    },
+    status: "running",
+    service: "paper-formatter-api"
+  });
+});
 documentRoutes.post("/", upload.single("file"), async (req, res, next) => {
     try {
         if (!req.file)

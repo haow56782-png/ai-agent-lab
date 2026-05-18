@@ -4,7 +4,9 @@
  * Exports the Express app as a Vercel serverless function.
  * All routes defined in src/server/app.ts are handled here.
  */
-import { createApp } from "../src/server/app";
+import "dotenv/config";
+import express from "express";
+import { createApp } from "../src/server/app.js";
 
 const { app } = createApp();
 

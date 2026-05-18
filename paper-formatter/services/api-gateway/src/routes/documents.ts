@@ -9,7 +9,7 @@ import { normalizeDocumentFilename } from "../utils/document-filename.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (_req, file, cb) => {
     const ext = normalizeDocumentFilename(file.originalname).toLowerCase().split(".").pop();
     if (ext === "docx" || ext === "pdf") {

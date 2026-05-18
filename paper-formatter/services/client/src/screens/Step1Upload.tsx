@@ -47,7 +47,7 @@ const UPLOAD_MODE_COPY: Record<UploadMode, {
     extension: 'docx',
     accept: '.docx',
     zoneTitle: '拖入 Word 论文，或点击选择文件',
-    supportText: '支持 .docx · 单文件 ≤ 15 MB',
+    supportText: '支持 .docx · 单文件 ≤ 10 MB',
     note: '系统会生成修正版 Word，不改动原文件',
     button: '上传 Word 论文',
     mismatch: '当前选择的是 Word 排版修复，请上传 .docx 文件',
@@ -57,7 +57,7 @@ const UPLOAD_MODE_COPY: Record<UploadMode, {
     extension: 'pdf',
     accept: '.pdf',
     zoneTitle: '拖入 PDF 论文，或点击选择文件',
-    supportText: '支持 .pdf · 单文件 ≤ 15 MB',
+    supportText: '支持 .pdf · 单文件 ≤ 10 MB',
     note: '系统会生成格式检测报告，不直接修改 PDF',
     button: '上传 PDF 检测',
     mismatch: '当前选择的是 PDF 格式检测，请上传 .pdf 文件',
@@ -176,7 +176,7 @@ const Step1Upload: React.FC<Props> = ({ showToast }) => {
       return;
     }
     const sizeMB = file.size / (1024 * 1024);
-    if (sizeMB > 15) {
+    if (sizeMB > 10) {
       setUploadError(`文件过大（当前 ${sizeMB.toFixed(0)} MB），请压缩图片后重新上传`);
       return;
     }

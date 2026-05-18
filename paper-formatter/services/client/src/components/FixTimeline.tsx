@@ -45,6 +45,7 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
         onPauseToggle={onPauseToggle}
         onSpeedChange={onSpeedChange}
         onJumpToComplete={onJumpToComplete}
+        onViewDiff={onViewDiff}
         onStartFix={onStartFix}
       />
 

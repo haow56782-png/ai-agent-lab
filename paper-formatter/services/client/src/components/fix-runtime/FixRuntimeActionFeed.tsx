@@ -139,8 +139,11 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
           type="button"
           className="fix-runtime-process-filter"
           onClick={() => setActiveFilter(activeFilter === 'all' ? 'review' : 'all')}
+          disabled={findingStatusSummary.needsReview === 0}
         >
-          {activeFilter === 'all' ? `只看待确认 ${findingStatusSummary.needsReview}` : '查看全部过程'}
+          {activeFilter === 'all'
+            ? (findingStatusSummary.needsReview > 0 ? `只看待确认 ${findingStatusSummary.needsReview}` : '已全部处理')
+            : '查看全部过程'}
         </button>
       </div>
 

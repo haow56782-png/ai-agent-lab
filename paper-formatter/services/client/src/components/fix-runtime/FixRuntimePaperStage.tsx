@@ -330,7 +330,7 @@ export const FixRuntimePaperStage: React.FC<Props> = ({
   }
 
   return (
-    <div className={`fix-runtime-paperframe ${runtimeStore.status === 'running' ? 'is-runtime-running' : ''} ${activeActionSet.size > 0 ? 'is-writing-now' : ''}`}>
+    <div className={`fix-runtime-paperframe ${runtimeStore.status === 'running' || runtimeStore.status === 'paused' ? 'is-runtime-running' : ''} ${runtimeStore.status === 'running' || runtimeStore.progressPct > 0 ? 'is-writing-now' : ''}`}>
       <div className="fix-runtime-printer-head" aria-hidden="true" />
       <div className="fix-runtime-paper-glow" aria-hidden="true" />
       <article className={paperBow ? 'fix-runtime-a4 is-bowing' : 'fix-runtime-a4'} aria-label="论文修复工作台">

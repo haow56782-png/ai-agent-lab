@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FixBeforeAfterModal } from './FixBeforeAfterModal';
-import { FixProcessDrawer } from './FixProcessDrawer';
+import {
+  buildRepairExplanation,
+  cleanRuleLabel,
+  FixProcessDrawer,
+  rowStatusLabel,
+  rowStatusTone,
+} from './FixProcessDrawer';
+import { FixSafetyNotice } from './FixSafetyNotice';
 import type { TimelineRow, FixRuntimeStore, FixFindingStatusSummary, FixTaskFilter } from './types';
 
 interface Props {
@@ -28,6 +35,7 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
   const [compareRow, setCompareRow] = useState<TimelineRow | null>(null);
   const [activeFilter, setActiveFilter] = useState<FixTaskFilter>('all');
   const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
+  const [processOpen, setProcessOpen] = useState(false);
   const focusTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -69,10 +77,13 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
     if (activeFilter === 'review') return row.status === 'needs-review';
     return false;
   });
-  const compareCandidate = filteredRows.find((row) => row.status === 'live')
+  const currentTaskRow = filteredRows.find((row) => row.status === 'live')
+    || (focusedRowId ? filteredRows.find((row) => row.id === focusedRowId) : null)
     || filteredRows.find((row) => row.status === 'done')
     || filteredRows[0]
     || null;
+  const compareCandidate = currentTaskRow;
+  const currentTaskExplanation = currentTaskRow ? buildRepairExplanation(currentTaskRow) : null;
   const locateCompareCandidate = () => {
     if (!compareCandidate) return;
     const node = rightFeedRef.current?.querySelector<HTMLElement>(`[data-testid="fix-runtime-action-card-${compareCandidate.id}"]`);
@@ -106,17 +117,48 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
       data-testid="fix-runtime-action-feed"
     >
       <div className="fix-runtime-note-head" data-testid="fix-runtime-action-count">
-        完整修复过程 · 当前修复现场
+        当前修复
       </div>
 
-      <FixProcessDrawer
-        rows={filteredRows}
-        activeFilter={activeFilter}
-        open={true}
-        onClose={() => {}}
-        onJumpToRow={jumpAndFrameCard}
-        focusedRowId={focusedRowId}
-      />
+      {currentTaskRow && currentTaskExplanation ? (
+        <article
+          className={[
+            'fix-current-task-card',
+            `status-${rowStatusTone(currentTaskRow)}`,
+            currentTaskRow.status === 'live' ? 'is-live' : '',
+          ].filter(Boolean).join(' ')}
+          data-testid="fix-runtime-current-task-card"
+        >
+          <div className="fix-current-task-card-head">
+            <span>{rowStatusLabel(currentTaskRow)}</span>
+            <b>第 {currentTaskRow.page} 页 · {currentTaskRow.chapter}</b>
+          </div>
+          <h3>{currentTaskRow.findingTitle}</h3>
+          <dl>
+            <div>
+              <dt>发现问题</dt>
+              <dd>{currentTaskExplanation.problem}</dd>
+            </div>
+            <div>
+              <dt>依据</dt>
+              <dd>{cleanRuleLabel(currentTaskRow.ruleLabel)}</dd>
+            </div>
+            <div>
+              <dt>修复动作</dt>
+              <dd>{currentTaskExplanation.action}</dd>
+            </div>
+            <div>
+              <dt>安全说明</dt>
+              <dd>{currentTaskExplanation.safety}</dd>
+            </div>
+          </dl>
+        </article>
+      ) : (
+        <div className="fix-runtime-empty-state">
+          <strong>等待修复任务</strong>
+          <span>系统会在这里展示当前正在处理的发现项。</span>
+        </div>
+      )}
 
       <div className="fix-runtime-process-actions">
         <button
@@ -139,13 +181,30 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
           type="button"
           className="fix-runtime-process-filter"
           onClick={() => setActiveFilter(activeFilter === 'all' ? 'review' : 'all')}
-          disabled={findingStatusSummary.needsReview === 0}
         >
-          {activeFilter === 'all'
-            ? (findingStatusSummary.needsReview > 0 ? `只看待确认 ${findingStatusSummary.needsReview}` : '已全部处理')
-            : '查看全部过程'}
+          {activeFilter === 'all' ? `只看待确认 ${findingStatusSummary.needsReview}` : '查看全部过程'}
         </button>
       </div>
+
+      <button
+        type="button"
+        className="fix-runtime-process-toggle"
+        onClick={() => setProcessOpen((current) => !current)}
+        aria-expanded={processOpen}
+      >
+        {processOpen ? '收起完整修复过程' : `查看完整修复过程 · ${filteredRows.length} 项`}
+      </button>
+
+      <FixProcessDrawer
+        rows={filteredRows}
+        activeFilter={activeFilter}
+        open={processOpen}
+        onClose={() => setProcessOpen(false)}
+        onJumpToRow={jumpAndFrameCard}
+        focusedRowId={focusedRowId}
+      />
+
+      <FixSafetyNotice />
 
       <button
         type="button"

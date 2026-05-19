@@ -17,6 +17,72 @@ const FILTER_TITLE: Record<FixTaskFilter, string> = {
   manual: '未处理项',
 };
 
+export function rowStatusLabel(row: TimelineRow) {
+  if (row.status === 'live') return '正在修复';
+  if (row.status === 'needs-review') return '等待处理';
+  return '已完成';
+}
+
+export function rowStatusTone(row: TimelineRow) {
+  if (row.status === 'live') return 'live';
+  if (row.status === 'needs-review') return 'waiting';
+  return 'done';
+}
+
+export function humanizeRepairText(text: string) {
+  return text
+    .replace(/\breplace\b/gi, '调整')
+    .replace(/\bdiff\b/gi, '修改对比')
+    .replace(/\bpatch\b/gi, '写回')
+    .replace(/\bfixType\b/gi, '修复类型')
+    .replace(/\bfinding_id\b/gi, '发现项');
+}
+
+export function isPageLayoutRow(row: TimelineRow) {
+  const signal = `${row.findingTitle} ${row.findingLabel} ${row.ruleLabel}`.toLowerCase();
+  return /页边距|页面|版心|纸张|装订线|page|margin|canvas/.test(signal);
+}
+
+export function buildRepairExplanation(row: TimelineRow) {
+  if (isPageLayoutRow(row)) {
+    return {
+      problem: '当前页面版心与学校模板要求不一致。',
+      action: '系统正在调整页面边距，使正文区域与学校模板保持一致。',
+      safety: '本次仅调整页面布局参数，不修改正文文字。',
+    };
+  }
+  const signal = `${row.findingTitle} ${row.findingLabel} ${row.ruleLabel}`;
+  if (/标题|层级|编号/.test(signal)) {
+    return {
+      problem: '当前标题样式与学校模板要求不一致。',
+      action: '系统正在统一标题层级、字号和段前段后设置。',
+      safety: '本次仅调整标题格式，不修改标题文字。',
+    };
+  }
+  if (/参考文献|DOI|著录/.test(signal)) {
+    return {
+      problem: '当前参考文献著录格式与规范要求不一致。',
+      action: '系统正在整理参考文献的标点、顺序和著录格式。',
+      safety: '本次仅调整著录格式，不改动正文论述。',
+    };
+  }
+  return {
+    problem: '当前格式与所选学校模板要求不一致。',
+    action: humanizeRepairText(row.stateSummary || row.recentActionSummary || '系统正在写回安全的格式修复。'),
+    safety: '本次仅调整格式属性，不修改正文文字。',
+  };
+}
+
+export function cleanRuleLabel(ruleLabel: string) {
+  if (!ruleLabel) return '学校模板规范 + GB/T 7713.1';
+  if (/canonical_|body_|page_|canvas|font|margin|heading|rule-|RULE-/i.test(ruleLabel)) {
+    return '学校模板规范 + GB/T 7713.1';
+  }
+  return humanizeRepairText(ruleLabel)
+    .replace(/\s*·\s*/g, ' + ')
+    .replace(/vAuto/gi, '学校模板规范');
+}
+
 export const FixProcessDrawer: React.FC<Props> = ({
   rows,
   activeFilter,
@@ -36,7 +102,7 @@ export const FixProcessDrawer: React.FC<Props> = ({
         {rows.length === 0 ? (
           <div className="fix-process-empty">当前分类暂无发现项。</div>
         ) : rows.map((row, index) => {
-          const tone = row.status === 'live' ? 'live' : row.status === 'needs-review' ? 'waiting' : 'done';
+          const explanation = buildRepairExplanation(row);
           return (
             <button
               key={row.id}
@@ -44,7 +110,7 @@ export const FixProcessDrawer: React.FC<Props> = ({
               className={[
                 'fix-process-row',
                 'fix-runtime-action-card',
-                `status-${tone}`,
+                `status-${rowStatusTone(row)}`,
                 row.status === 'live' ? 'is-live' : '',
                 row.status === 'needs-review' ? 'is-needs-review' : '',
                 focusedRowId === row.id ? 'is-user-focus' : '',
@@ -56,8 +122,11 @@ export const FixProcessDrawer: React.FC<Props> = ({
             >
               <span className="fix-process-index">{index + 1}</span>
               <span className="fix-process-main">
-                <strong>{row.findingTitle}</strong>
+                <strong>{rowStatusLabel(row)} · {row.findingTitle}</strong>
                 <em>第 {row.page} 页 · {row.chapter}</em>
+                <small><b>发现问题：</b>{explanation.problem}</small>
+                <small><b>修复动作：</b>{explanation.action}</small>
+                <small><b>安全说明：</b>{explanation.safety}</small>
               </span>
             </button>
           );

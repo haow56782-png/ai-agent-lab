@@ -20,8 +20,9 @@ function formatPaperRevisionLabel(payload: string): string {
   if (/标题|层级|编号/.test(normalized)) return '标题样式';
   if (/参考文献|DOI|著录/.test(normalized)) return '著录格式';
   if (/图片|印章|水印|图层|浮动/.test(normalized)) return '图层顺序';
-  if (/正文|字体|行距|段落/.test(normalized)) return '正文格式';
-  return '格式检查';
+  if (/页边距|页面|版心|纸张|装订线/.test(normalized)) return '页面版心';
+  if (/正文|字体|行距|段落/.test(normalized)) return '正文样式';
+  return '格式属性';
 }
 
 function isPageLayoutAction(action: FixAction): boolean {
@@ -207,8 +208,8 @@ export const FixRuntimePaperStage: React.FC<Props> = ({
           <span className={openPopoverKey === popoverKey ? 'fix-issue-popover is-open' : 'fix-issue-popover'}>
             <strong>问题：{formatPaperRevisionLabel(issueAction.findingLabel)}</strong>
             <em>位置：第 {currentPaperPage.pageNumber} 页 · {getPageChapter(currentPaperPage)}</em>
-            <em>当前：格式属性与规则不一致</em>
-            <em>目标：按学校规则与 GB/T 7713.1 统一</em>
+            <em>当前：排版属性与规则要求不一致</em>
+            <em>目标：按学校模板与 GB/T 7713.1 统一</em>
             <em>动作：仅调整格式属性，不修改文字内容</em>
             <em>状态：{issueStatusLabel === '已写回' ? '已写回，等待最终确认' : issueStatusLabel}</em>
           </span>

@@ -222,3 +222,88 @@ Agent Output
 | 共享状态和内存 | ❌ | ✅ sharedMemoryNamespace |
 
 两者互补：AGENTS.md 定义人类可读的 Agent 行为规范，Claude Flow 提供运行时执行机制。
+
+
+<claude-mem-context>
+# Memory Context
+
+# [ai-agent-lab] recent context, 2026-05-19 4:21am GMT+4
+
+Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision 🚨security_alert 🔐security_note
+Format: ID TIME TYPE TITLE
+Fetch details: get_observations([IDs]) | Search: mem-search skill
+
+Stats: 50 obs (13,809t read) | 517,122t work | 97% savings
+
+### May 10, 2026
+S546 代码审阅与重构规划 — Step4Diff.tsx 拆分及全局视觉审计 (May 10 at 3:18 AM)
+S547 Test batch paper processing / Investigate `/jobs/fix/status` 404 server route (May 10 at 3:20 AM)
+S545 测试批量跑论文 (test batch paper processing) — evolved into codebase cleanup, CSS simplification, and file-splitting analysis of the paper-formatter app (May 10 at 3:21 AM)
+1134 4:23a 🔵 FixPaywallCard and FixBottomBar are small leaf components — redesign will need to absorb or replace them
+1135 " 🔄 Step4Fix.tsx fully restructured — FixRuntimeStore replaces scattered state + new document-rich LiveDocumentFrame
+1136 4:25a 🔄 FixTimeline.tsx deleted entirely — complete rewrite incoming for new marginalia layout
+1137 4:26a 🟣 Complete FixTimeline rewrite — new marginalia layout with document-only A4 paper
+1138 " 🟣 Thesis correction demo "修复产物" page refactoring
+1139 4:30a ✅ TS6133 orphaned variable cleanup in Step4Fix.tsx
+1140 4:45a 🟣 New PenCursor component for animated writing cursor overlay
+1141 " ✅ FixTimeline.tsx deleted — component replaced
+S548 测试批量跑论文 (test batch paper processing) — original request remains unfulfilled; session instead continued with the 7-item visual audit polish pass. (May 10 at 4:46 AM)
+1147 4:48a 🟣 Character-by-character pen writing animation in FixTimeline
+1148 " 🟣 CSS animation system for pen writing and page flip effects
+1149 4:49a 🔄 PenCursor SVG wrapped in pen-cursor-body container
+1150 " 🔄 Pen cursor CSS states delegated to pen-cursor-body child
+1151 " 🟣 Pen cursor lifting animation with translateY offset
+1152 4:50a 🔴 TypeScript compilation errors in rewritten FixTimeline.tsx
+1153 " 🔴 Fixed two TypeScript compilation errors in FixTimeline.tsx
+1154 " ✅ TypeScript compilation clean after pen animation system fixes
+1155 " ⚖️ Decision to replace full-page rewrite with tutor review action types
+1179 4:52a 🔵 Tutor review pen system — 9-verification check passed, all features confirmed
+1156 4:53a ✅ Button hover and active states added globally
+1157 " ✅ border-radius standardized from 8 to 6 across all dialog components
+1158 " ✅ Focus-visible styles added for role="button" interactive divs
+1159 " 🔴 Upload zone div made keyboard-accessible
+S549 测试批量跑论文 — 会话被视觉审计和设计讨论占据；已交付 7 项前端修复（Sidebar 进度、TopBar 可点击、hover/focus CSS、border-radius 统一、键盘可访问性），并就产品设计哲学和 6 个剩余优化方向展开讨论。 (May 10 at 4:54 AM)
+S550 Accessibility improvements (方向六) — adding ariaLabel support to Icon component system and fixing WCAG AA color contrast (May 10 at 4:58 AM)
+S551 Accessibility improvements (方向六) — ariaLabel support for Icon/IconBtn, WCAG AA color contrast, and app architecture exploration (May 10 at 5:00 AM)
+1160 5:03a 🟣 Icon component now supports ariaLabel prop for accessibility
+1161 " 🟣 IconBtn component threads ariaLabel to button element
+1162 " ✅ --sun-700 darkened from #8A6516 to #855F14 for WCAG AA color contrast
+1163 " 🟣 WarningCard warn icon labeled with ariaLabel="警告"
+1164 " 🟣 ProfileSelectionPanel search input labeled with aria-label="搜索学校"
+1165 " 🔵 Production build and TypeScript check pass clean after all accessibility changes
+S552 Accessibility improvements (方向六: 可访问性) — modal backdrop refactor, motion token migration, and WCAG support for paper-formatter app (May 10 at 5:12 AM)
+1166 5:12a ✅ Motion design tokens added to CSS custom properties
+S553 测试批量跑论文 (batch paper processing test) — unfulfilled; session instead executed accessibility and animation improvements for the paper-formatter app (May 10 at 5:12 AM)
+1167 5:14a 🔄 CSS keyframe refinements in index.css
+1168 " 🔄 step-wrap animation migrated to motion design tokens
+1169 " 🟣 prefers-reduced-motion support added
+1170 " 🟣 card-hover and modal-backdrop CSS utility classes created
+1171 " 🔄 Modal backdrops refactored to use modal-backdrop CSS class
+1172 " ✅ SchoolListItem hover effect attempted and reverted
+1173 " 🔵 Step3Parse score count-up animation uses rAF with custom cubic easing
+1174 " ⚖️ modal-backdrop CSS class separated from positioning/layering concerns
+1175 5:21a 🟣 list-stagger CSS utility class for sequenced entrance animations
+1176 " ✅ card-hover utility class applied to DetectionBanner and ProfileSelectionPanel
+1177 " ✅ list-stagger class applied to school list in ProfileSelectionPanel
+1178 " ✅ useRef imported in App.tsx
+1183 5:22a ✅ Direction-aware step transitions implemented in wizard flow
+1184 " 🟣 CSS motion design system with utility classes
+1185 " ✅ Modal backdrops unified with blur utility class
+1186 " ✅ Card hover and stagger animations applied to UI components
+1187 " 🔵 Server /jobs/fix/status route returns 404
+1188 " ⚖️ Original batch paper processing request deferred for accessibility work
+1180 5:23a 🔵 Build artifact locations in paper-formatter monorepo
+1181 " ✅ Build caches cleared via Node.js fs.rmSync after shell rm rejected
+1182 " 🔵 Cache cleared successfully via Node.js workaround; git workspace shows untracked paper-formatter project
+S554 Accessibility and animation improvements for paper-formatter app — all work verified and dev server running (May 10 at 5:37 AM)
+**Investigated**: Examined all three modal components (ShareModal, PrintPreviewModal, RulesModal) for backdrop implementation pattern; verified no remaining references to old protoSlide keyframe name via grep; confirmed Btn component ariaLabel threading still needs implementation; identified that server /jobs/fix/status route needs investigation as user's last explicit concern.
+
+**Learned**: Production build consistently passes in ~101ms with 59 modules transformed and zero errors. Vite dev server starts reliably in ~114-164ms. Port 5175 was used to avoid conflicts. The direction-aware step transitions, staggered lists, card hover effects, and modal blur backdrops all compile without issues.
+
+**Completed**: All accessibility and animation infrastructure work is verified: direction-aware step transitions (protoSlideIn/protoSlideOut), motion design tokens, prefers-reduced-motion support, .card-hover/.modal-backdrop/.list-stagger utility classes, application to DetectionBanner and ProfileSelectionPanel, modal backdrop unification across all three modals, and RulesModal inline style fix. Production build passes. Dev server running on port 5175.
+
+**Next Steps**: Investigate the server-side /jobs/fix/status 404 (user's last explicit concern, never examined). After that, thread ariaLabel through the Btn component. Then address the original pending request: 测试批量跑论文 (batch paper processing test).
+
+
+Access 517k tokens of past work via get_observations([IDs]) or mem-search skill.
+</claude-mem-context>

@@ -1,4 +1,82 @@
-/* Fix process drawer — now inline, always visible */
+/* Fix process drawer — inline and opt-in, so the right side stays focused. */
+.fix-current-task-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(42,77,58,.18);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.82), rgba(250,248,242,.72)),
+    radial-gradient(circle at top right, rgba(232,240,235,.8), transparent 42%);
+  box-shadow: 0 14px 34px -28px rgba(21,23,27,.34);
+}
+
+.fix-current-task-card.is-live {
+  border-color: rgba(42,77,58,.32);
+  box-shadow: 0 16px 40px -30px rgba(42,77,58,.48);
+}
+
+.fix-current-task-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fix-current-task-card-head span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(232,240,235,.88);
+  color: var(--brand-700);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.fix-current-task-card.status-waiting .fix-current-task-card-head span {
+  background: rgba(255,248,225,.86);
+  color: #8a6516;
+}
+
+.fix-current-task-card-head b {
+  min-width: 0;
+  color: var(--ink-400);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.fix-current-task-card h3 {
+  margin: 0;
+  color: var(--ink-900);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.fix-current-task-card dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.fix-current-task-card dl div {
+  display: grid;
+  gap: 3px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(21,23,27,.06);
+}
+
+.fix-current-task-card dt {
+  color: var(--ink-400);
+  font-size: 10.5px;
+}
+
+.fix-current-task-card dd {
+  margin: 0;
+  color: var(--ink-700);
+  font-size: 12px;
+  line-height: 1.58;
+}
+
 .fix-process-inline {
   margin: 8px 0;
   padding: 0;

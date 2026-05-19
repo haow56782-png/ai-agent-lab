@@ -27,6 +27,9 @@ function loadCanonicalSchoolRegistry(): CanonicalSchoolRegistryEntry[] {
     path.join(dirname, "../../fixtures/canonical-school-registry.json"),
     path.join(dirname, "../../src/fixtures/canonical-school-registry.json"),
     path.join(process.cwd(), "src/fixtures/canonical-school-registry.json"),
+    // Docker runtime paths (JSON copied by Dockerfile to these locations)
+    path.join(process.cwd(), "services/api-gateway/fixtures/canonical-school-registry.json"),
+    path.join(process.cwd(), "services/api-gateway/dist/fixtures/canonical-school-registry.json"),
   ];
   for (const candidate of candidates) {
     try {

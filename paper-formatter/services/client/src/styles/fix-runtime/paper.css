@@ -211,17 +211,17 @@
 }
 
 .fix-paper-block.is-batch-live {
-  background: rgba(255,248,225,.92);
+  background: rgba(232,240,235,.42);
   transition: background-color 160ms ease-out;
 }
 
 .fix-paper-block.is-writing-now {
   position: relative;
   background:
-    linear-gradient(90deg, rgba(232,240,235,.32), rgba(232,240,235,.62), rgba(232,240,235,.18));
+    linear-gradient(90deg, rgba(232,240,235,.24), rgba(232,240,235,.52), rgba(232,240,235,.14));
   box-shadow:
-    inset 2px 0 0 rgba(42,77,58,.5),
-    0 8px 22px -18px rgba(42,77,58,.5);
+    inset 2px 0 0 rgba(42,77,58,.38),
+    0 8px 22px -20px rgba(42,77,58,.38);
 }
 
 .fix-paper-block.is-writing-now::before {
@@ -351,7 +351,7 @@
   right: 0;
   top: 52%;
   height: .8px;
-  background: #c83838;
+  background: rgba(42,77,58,.62);
   transform-origin: left center;
 }
 
@@ -419,7 +419,7 @@
 }
 
 .fix-paper-annotation.is-live .fix-paper-annotation-text {
-  color: #9d1f1f;
+  color: var(--brand-700);
 }
 
 .fix-paper-annotation.is-stale .fix-paper-annotation-text {
@@ -435,15 +435,15 @@
 .fix-paper-annotation-leader {
   display: inline-block;
   height: 0;
-  border-top: 1px dashed rgba(200,56,56,.7);
+  border-top: 1px dashed rgba(42,77,58,.46);
 }
 
 .fix-paper-annotation-text {
   display: inline-block;
-  color: #c83838;
+  color: var(--brand-700);
   font-size: 10.5px;
   line-height: 1.45;
-  font-family: "KaiTi", "STKaiti", serif;
+  font-family: var(--sans);
   max-width: 100%;
   padding: 1px 5px;
   border-radius: 4px;

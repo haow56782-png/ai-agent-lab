@@ -6,9 +6,11 @@ test.describe('Step4Fix interaction optimisations', () => {
     await bootstrapState(page, seedAppStatePatch(4));
     await page.goto('/');
 
-    // Jump to completion so all cards are visible and stable
+    // Jump to completion, then explicitly open the full process list.
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('完整修复过程');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await expect(page.getByTestId('fix-runtime-current-task-card')).toBeVisible();
+    await page.getByRole('button', { name: /查看完整修复过程/ }).click();
 
     const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');
     await expect(cards.first()).toBeVisible();
@@ -55,7 +57,8 @@ test.describe('Step4Fix interaction optimisations', () => {
     await page.goto('/');
 
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('完整修复过程');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await page.getByRole('button', { name: /查看完整修复过程/ }).click();
 
     const feed = page.getByTestId('fix-runtime-action-feed');
     const cards = page.locator('[data-testid^="fix-runtime-action-card-"]');

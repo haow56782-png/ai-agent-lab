@@ -414,12 +414,17 @@ export async function ensureSeedProfileSamples(): Promise<void> {
 }
 
 export async function ensureSeedSchools(): Promise<void> {
+  console.log("[seed] Checking existing school profiles...");
   const existing = await query("SELECT COUNT(*) as cnt FROM school_profiles");
-  if (parseInt(existing.rows[0].cnt as string, 10) > 0) {
+  const cnt = parseInt(existing.rows[0].cnt as string, 10);
+  console.log(`[seed] Found ${cnt} existing profiles`);
+  if (cnt > 0) {
     await ensureSeedProfileSamples();
+    console.log("[seed] Profile samples ensured");
     for (const seed of CANONICAL_PROFILE_SEEDS) {
       await ensureCanonicalProfile(seed);
     }
+    console.log(`[seed] ${CANONICAL_PROFILE_SEEDS.length} canonical profiles updated`);
     return;
   }
 

@@ -19,7 +19,9 @@ async function start() {
     console.log("[init] Database schema ready");
 
     // Seed canonical schools
+    console.log("[init] Seeding canonical schools...");
     await ensureSeedSchools();
+    console.log("[init] Canonical schools seeded");
     const normalizedSourceTypes = await normalizeCanonicalProfileSourceTypes();
     console.log(`[init] Canonical profile source-type normalization: ${normalizedSourceTypes} profiles`);
     const migration = await migrateLegacyDetectedProfiles();
@@ -44,7 +46,8 @@ async function start() {
     console.log("[init] Storage buckets ready");
     console.log(`[init] Cache mode: ${mode}`);
   } catch (err: any) {
-    console.warn("[init] Infrastructure init warning:", err.message);
+    console.error("[init] Infrastructure init error:", err.message);
+    console.error("[init] Stack:", err.stack);
     console.warn("[init] Running in degraded mode — some features may be unavailable");
   }
 

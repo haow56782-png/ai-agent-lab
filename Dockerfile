@@ -30,4 +30,4 @@ ENV DOCX_PARSER_SCRIPT=/app/paper-formatter/services/api-gateway/parser/parse.py
 ENV DETECT_SCHOOL_SCRIPT=/app/paper-formatter/services/api-gateway/parser/detect_school.py
 
 EXPOSE 4000
-CMD ["node", "paper-formatter/services/api-gateway/dist/services/api-gateway/src/index.js"]
+CMD ["node", "paper-formatter/services/api-gateway/dist/index.js"]

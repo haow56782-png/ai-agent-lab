@@ -49,8 +49,6 @@ function parseSimpleResponse(input: string): string | null {
   return null;
 }
 
-let authenticated = false;
-
 async function send(parts: Array<string | number>): Promise<string | null> {
   if (!REDIS_ENABLED || !redisTarget) return null;
   return await new Promise((resolve, reject) => {
@@ -58,20 +56,18 @@ async function send(parts: Array<string | number>): Promise<string | null> {
     let raw = "";
     socket.setTimeout(2000);
     socket.on("connect", () => {
-      if (redisTarget.password && !authenticated) {
-        // Send AUTH command first
+      if (redisTarget.password) {
+        // Send AUTH before the actual command
         socket.write(encodeCommand(["AUTH", redisTarget.password]));
-        authenticated = true;
       }
       socket.write(encodeCommand(parts));
     });
     socket.on("data", (chunk) => {
       raw += chunk.toString("utf8");
-      // Wait for all responses (AUTH + actual command)
-      if (redisTarget.password && raw.split("\r\n").length < 4) return;
-      if (raw.includes("\r\n")) {
-        socket.end();
-      }
+      // Wait for all responses (AUTH + actual command) when password is set
+      const expectedLines = redisTarget.password ? 4 : 2;
+      if (raw.split("\r\n").filter(Boolean).length < expectedLines) return;
+      socket.end();
     });
     socket.on("timeout", () => {
       socket.destroy();
@@ -80,13 +76,14 @@ async function send(parts: Array<string | number>): Promise<string | null> {
     socket.on("error", reject);
     socket.on("close", () => {
       try {
+        let response = raw;
         // If AUTH was sent, skip its response and parse the actual command response
         if (redisTarget.password) {
-          const responses = raw.split("\r\n");
-          // AUTH response is first 2 tokens (+OK\r\n), skip it
-          raw = responses.slice(2).join("\r\n");
+          const lines = raw.split("\r\n").filter(Boolean);
+          // AUTH response is first 2 lines (+OK\r\n), skip them
+          response = lines.slice(2).join("\r\n");
         }
-        resolve(parseSimpleResponse(raw));
+        resolve(parseSimpleResponse(response));
       } catch (err) {
         reject(err);
       }

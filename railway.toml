@@ -1,6 +1,3 @@
 [build]
 # Use the paper-formatter Dockerfile instead of Railpack auto-detection
 dockerfilePath = "paper-formatter/Dockerfile"
-
-[deploy]
-healthcheckPath = "/api/v1/health"

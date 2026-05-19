@@ -83,7 +83,8 @@ export function isRedisEnabled(): boolean {
 export async function redisGet(key: string): Promise<string | null> {
   try {
     return await send(["GET", key]);
-  } catch {
+  } catch (err: any) {
+    console.warn(`[redis] GET ${key} failed:`, err.message);
     return null;
   }
 }
@@ -91,15 +92,25 @@ export async function redisGet(key: string): Promise<string | null> {
 export async function redisSetEx(key: string, ttlSeconds: number, value: string): Promise<void> {
   try {
     await send(["SETEX", key, ttlSeconds, value]);
-  } catch {
-    // Ignore cache writes in degraded mode
+  } catch (err: any) {
+    console.warn(`[redis] SETEX ${key} failed:`, err.message);
   }
 }
 
 export async function redisDel(key: string): Promise<void> {
   try {
     await send(["DEL", key]);
+  } catch (err: any) {
+    console.warn(`[redis] DEL ${key} failed:`, err.message);
+  }
+}
+
+/** Lightweight connectivity test. Returns true if Redis responds to PING. */
+export async function redisPing(): Promise<boolean> {
+  try {
+    const result = await send(["PING"]);
+    return result === "PONG";
   } catch {
-    // Ignore cache invalidation in degraded mode
+    return false;
   }
 }

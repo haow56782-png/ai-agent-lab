@@ -9,7 +9,7 @@ import {
   parseDetectSchoolCommand,
 } from "../dto/document-requests.js";
 import { query } from "../db.js";
-import { redisDel, redisGet, redisSetEx } from "../redis.js";
+import { getCache } from "../cache/index.js";
 import { v4 as uuid } from "uuid";
 import crypto from "crypto";
 import { spawnSync } from "child_process";
@@ -76,7 +76,8 @@ profileRoutes.post("/detect", async (req, res, next) => {
   try {
     const command = parseDetectSchoolCommand(req.body);
     const cacheKey = `profiles:detect:${command.legacyDocId}`;
-    const cached = await redisGet(cacheKey);
+    const cache = getCache();
+    const cached = await cache.get(cacheKey);
     if (cached) {
       return res.json(JSON.parse(cached));
     }
@@ -108,7 +109,7 @@ profileRoutes.post("/detect", async (req, res, next) => {
       const output = JSON.parse(result.stdout || "{}");
       if (!output.detected || !output.name) {
         const payload = { detected: false, name: null, confidence: 0, existingSchoolId: null };
-        await redisSetEx(cacheKey, CACHE_TTLS.detectSchool, JSON.stringify(payload));
+        await cache.set(cacheKey, JSON.stringify(payload), CACHE_TTLS.detectSchool);
         return res.json(payload);
       }
 
@@ -121,7 +122,7 @@ profileRoutes.post("/detect", async (req, res, next) => {
         matchedText: output.matched_text,
         existingSchoolId: existing?.school_id || null,
       };
-      await redisSetEx(cacheKey, CACHE_TTLS.detectSchool, JSON.stringify(payload));
+      await cache.set(cacheKey, JSON.stringify(payload), CACHE_TTLS.detectSchool);
       return res.json(payload);
     } finally {
       try { unlinkSync(tmpPath); } catch { /* ok */ }
@@ -134,6 +135,7 @@ profileRoutes.post("/detect", async (req, res, next) => {
 profileRoutes.post("/auto-create", async (req, res, next) => {
   try {
     const command = parseAutoCreateSchoolCommand(req.body);
+    const cache = getCache();
 
     const existing = await profileRepo.findBestProfileByName(command.name);
     if (existing) {
@@ -144,10 +146,10 @@ profileRoutes.post("/auto-create", async (req, res, next) => {
         );
         await profileRepo.incrementUploadCount(existing.school_id);
       }
-      await redisDel("profiles:list:all");
-      await redisDel("profiles:list:v2:all");
+      await cache.del("profiles:list:all");
+      await cache.del("profiles:list:v2:all");
       if (command.legacyDocId) {
-        await redisDel(`profiles:detect:${command.legacyDocId}`);
+        await cache.del(`profiles:detect:${command.legacyDocId}`);
       }
       return res.json({
         schoolId: existing.school_id,
@@ -179,10 +181,10 @@ profileRoutes.post("/auto-create", async (req, res, next) => {
     }
 
     console.log(`[profiles] Auto-created school: ${command.name} (${schoolId})`);
-    await redisDel("profiles:list:all");
-    await redisDel("profiles:list:v2:all");
+    await cache.del("profiles:list:all");
+    await cache.del("profiles:list:v2:all");
     if (command.legacyDocId) {
-      await redisDel(`profiles:detect:${command.legacyDocId}`);
+      await cache.del(`profiles:detect:${command.legacyDocId}`);
     }
 
     res.status(201).json({
@@ -229,8 +231,9 @@ profileRoutes.post("/import-template", templateUpload.single("file"), async (req
 profileRoutes.get("/", async (_req, res, next) => {
   try {
     const q = _req.query.q as string | undefined;
+    const cache = getCache();
     const cacheKey = `profiles:list:v2:${q || "all"}`;
-    const cached = await redisGet(cacheKey);
+    const cached = await cache.get(cacheKey);
     if (cached) {
       return res.json(JSON.parse(cached));
     }
@@ -251,7 +254,7 @@ profileRoutes.get("/", async (_req, res, next) => {
         sourceType: p.source_type,
       })),
     };
-    await redisSetEx(cacheKey, CACHE_TTLS.listProfiles, JSON.stringify(payload));
+    await cache.set(cacheKey, JSON.stringify(payload), CACHE_TTLS.listProfiles);
     res.json(payload);
   } catch (err) {
     next(err);
@@ -269,8 +272,9 @@ profileRoutes.get("/:profileId", async (req, res, next) => {
       });
     }
 
+    const cache = getCache();
     const cacheKey = `profile:v2:${req.params.profileId}`;
-    const cached = await redisGet(cacheKey);
+    const cached = await cache.get(cacheKey);
     if (cached) {
       return res.json(JSON.parse(cached));
     }
@@ -281,7 +285,7 @@ profileRoutes.get("/:profileId", async (req, res, next) => {
         error: { code: "NOT_FOUND", message: "Profile not found" },
       });
     }
-    await redisSetEx(cacheKey, CACHE_TTLS.profileDetail, JSON.stringify(profile));
+    await cache.set(cacheKey, JSON.stringify(profile), CACHE_TTLS.profileDetail);
     res.json(profile);
   } catch (err) {
     next(err);

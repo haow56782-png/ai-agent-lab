@@ -5,7 +5,7 @@ import { createApp } from "./app.js";
 import { ensureSchema, closePool } from "./db.js";
 import { ensureBuckets } from "./storage.js";
 import { ensureSeedSchools, migrateLegacyDetectedProfiles, normalizeCanonicalProfileSourceTypes } from "./repositories/profiles.js";
-import { isRedisEnabled, redisDel } from "./redis.js";
+import { initCacheStore, getCache } from "./cache/index.js";
 import { CANONICAL_PROFILE_SEEDS } from "./fixtures/canonical-school-profiles.js";
 
 const { app, FIX_FREE_LIMIT } = createApp();
@@ -24,12 +24,17 @@ async function start() {
     console.log(`[init] Canonical profile source-type normalization: ${normalizedSourceTypes} profiles`);
     const migration = await migrateLegacyDetectedProfiles();
     console.log(`[init] Legacy detected profile migration: ${migration.migratedProfiles} profiles, ${migration.migratedDocumentLinks} document links`);
-    if (isRedisEnabled() && (normalizedSourceTypes > 0 || migration.migratedProfiles > 0)) {
-      await redisDel("profiles:list:all");
-      await redisDel("profiles:list:v2:all");
+    // Initialize cache store (Redis if available, otherwise in-memory)
+    const { mode } = await initCacheStore();
+
+    // Invalidate stale profile caches after normalization/migration
+    if (normalizedSourceTypes > 0 || migration.migratedProfiles > 0) {
+      const cache = getCache();
+      await cache.del("profiles:list:all");
+      await cache.del("profiles:list:v2:all");
       for (const seed of CANONICAL_PROFILE_SEEDS) {
-        await redisDel(`profile:${seed.schoolId}`);
-        await redisDel(`profile:v2:${seed.schoolId}`);
+        await cache.del(`profile:${seed.schoolId}`);
+        await cache.del(`profile:v2:${seed.schoolId}`);
       }
       console.log("[init] Profile caches invalidated after source/profile normalization");
     }
@@ -37,7 +42,7 @@ async function start() {
     // Initialize MinIO buckets
     await ensureBuckets();
     console.log("[init] Storage buckets ready");
-    console.log(`[init] Redis cache ${isRedisEnabled() ? "enabled" : "disabled"}`);
+    console.log(`[init] Cache mode: ${mode}`);
   } catch (err: any) {
     console.warn("[init] Infrastructure init warning:", err.message);
     console.warn("[init] Running in degraded mode — some features may be unavailable");

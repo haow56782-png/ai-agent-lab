@@ -26,8 +26,10 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      # redis is optional — api-gateway falls back to in-memory cache when absent
+      # Uncomment the lines below when Redis is available:
+      # redis:
+      #   condition: service_healthy
       formatter:
         condition: service_started
     logging:

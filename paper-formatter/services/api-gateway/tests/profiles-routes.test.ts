@@ -30,10 +30,15 @@ vi.mock("../src/db.js", () => ({
   query: vi.fn(),
 }));
 
-vi.mock("../src/redis.js", () => ({
-  redisGet: vi.fn(),
-  redisSetEx: vi.fn(),
-  redisDel: vi.fn(),
+const mockCache = {
+  get: vi.fn(),
+  set: vi.fn(),
+  del: vi.fn(),
+};
+
+vi.mock("../src/cache/index.js", () => ({
+  getCache: vi.fn(() => mockCache),
+  initCacheStore: vi.fn(),
 }));
 
 vi.mock("child_process", () => ({
@@ -50,9 +55,9 @@ vi.mock("child_process", () => ({
 describe("profile routes canonical mapping", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(redisGet).mockResolvedValue(null as any);
-    vi.mocked(redisSetEx).mockResolvedValue(undefined as any);
-    vi.mocked(redisDel).mockResolvedValue(undefined as any);
+    mockCache.get.mockResolvedValue(null);
+    mockCache.set.mockResolvedValue(undefined);
+    mockCache.del.mockResolvedValue(undefined);
     vi.mocked(query).mockResolvedValue({ rows: [] } as any);
   });
 

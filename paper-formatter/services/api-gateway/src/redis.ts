@@ -25,6 +25,13 @@ function parseRedisUrl(value: string): RedisTarget | null {
 }
 
 const redisTarget = parseRedisUrl(REDIS_URL);
+if (redisTarget) {
+  const hasPassword = !!redisTarget.password;
+  const { host, port } = redisTarget;
+  console.log("[redis] Parsed target:", { host, port, hasPassword });
+} else if (REDIS_URL) {
+  console.warn("[redis] Failed to parse REDIS_URL:", REDIS_URL);
+}
 
 function encodeBulk(value: string): string {
   return `$${Buffer.byteLength(value)}\r\n${value}\r\n`;
@@ -56,6 +63,7 @@ async function send(parts: Array<string | number>): Promise<string | null> {
     let raw = "";
     socket.setTimeout(2000);
     socket.on("connect", () => {
+      console.log("[redis] Connected to", redisTarget.host + ":" + redisTarget.port);
       if (redisTarget.password) {
         // Send AUTH before the actual command
         socket.write(encodeCommand(["AUTH", redisTarget.password]));
@@ -70,10 +78,14 @@ async function send(parts: Array<string | number>): Promise<string | null> {
       socket.end();
     });
     socket.on("timeout", () => {
+      console.error("[redis] Timeout connecting to", redisTarget.host + ":" + redisTarget.port);
       socket.destroy();
       reject(new Error("Redis timeout"));
     });
-    socket.on("error", reject);
+    socket.on("error", (err) => {
+      console.error("[redis] Error connecting to", redisTarget.host + ":" + redisTarget.port, err);
+      reject(err);
+    });
     socket.on("close", () => {
       try {
         let response = raw;
@@ -122,6 +134,7 @@ export async function redisDel(key: string): Promise<void> {
 
 /** Lightweight connectivity test. Returns true if Redis responds to PING. */
 export async function redisPing(): Promise<boolean> {
+  console.log("[redis] PING attempt to", redisTarget);
   try {
     const result = await send(["PING"]);
     return result === "PONG";

@@ -1,0 +1,104 @@
+/* ─────────────────────────────────────────────────────────────
+   论文排版 MVP — design tokens
+   Aesthetic: scholarly paper. Cream substrate, ink-blue primary,
+   warm rust for diff/changes, serif headlines for academic gravitas.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* Paper substrate */
+  --paper-0: #FBFAF6;        /* page */
+  --paper-1: #F4F0E6;        /* canvas / muted bg */
+  --paper-2: #ECE6D8;        /* divider tint / chip */
+  --paper-3: #DED5C0;        /* deeper rule */
+
+  /* Ink */
+  --ink-900: #15171B;        /* headlines */
+  --ink-700: #2E323A;        /* body */
+  --ink-500: #6B655B;        /* secondary */
+  --ink-400: #8E867A;        /* tertiary / placeholder */
+  --ink-300: #B6AE9F;        /* hairline */
+
+  /* Brand — deep ink blue, like a fountain-pen */
+  --brand-900: #0E2A48;
+  --brand-700: #1E3A5F;
+  --brand-500: #3B5C82;
+  --brand-100: #DCE5EE;
+  --brand-50:  #EEF2F7;
+
+  /* Accents */
+  --rust-700: #9C4421;       /* diff: changed / removed */
+  --rust-500: #B8542F;
+  --rust-100: #F2DDD0;
+
+  --leaf-700: #2F6B4F;       /* pass / safe */
+  --leaf-500: #468A6A;
+  --leaf-100: #DDEBE0;
+
+  --sun-700:  #8A6516;       /* warn / needs review */
+  --sun-500:  #B7872B;
+  --sun-100:  #F1E5C4;
+
+  /* Hairlines & shadows */
+  --hair: rgba(21, 23, 27, 0.10);
+  --hair-strong: rgba(21, 23, 27, 0.18);
+  --shadow-card: 0 1px 0 rgba(21, 23, 27, .04), 0 12px 36px -16px rgba(21, 23, 27, .18);
+  --shadow-soft: 0 1px 2px rgba(21, 23, 27, .06);
+
+  /* Type stacks */
+  --serif: "Source Serif 4", "Source Serif Pro", "Noto Serif SC",
+           "Songti SC", "STSong", Georgia, serif;
+  --sans:  "Inter", -apple-system, "PingFang SC", "Noto Sans SC",
+           "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono:  "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* Utility scaffolding used inside artboards.
+   Scoped to .ab so they never leak into the design-canvas chrome. */
+.ab {
+  box-sizing: border-box;
+  font-family: var(--sans);
+  color: var(--ink-700);
+  font-size: 14px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.ab * { box-sizing: border-box; }
+.ab .serif { font-family: var(--serif); font-feature-settings: "ss01"; }
+.ab .mono  { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.ab .num   { font-variant-numeric: tabular-nums; }
+.ab .hair  { background: var(--hair); }
+.ab .vrule { width: 1px; background: var(--hair); align-self: stretch; }
+.ab .hrule { height: 1px; background: var(--hair); }
+
+/* Tag / chip */
+.ab .chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 22px; padding: 0 8px; border-radius: 3px;
+  font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  background: var(--paper-2); color: var(--ink-500);
+  font-weight: 500;
+}
+.ab .chip.ink   { background: var(--ink-900); color: var(--paper-0); }
+.ab .chip.brand { background: var(--brand-100); color: var(--brand-900); }
+.ab .chip.rust  { background: var(--rust-100); color: var(--rust-700); }
+.ab .chip.leaf  { background: var(--leaf-100); color: var(--leaf-700); }
+.ab .chip.sun   { background: var(--sun-100);  color: var(--sun-700);  }
+
+/* "Section index" — small caps with leading hairline */
+.ab .secdex {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--ink-500); letter-spacing: .12em; text-transform: uppercase;
+}
+.ab .secdex::before {
+  content: ""; width: 28px; height: 1px; background: var(--ink-700);
+}
+
+/* Reusable ruled paper bg for documents */
+.paper-rules {
+  background-image:
+    linear-gradient(to bottom, transparent 31px, rgba(21,23,27,.045) 31px, rgba(21,23,27,.045) 32px, transparent 32px);
+  background-size: 100% 32px;
+}

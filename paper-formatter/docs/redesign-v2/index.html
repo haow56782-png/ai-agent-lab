@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>正稿 · Step 3 / 4 / 5 改版</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    html, body { margin: 0; height: 100%; background: #f0eee9; }
+    body { font-family: var(--sans); }
+    @keyframes protoFadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="hifi-shell.jsx"></script>
+  <script type="text/babel" src="redesign-brief.jsx"></script>
+  <script type="text/babel" src="redesign-step3.jsx"></script>
+  <script type="text/babel" src="redesign-step4.jsx"></script>
+  <script type="text/babel" src="redesign-step5.jsx"></script>
+
+  <script type="text/babel">
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="brief"
+            title="00 — 改版纲领"
+            subtitle="为什么改 · 怎么改 · 为参赛交付清晰可辩护的设计姿态"
+          >
+            <DCArtboard id="brief" label="改版纲领 · 红笔工坊" width={1200} height={760}>
+              <RedesignBrief />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="step3"
+            title="03 — 体检（Step 3 · 改版）"
+            subtitle="结构 X 光：玻璃罩 + 扫描线 + 边扫边长的结构骨架"
+          >
+            <DCArtboard id="s3" label="HF · Step 3 体检 · 结构 X 光探针" width={1440} height={900}>
+              <RedesignStep3 />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="step4"
+            title="04 — 修复（Step 4 · 改版）"
+            subtitle="红笔工坊：稿纸地图 · 红笔标注 · 可拖动时间线 · 一键批准 / 存疑"
+          >
+            <DCArtboard id="s4" label="HF · Step 4 修复 · 红笔工坊 ★" width={1440} height={900}>
+              <RedesignStep4 />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="step5"
+            title="05 — 确认（Step 5 · 改版）"
+            subtitle="校对台：逐项 before/after 对照 · 文本指纹证书 · 下载守门"
+          >
+            <DCArtboard id="s5" label="HF · Step 5 确认 · 校对台 ★" width={1440} height={900}>
+              <RedesignStep5 />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

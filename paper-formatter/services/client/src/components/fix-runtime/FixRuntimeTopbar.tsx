@@ -12,6 +12,7 @@ interface Props {
   onPauseToggle: () => void;
   onSpeedChange: (speed: 1 | 2 | 4) => void;
   onJumpToComplete: () => void;
+  onViewDiff?: () => void;
   onStartFix?: () => void;
 }
 
@@ -24,6 +25,7 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
   activeFinding,
   onPauseToggle,
   onJumpToComplete,
+  onViewDiff,
   onStartFix,
 }) => {
   const progress = findingStatusSummary.autoFixableTotal > 0
@@ -111,6 +113,15 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
         >
           跳过动画，查看结果
         </button>
+        {onViewDiff ? (
+          <button
+            type="button"
+            className="fix-control-button"
+            onClick={onViewDiff}
+          >
+            查看校对台
+          </button>
+        ) : null}
       </div>
     </header>
   );

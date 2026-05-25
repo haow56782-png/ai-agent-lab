@@ -9,6 +9,7 @@ import {
   useApp,
   getLegacyDocumentId,
   defaultBaseStandardVersion,
+  getSchoolOptions,
   type SchoolOption,
   type BaseStandardVersion,
 } from '../components/AppFrame';
@@ -107,8 +108,22 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
     return result.profiles;
   }, []);
 
+  const localFallbackProfiles = React.useMemo(
+    () => getSchoolOptions().map((profile) => ({
+      ...profile,
+      baseStandardVersion: baseStandard,
+      sourceType: profile.sourceType || 'official',
+    })),
+    [baseStandard],
+  );
+
   const profileOptions = React.useMemo(
-    () => profileCatalog.map((profile, index) => toProfileOption(profile, index, baseStandard)).sort((left, right) => {
+    () => {
+      const options = profileCatalog.length > 0
+        ? profileCatalog.map((profile, index) => toProfileOption(profile, index, baseStandard))
+        : localFallbackProfiles;
+
+      return options.sort((left, right) => {
       const leftStatus = getProfileRuleStatus(left);
       const rightStatus = getProfileRuleStatus(right);
       const statusDiff = RULE_STATUS_PRIORITY[leftStatus] - RULE_STATUS_PRIORITY[rightStatus];
@@ -124,8 +139,9 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
       const matchDiff = right.match - left.match;
       if (matchDiff !== 0) return matchDiff;
       return left.name.localeCompare(right.name, 'zh-CN');
-    }),
-    [baseStandard, profileCatalog],
+      });
+    },
+    [baseStandard, localFallbackProfiles, profileCatalog],
   );
   const ruleStatusCounts = React.useMemo(() => {
     const counts: Record<RuleStatusFilter, number> = {

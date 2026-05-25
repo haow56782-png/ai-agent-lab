@@ -215,7 +215,7 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
   };
 
   return (
-    <div style={{ flex: 1, padding: '32px 56px 36px', overflow: 'auto', background: 'var(--paper-1)' }}>
+    <div className="delivery-desk">
       <DeliveryHeader
         contentIntegrity={contentIntegrityView}
         deliveryNarrative={deliveryNarrative}
@@ -223,23 +223,20 @@ const Step5Output: React.FC<Props> = ({ showToast }) => {
         newScore={newScore}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, marginBottom: 16 }}>
+      <div className="delivery-signal-grid">
         {[
           { label: '正文保护', value: contentIntegrityView.detail },
           { label: '交付方式', value: '修正稿、原稿、修改清单、报告可一起留档' },
           { label: '导出建议', value: '确认页已过目，再下载最终交稿版' },
         ].map((signal) => (
-          <div key={signal.label} style={{
-            background: 'var(--paper-0)', borderRadius: 6, border: '1px solid var(--hair)',
-            padding: '12px 14px',
-          }}>
-            <div className="mono" style={{ fontSize: 10, color: 'var(--ink-400)', marginBottom: 6 }}>{signal.label}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--ink-700)', lineHeight: 1.5 }}>{signal.value}</div>
+          <div key={signal.label} className="delivery-signal-card">
+            <div className="mono">{signal.label}</div>
+            <p>{signal.value}</p>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20 }}>
+      <div className="delivery-grid">
         {/* LEFT: Fix summary + export */}
         <div>
           <FixSummaryCard items={FIX_SUMMARY} />

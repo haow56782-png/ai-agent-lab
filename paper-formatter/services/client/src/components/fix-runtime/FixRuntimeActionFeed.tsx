@@ -116,8 +116,12 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
       onScroll={onScroll}
       data-testid="fix-runtime-action-feed"
     >
-      <div className="fix-runtime-note-head" data-testid="fix-runtime-action-count">
-        当前修复
+      <div className="fix-runtime-cockpit-head" data-testid="fix-runtime-action-count">
+        <div>
+          <div className="fix-runtime-note-head">当前发现项</div>
+          <strong>{findingStatusSummary.writtenBack} / {findingStatusSummary.autoFixableTotal || findingStatusSummary.total}</strong>
+        </div>
+        <span>{findingStatusSummary.needsReview} 项待确认</span>
       </div>
 
       {currentTaskRow && currentTaskExplanation ? (
@@ -134,21 +138,21 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
             <b>第 {currentTaskRow.page} 页 · {currentTaskRow.chapter}</b>
           </div>
           <h3>{currentTaskRow.findingTitle}</h3>
-          <dl>
-            <div>
-              <dt>发现问题</dt>
+          <dl className="fix-current-task-triplet">
+            <div className="tone-ink">
+              <dt>证据</dt>
               <dd>{currentTaskExplanation.problem}</dd>
             </div>
-            <div>
-              <dt>依据</dt>
+            <div className="tone-brand">
+              <dt>规则</dt>
               <dd>{cleanRuleLabel(currentTaskRow.ruleLabel)}</dd>
             </div>
-            <div>
-              <dt>修复动作</dt>
+            <div className="tone-rust">
+              <dt>修改</dt>
               <dd>{currentTaskExplanation.action}</dd>
             </div>
-            <div>
-              <dt>安全说明</dt>
+            <div className="tone-leaf">
+              <dt>安全</dt>
               <dd>{currentTaskExplanation.safety}</dd>
             </div>
           </dl>

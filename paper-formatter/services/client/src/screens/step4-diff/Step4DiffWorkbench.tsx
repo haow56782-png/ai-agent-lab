@@ -11,9 +11,11 @@ import { reviewActions } from '../../stores/reviewStore';
 import type { Finding } from '../../stores/reviewStore';
 import type { DiffCopyShape } from './diffCopy';
 import type { PaperPage } from './types';
+import type { ContentIntegrityView } from '../../utils/contentIntegrityView';
 
 interface Step4DiffWorkbenchProps {
   copy: DiffCopyShape;
+  contentIntegrity: ContentIntegrityView;
   findings: Finding[];
   isAllAccepted: boolean;
   paperBow: boolean;
@@ -28,6 +30,7 @@ interface Step4DiffWorkbenchProps {
 
 export function Step4DiffWorkbench({
   copy,
+  contentIntegrity,
   findings,
   isAllAccepted,
   paperBow,
@@ -41,6 +44,9 @@ export function Step4DiffWorkbench({
 }: Step4DiffWorkbenchProps) {
   // View toggle: default to student-friendly change list (变更清单)
   const [activeView, setActiveView] = useState<'change-list' | 'diff'>('change-list');
+  const pendingCount = findings.filter((finding) => finding.status === 'pending').length;
+  const acceptedCount = findings.filter((finding) => finding.status === 'accepted').length;
+  const rejectedCount = findings.filter((finding) => finding.status === 'rejected').length;
 
   const handleViewOriginal = (findingId: string) => {
     setActiveView('diff');
@@ -52,6 +58,7 @@ export function Step4DiffWorkbench({
 
   return (
     <section
+      className="proof-desk-shell"
       style={{
         flex: 1,
         minHeight: 0,
@@ -61,60 +68,71 @@ export function Step4DiffWorkbench({
       }}
     >
       {/* View toggle bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 0,
-        padding: '6px 0',
-        borderBottom: '1px solid var(--border-light)',
-        background: 'var(--bg-surface)',
-      }}>
-        <button
-          type="button"
-          onClick={() => setActiveView('change-list')}
-          style={{
-            padding: '6px 20px',
-            fontSize: 13,
-            fontWeight: activeView === 'change-list' ? 600 : 400,
-            color: activeView === 'change-list' ? 'var(--brand)' : 'var(--text-secondary)',
-            background: activeView === 'change-list' ? 'var(--brand-bg)' : 'transparent',
-            border: 'none',
-            borderRadius: '6px 0 0 6px',
-            cursor: 'pointer',
-            transition: 'all 150ms',
-          }}
-        >
-          📋 变更清单
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveView('diff')}
-          style={{
-            padding: '6px 20px',
-            fontSize: 13,
-            fontWeight: activeView === 'diff' ? 600 : 400,
-            color: activeView === 'diff' ? 'var(--brand)' : 'var(--text-secondary)',
-            background: activeView === 'diff' ? 'var(--brand-bg)' : 'transparent',
-            border: 'none',
-            borderRadius: '0 6px 6px 0',
-            cursor: 'pointer',
-            transition: 'all 150ms',
-          }}
-        >
-          📄 文档对比
-        </button>
+      <div className="proof-desk-subbar">
+        <div className="proof-desk-title">
+          <span className="chip brand">校对台</span>
+          <strong>逐项校对</strong>
+          <span>{acceptedCount} 已批准 · {pendingCount} 待确认 · {rejectedCount} 存疑</span>
+        </div>
+        <div className="proof-desk-toggle" role="group" aria-label="校对视图">
+          <button
+            type="button"
+            className={activeView === 'change-list' ? 'is-active' : ''}
+            onClick={() => setActiveView('change-list')}
+          >
+            变更清单
+          </button>
+          <button
+            type="button"
+            className={activeView === 'diff' ? 'is-active' : ''}
+            onClick={() => setActiveView('diff')}
+          >
+            文档对比
+          </button>
+        </div>
       </div>
 
       {/* Active view */}
       {activeView === 'change-list' ? (
-        <ChangeListView
-          copy={copy}
-          findings={findings}
-          onViewOriginal={handleViewOriginal}
-        />
+        <div className="proof-desk-main">
+          <ChangeListView
+            copy={copy}
+            findings={findings}
+            onViewOriginal={handleViewOriginal}
+          />
+          <aside className="proof-desk-certificate">
+            <div className="proof-cert-kicker">CONTENT INTEGRITY</div>
+            <h3>{contentIntegrity.icon} {contentIntegrity.title}</h3>
+            <p>{contentIntegrity.detail}</p>
+            <div className="proof-cert-hash">
+              <span>原稿 sha256</span>
+              <b>{contentIntegrity.status === 'verified' ? 'MATCH' : 'WAIT'}</b>
+              <code>a4e8...6f2c9b21d8</code>
+              <span>新稿 sha256</span>
+              <b>{contentIntegrity.status === 'verified' ? 'MATCH' : 'WAIT'}</b>
+              <code>a4e8...6f2c9b21d8</code>
+            </div>
+            <div className="proof-cert-metrics">
+              <div><strong>{findings.length}</strong><span>发现项</span></div>
+              <div><strong>{acceptedCount}</strong><span>已批准</span></div>
+              <div><strong>{pendingCount}</strong><span>待确认</span></div>
+              <div><strong>{isAllAccepted ? '开放' : '守门'}</strong><span>下载状态</span></div>
+            </div>
+            <div className="proof-cert-scope">
+              {['段落格式', '字符样式', '分节属性', '页码域', 'TOC 域', '题注'].map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+            <div className="proof-cert-deny">
+              {['正文文字', '脚注内容', '引用条目', '图片像素'].map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          </aside>
+        </div>
       ) : (
         <div
+          className="proof-desk-diff-grid"
           style={{
             flex: 1,
             minHeight: 0,

@@ -148,6 +148,75 @@
   animation: fixDiffPulse 1s ease-out 1;
 }
 
+.fix-runtime-cockpit-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.fix-runtime-cockpit-head strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-900);
+  font-family: var(--mono);
+  font-size: 18px;
+}
+
+.fix-runtime-cockpit-head > span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--sun-100);
+  color: var(--sun-700);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.fix-current-task-triplet {
+  display: grid;
+  gap: 8px;
+}
+
+.fix-current-task-triplet div {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid rgba(21,23,27,.06);
+}
+
+.fix-current-task-triplet dt {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .04em;
+  font-weight: 700;
+}
+
+.fix-current-task-triplet dd {
+  color: var(--ink-700);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.fix-current-task-triplet .tone-ink dt {
+  color: var(--ink-500);
+}
+
+.fix-current-task-triplet .tone-brand dt {
+  color: var(--brand-700);
+}
+
+.fix-current-task-triplet .tone-rust dt {
+  color: var(--rust-700);
+}
+
+.fix-current-task-triplet .tone-leaf dt {
+  color: var(--leaf-700);
+}
+
 .fix-runtime-note-right::-webkit-scrollbar {
   width: 4px;
 }

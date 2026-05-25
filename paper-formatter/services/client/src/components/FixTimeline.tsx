@@ -1,7 +1,8 @@
 import React from 'react';
 import { FixRuntimeActionFeed } from './fix-runtime/FixRuntimeActionFeed';
+import { FixRuntimeManuscriptMap } from './fix-runtime/FixRuntimeManuscriptMap';
 import { FixRuntimePaperStage } from './fix-runtime/FixRuntimePaperStage';
-import { FixRuntimeRulesAside } from './fix-runtime/FixRuntimeRulesAside';
+import { FixRuntimeScrubber } from './fix-runtime/FixRuntimeScrubber';
 import { FixRuntimeTopbar } from './fix-runtime/FixRuntimeTopbar';
 import type { FixTimelineProps } from './fix-runtime/types';
 import { useFixRuntimePlayback } from './fix-runtime/useFixRuntimePlayback';
@@ -50,11 +51,11 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
       />
 
       <div className="fix-runtime-stage">
-        <FixRuntimeRulesAside
-          isPageFlipping={playback.isPageFlipping}
+        <FixRuntimeManuscriptMap
+          runtimeStore={playback.visualRuntimeStore}
+          timelineRows={playback.timelineRows}
           leftRules={playback.leftRules}
           hiddenRuleCount={playback.hiddenRuleCount}
-          ruleFlashId={playback.ruleFlashId}
           activeThesisSubset={playback.activeThesisSubset}
         />
 
@@ -92,6 +93,14 @@ export const FixTimeline: React.FC<FixTimelineProps> = ({
           onViewDiff={onViewDiff}
         />
       </div>
+
+      <FixRuntimeScrubber
+        runtimeStore={playback.visualRuntimeStore}
+        timelineRows={playback.timelineRows}
+        viewDiffEnabled={playback.viewDiffEnabled}
+        onJumpToAction={playback.handleJumpToAction}
+        onViewDiff={onViewDiff}
+      />
     </section>
   );
 };

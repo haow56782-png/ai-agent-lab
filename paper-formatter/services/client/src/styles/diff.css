@@ -1,4 +1,191 @@
 /* Diff workspace domain styles */
+.proof-desk-shell {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(184,84,47,.07), transparent 28%),
+    linear-gradient(180deg, var(--paper-1), #eee7da);
+}
+
+.proof-desk-subbar {
+  min-height: 54px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--hair);
+  background: rgba(251,250,246,.96);
+}
+
+.proof-desk-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.proof-desk-title strong {
+  color: var(--ink-900);
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -.03em;
+}
+
+.proof-desk-title span:last-child {
+  color: var(--ink-500);
+  font-size: 12px;
+}
+
+.proof-desk-toggle {
+  margin-left: auto;
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--hair-strong);
+  border-radius: 999px;
+  background: var(--paper-2);
+}
+
+.proof-desk-toggle button {
+  height: 28px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-500);
+  font-size: 12px;
+}
+
+.proof-desk-toggle button.is-active {
+  background: var(--ink-900);
+  color: var(--paper-0);
+}
+
+.proof-desk-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  overflow: hidden;
+}
+
+.proof-desk-main .change-list-view {
+  padding: 22px 28px 28px !important;
+}
+
+.proof-desk-certificate {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-left: 1px solid var(--hair);
+  background: rgba(251,250,246,.98);
+  overflow: auto;
+}
+
+.proof-cert-kicker {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .16em;
+  color: var(--ink-400);
+}
+
+.proof-desk-certificate h3 {
+  margin: 0;
+  color: var(--ink-900);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.28;
+}
+
+.proof-desk-certificate p {
+  color: var(--ink-500);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.proof-cert-hash {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--paper-1);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.proof-cert-hash span {
+  color: var(--ink-400);
+}
+
+.proof-cert-hash b {
+  color: var(--leaf-700);
+  font-size: 9.5px;
+}
+
+.proof-cert-hash code {
+  grid-column: 1 / -1;
+  margin-bottom: 8px;
+  color: var(--ink-700);
+  word-break: break-all;
+}
+
+.proof-cert-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.proof-cert-metrics div {
+  padding: 10px 11px;
+  border-radius: 5px;
+  background: var(--paper-1);
+}
+
+.proof-cert-metrics strong {
+  display: block;
+  color: var(--ink-900);
+  font-family: var(--serif);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.proof-cert-metrics span {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-500);
+  font-size: 10.5px;
+}
+
+.proof-cert-scope,
+.proof-cert-deny {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.proof-cert-scope span,
+.proof-cert-deny span {
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.proof-cert-scope span {
+  background: var(--leaf-100);
+  color: var(--leaf-700);
+}
+
+.proof-cert-deny span {
+  background: var(--paper-2);
+  color: var(--ink-500);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-400);
+}
+
+.proof-desk-diff-grid {
+  background: var(--paper-1);
+}
+
 .secdex {
   display: flex; align-items: center; gap: 12px;
   font-family: var(--mono); font-size: 11px;

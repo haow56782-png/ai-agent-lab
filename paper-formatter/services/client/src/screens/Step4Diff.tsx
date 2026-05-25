@@ -269,6 +269,7 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
           />
 
           <Step4DiffWorkbench
+            contentIntegrity={contentIntegrityView}
             copy={copy}
             findings={effectiveFindings}
             isAllAccepted={controller.isAllAccepted}

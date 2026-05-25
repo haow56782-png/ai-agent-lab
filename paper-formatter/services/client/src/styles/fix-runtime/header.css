@@ -169,7 +169,7 @@
 
 .fix-runtime-stage {
   display: grid;
-  grid-template-columns: 220px minmax(600px, 1fr) 280px;
+  grid-template-columns: 190px minmax(560px, 1fr) 360px;
   min-height: 0;
   overflow: hidden;
   align-items: stretch;

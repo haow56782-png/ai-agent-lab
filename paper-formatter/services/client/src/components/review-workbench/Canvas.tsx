@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import type { DiffCopyShape } from '../../screens/step4-diff/diffCopy';
 import type { PaperPage } from '../../screens/step4-diff/types';
 import { A4_MARGIN_BOTTOM, A4_MARGIN_LEFT, A4_MARGIN_RIGHT, A4_MARGIN_TOP } from '../../screens/step4-diff/types';
+import { shouldShowFindingMark } from '../../screens/step4-diff/reviewVisualState';
 import { useFindingObserver } from '../../hooks/useFindingObserver';
 import { selectFocusedFindingPage, useReviewStore, type Finding } from '../../stores/reviewStore';
 
@@ -97,6 +98,7 @@ export const Canvas: React.FC<Props> = ({
                     {page.paragraphList.map((paragraph, paragraphIndex) => {
                       const paragraphFindings = pageFindings.filter((finding) => Math.floor(finding.anchorRect.y / 100) === paragraphIndex);
                       const primaryFinding = paragraphFindings[0];
+                      const showFindingMark = !!primaryFinding && shouldShowFindingMark(primaryFinding.status);
                       const isFocused = primaryFinding?.finding_id === focusFindingId;
                       const isDimmed = !!focusFindingId && !!primaryFinding && !isFocused;
                       return (
@@ -107,13 +109,13 @@ export const Canvas: React.FC<Props> = ({
                           }}
                           data-finding-id={primaryFinding?.finding_id}
                           className={[
-                            primaryFinding ? 'finding-paper-paragraph has-finding' : 'finding-paper-paragraph',
+                            showFindingMark ? 'finding-paper-paragraph has-finding' : 'finding-paper-paragraph',
                             isFocused ? 'is-focus' : '',
                             isDimmed ? 'is-dimmed' : '',
                             primaryFinding?.status !== 'pending' ? 'is-processed' : '',
                           ].filter(Boolean).join(' ')}
                         >
-                          {primaryFinding && (
+                          {showFindingMark && (
                             <span
                               className="finding-anchor"
                               style={{
@@ -124,7 +126,7 @@ export const Canvas: React.FC<Props> = ({
                             />
                           )}
                           <span>{paragraph}</span>
-                          {primaryFinding && (
+                          {showFindingMark && (
                             <span className="finding-inline-note">
                               {primaryFinding.before} → {primaryFinding.after}
                             </span>
@@ -142,7 +144,7 @@ export const Canvas: React.FC<Props> = ({
                   </div>
 
                   <div className="finding-paper-footer">{page.pageNumber}</div>
-                  {pageFindings.slice(0, 5).map((finding, index) => (
+                  {pageFindings.filter((finding) => shouldShowFindingMark(finding.status)).slice(0, 5).map((finding, index) => (
                     <div
                       key={`${finding.finding_id}-margin`}
                       className={[

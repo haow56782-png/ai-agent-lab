@@ -2,6 +2,7 @@ import React from 'react';
 import type { DiffCopyShape } from './diffCopy';
 import type { PaperPage, ReviewItem } from './types';
 import { A4_MARGIN_BOTTOM, A4_MARGIN_LEFT, A4_MARGIN_RIGHT, A4_MARGIN_TOP } from './types';
+import { shouldShowDiffMark } from './reviewVisualState';
 
 function renderDeleteLead(text?: string) {
   if (!text) return null;
@@ -90,11 +91,19 @@ export const DiffPaperStream: React.FC<Props> = ({
       {paperTopSpacer > 0 && <div aria-hidden="true" style={{ height: paperTopSpacer }} />}
       {paperPages.filter((paperPage) => visiblePaperPages.includes(paperPage.pageNumber)).map((paperPage) => {
         const marginNotes = paperPage.reviewAnchors
-          .filter((anchor) => anchor.diff?.action === 'annotate' || anchor.diff?.action === 'format-hint')
+          .filter((anchor) => {
+            const noteItem = reviewItems.find((item) => item.findingId === anchor.findingId);
+            const noteAction = noteItem ? ruleActions.get(noteItem.label) : undefined;
+            return shouldShowDiffMark(noteAction) && (anchor.diff?.action === 'annotate' || anchor.diff?.action === 'format-hint');
+          })
           .slice(0, 5);
         const overflowNoteCount = Math.max(
           0,
-          paperPage.reviewAnchors.filter((anchor) => anchor.diff?.action === 'annotate' || anchor.diff?.action === 'format-hint').length - marginNotes.length,
+          paperPage.reviewAnchors.filter((anchor) => {
+            const noteItem = reviewItems.find((item) => item.findingId === anchor.findingId);
+            const noteAction = noteItem ? ruleActions.get(noteItem.label) : undefined;
+            return shouldShowDiffMark(noteAction) && (anchor.diff?.action === 'annotate' || anchor.diff?.action === 'format-hint');
+          }).length - marginNotes.length,
         );
 
         return (
@@ -188,11 +197,12 @@ export const DiffPaperStream: React.FC<Props> = ({
                   {paperPage.paragraphList.map((paragraph, index) => {
                     const paragraphAnchor = paperPage.reviewAnchors.find((anchor) => anchor.paragraphIndex === index);
                     const paragraphDiff = paragraphAnchor?.diff ?? null;
-                    const isFormatHint = paragraphDiff?.action === 'format-hint';
-                    const isDelete = paragraphDiff?.action === 'delete';
-                    const isReplace = paragraphDiff?.action === 'replace';
                     const anchorReviewItem = paragraphAnchor ? reviewItems.find((item) => item.findingId === paragraphAnchor.findingId) : undefined;
                     const actionState = anchorReviewItem ? ruleActions.get(anchorReviewItem.label) : undefined;
+                    const showDiffMark = !!paragraphDiff && shouldShowDiffMark(actionState);
+                    const isFormatHint = showDiffMark && paragraphDiff?.action === 'format-hint';
+                    const isDelete = showDiffMark && paragraphDiff?.action === 'delete';
+                    const isReplace = showDiffMark && paragraphDiff?.action === 'replace';
                     const isDimmed = !!activeRuleId && paragraphAnchor?.findingId !== activeRuleId;
                     const isPulsing = emphasizedRuleId === paragraphAnchor?.findingId;
                     const srLabel = paragraphAnchor
@@ -216,9 +226,9 @@ export const DiffPaperStream: React.FC<Props> = ({
                         ].filter(Boolean).join(' ') || undefined}
                         style={{
                           position: 'relative',
-                          padding: paragraphDiff ? '10px 12px' : '0',
-                          background: paragraphDiff && paragraphDiff.action !== 'delete' ? 'rgba(200,56,56,.06)' : 'transparent',
-                          borderRadius: paragraphDiff ? 'var(--radius-sm)' : 0,
+                          padding: showDiffMark ? '10px 12px' : '0',
+                          background: showDiffMark && paragraphDiff.action !== 'delete' ? 'rgba(200,56,56,.06)' : 'transparent',
+                          borderRadius: showDiffMark ? 'var(--radius-sm)' : 0,
                         }}
                       >
                         {isReplace ? (

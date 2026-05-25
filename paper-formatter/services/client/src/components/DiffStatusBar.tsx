@@ -3,6 +3,7 @@
 // Ring progress: confirmed / total with SVG circle.
 
 import React from 'react';
+import { getDiffConfirmationProgress } from './diffStatusProgress';
 
 interface DiffStatusBarProps {
   total: number;
@@ -21,8 +22,8 @@ export const DiffStatusBar: React.FC<DiffStatusBarProps> = ({
   passedCount,
   failCount,
 }) => {
-  const confirmedCount = passedCount + acceptedCount + rejectedCount;
-  const confirmedRatio = total > 0 ? confirmedCount / total : 0;
+  const progress = getDiffConfirmationProgress({ total, acceptedCount, rejectedCount });
+  const confirmedRatio = progress.ratio;
   const isComplete = pendingCount === 0 && failCount === 0 && total > 0;
 
   // Status text and color
@@ -110,9 +111,6 @@ export const DiffStatusBar: React.FC<DiffStatusBarProps> = ({
           color: 'var(--text-secondary)',
           alignItems: 'center',
         }}>
-          {passedCount > 0 && (
-            <span style={{ color: 'var(--status-pass)', fontWeight: 500 }}>✓{passedCount}</span>
-          )}
           {pendingCount > 0 && (
             <span style={{ color: 'var(--status-review)', fontWeight: 500 }}>⚠{pendingCount}</span>
           )}
@@ -125,6 +123,9 @@ export const DiffStatusBar: React.FC<DiffStatusBarProps> = ({
           {rejectedCount > 0 && (
             <span style={{ color: 'var(--text-tertiary)', fontWeight: 400, fontSize: 11 }}>已忽略 {rejectedCount}</span>
           )}
+          {passedCount > 0 && (
+            <span style={{ color: 'var(--text-tertiary)', fontWeight: 400, fontSize: 11 }}>自动通过 {passedCount}</span>
+          )}
         </div>
 
         {/* SVG ring */}
@@ -134,10 +135,10 @@ export const DiffStatusBar: React.FC<DiffStatusBarProps> = ({
           viewBox={`0 0 ${ringSize} ${ringSize}`}
           style={{ flexShrink: 0 }}
           role="progressbar"
-          aria-valuenow={Math.round(confirmedRatio * 100)}
+          aria-valuenow={progress.percent}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label={`确认进度 ${Math.round(confirmedRatio * 100)}%`}
+          aria-label={`确认进度 ${progress.percent}%`}
         >
           {/* Background circle */}
           <circle
@@ -187,7 +188,7 @@ export const DiffStatusBar: React.FC<DiffStatusBarProps> = ({
               fontSize={11}
               fontWeight={600}
             >
-              {Math.round(confirmedRatio * 100)}%
+              {progress.percent}%
             </text>
           )}
         </svg>

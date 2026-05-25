@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { getDiffConfirmationProgress } from '../../src/components/diffStatusProgress.ts';
-import { shouldShowDiffMark, shouldShowFindingMark } from '../../src/screens/step4-diff/reviewVisualState.ts';
+import {
+  isInlineDiffAction,
+  isMarginDiffAction,
+  shouldShowDiffMark,
+  shouldShowFindingMark,
+} from '../../src/screens/step4-diff/reviewVisualState.ts';
 
 function testFindingMarksOnlyStayLoudWhileActionable() {
   assert.equal(shouldShowFindingMark('pending'), true);
@@ -31,7 +36,19 @@ function testConfirmationProgressIgnoresAutoPassTotal() {
   assert.equal(getDiffConfirmationProgress({ total: 7, acceptedCount: 0, rejectedCount: 0 }).percent, 0);
 }
 
+function testPaperMarksHaveSinglePrimaryLayer() {
+  assert.equal(isInlineDiffAction('replace'), true);
+  assert.equal(isInlineDiffAction('delete'), true);
+  assert.equal(isInlineDiffAction('annotate'), false);
+  assert.equal(isInlineDiffAction('format-hint'), false);
+  assert.equal(isMarginDiffAction('annotate'), true);
+  assert.equal(isMarginDiffAction('format-hint'), true);
+  assert.equal(isMarginDiffAction('replace'), false);
+  assert.equal(isMarginDiffAction('delete'), false);
+}
+
 testFindingMarksOnlyStayLoudWhileActionable();
 testDiffMarksDoNotRepeatAfterDecision();
 testConfirmationProgressIgnoresAutoPassTotal();
+testPaperMarksHaveSinglePrimaryLayer();
 console.log('Accepted finding visual-noise tests passed');

@@ -2,7 +2,7 @@ import React from 'react';
 import type { DiffCopyShape } from './diffCopy';
 import type { PaperPage, ReviewItem } from './types';
 import { A4_MARGIN_BOTTOM, A4_MARGIN_LEFT, A4_MARGIN_RIGHT, A4_MARGIN_TOP } from './types';
-import { shouldShowDiffMark } from './reviewVisualState';
+import { isInlineDiffAction, isMarginDiffAction, shouldShowDiffMark } from './reviewVisualState';
 
 function renderDeleteLead(text?: string) {
   if (!text) return null;
@@ -90,11 +90,22 @@ export const DiffPaperStream: React.FC<Props> = ({
     >
       {paperTopSpacer > 0 && <div aria-hidden="true" style={{ height: paperTopSpacer }} />}
       {paperPages.filter((paperPage) => visiblePaperPages.includes(paperPage.pageNumber)).map((paperPage) => {
+        const inlineMarkedParagraphs = new Set(
+          paperPage.reviewAnchors
+            .filter((anchor) => {
+              const inlineItem = reviewItems.find((item) => item.findingId === anchor.findingId);
+              const inlineAction = inlineItem ? ruleActions.get(inlineItem.label) : undefined;
+              return shouldShowDiffMark(inlineAction) && isInlineDiffAction(anchor.diff?.action);
+            })
+            .map((anchor) => anchor.paragraphIndex),
+        );
         const marginNotes = paperPage.reviewAnchors
           .filter((anchor) => {
             const noteItem = reviewItems.find((item) => item.findingId === anchor.findingId);
             const noteAction = noteItem ? ruleActions.get(noteItem.label) : undefined;
-            return shouldShowDiffMark(noteAction) && (anchor.diff?.action === 'annotate' || anchor.diff?.action === 'format-hint');
+            return shouldShowDiffMark(noteAction)
+              && isMarginDiffAction(anchor.diff?.action)
+              && !inlineMarkedParagraphs.has(anchor.paragraphIndex);
           })
           .slice(0, 5);
         const overflowNoteCount = Math.max(
@@ -102,7 +113,9 @@ export const DiffPaperStream: React.FC<Props> = ({
           paperPage.reviewAnchors.filter((anchor) => {
             const noteItem = reviewItems.find((item) => item.findingId === anchor.findingId);
             const noteAction = noteItem ? ruleActions.get(noteItem.label) : undefined;
-            return shouldShowDiffMark(noteAction) && (anchor.diff?.action === 'annotate' || anchor.diff?.action === 'format-hint');
+            return shouldShowDiffMark(noteAction)
+              && isMarginDiffAction(anchor.diff?.action)
+              && !inlineMarkedParagraphs.has(anchor.paragraphIndex);
           }).length - marginNotes.length,
         );
 

@@ -126,11 +126,6 @@ export const Canvas: React.FC<Props> = ({
                             />
                           )}
                           <span>{paragraph}</span>
-                          {showFindingMark && (
-                            <span className="finding-inline-note">
-                              {primaryFinding.before} → {primaryFinding.after}
-                            </span>
-                          )}
                         </p>
                       );
                     })}

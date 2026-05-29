@@ -593,6 +593,10 @@ button:disabled {
   box-shadow: 0 18px 44px -34px rgba(21,23,27,.38);
 }
 
+.parse-main-chain-card-hero {
+  margin: 0 0 22px;
+}
+
 .parse-main-chain-card::before {
   content: '';
   position: absolute;
@@ -721,6 +725,31 @@ button:disabled {
   color: var(--ink-500);
   font-size: 10.5px;
   line-height: 1.4;
+}
+
+.parse-main-chain-gate {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(42,77,58,.14);
+  background: rgba(255,255,255,.54);
+}
+
+.parse-main-chain-gate strong {
+  color: var(--brand-700);
+  font-size: 12px;
+}
+
+.parse-main-chain-gate span {
+  color: var(--ink-600);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .parse-main-chain-cta {

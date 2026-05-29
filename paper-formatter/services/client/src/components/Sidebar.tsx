@@ -10,6 +10,11 @@ export const Sidebar: React.FC<{ state: AppState }> = ({ state }) => {
   const partialPct = state.step === 3 && !state.parseDone ? Math.min(state.parsePct, 99) / 6 : 0;
   const pct = state.step === 6 && state.exported ? 100 : Math.round(Math.min(stepPct + partialPct, 99));
   const school = findSchoolById(state.schoolId);
+  const ruleContextLabel = school
+    ? school.name
+    : state.step >= 3
+    ? '当前规则基线 · 安全写回可用'
+    : '等待选择学校规范';
 
   return (
     <aside style={{
@@ -53,7 +58,7 @@ export const Sidebar: React.FC<{ state: AppState }> = ({ state }) => {
               display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
             }}>{state.doc.name}</div>
             <div className="mono" style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>
-              {school ? school.name : '浏览模式 · 仅查看结构，不进入修复'}
+              {ruleContextLabel}
             </div>
             <div style={{ marginTop: 6, height: 3, background: 'rgba(255,255,255,.1)', borderRadius: 2, overflow: 'hidden' }}>
               <div style={{

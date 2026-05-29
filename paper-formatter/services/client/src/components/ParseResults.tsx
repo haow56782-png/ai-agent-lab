@@ -82,9 +82,45 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
       tone: 'waiting',
     },
   ];
+  const mainChainCard = (
+    <div className="parse-main-chain-card parse-main-chain-card-hero" data-testid="parse-main-chain">
+      <div className="parse-main-chain-head">
+        <div>
+          <div className="mono parse-main-chain-kicker">MAIN CHAIN · STEP3 → STEP4 → STEP5</div>
+          <strong>第 3 步已完成：发现项已归档，等待进入安全写回。</strong>
+        </div>
+        <span>{fixableIssues || totalIssues} / {Math.max(fixableIssues || totalIssues, 1)}</span>
+      </div>
+      <div className="parse-main-chain-rail" aria-hidden="true">
+        <i />
+      </div>
+      <div className="parse-main-chain-steps">
+        {mainChainSteps.map((item) => (
+          <div className={`parse-main-chain-step is-${item.tone}`} key={item.step}>
+            <div className="parse-main-chain-node">
+              <span>{item.step}</span>
+              <b>{item.status}</b>
+            </div>
+            <div className="parse-main-chain-copy">
+              <strong>{item.title}</strong>
+              <small>{item.detail}</small>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="parse-main-chain-gate">
+        <strong>Step5 确认门</strong>
+        <span>进入校对台后逐项确认；确认前不会开放定稿下载，所有格式写回都可在确认页复核。</span>
+      </div>
+      <button type="button" className="parse-main-chain-cta" onClick={() => onStep(4)}>
+        进入 Step4 查看修改 →
+      </button>
+    </div>
+  );
 
   return (
   <>
+    {mainChainCard}
     <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 28, paddingBottom: 80 }}>
       <div>
         <div className="secdex" style={{ marginBottom: 10 }}>发现项 · FINDINGS</div>
@@ -126,14 +162,6 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
             其中 <strong style={{ color: 'var(--brand-700)' }}>{fixableIssues}</strong> 项可以进入逐条处理工作台
           </div>
           <div style={{ marginTop: 18, display: 'flex', gap: 10, justifyContent: 'center', alignItems: 'center' }}>
-            <button onClick={() => onStep(4)} style={{
-              height: 44, padding: '0 28px', borderRadius: 4,
-              border: 'none', background: 'var(--ink-900)', color: 'var(--paper-0)',
-              fontSize: 14, fontWeight: 600, fontFamily: 'var(--sans)',
-              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8,
-            }}>
-              <span>🔎</span> 查看 {fixableIssues || totalIssues} 项发现并处理
-            </button>
             <button onClick={onShareClick} style={{
               height: 44, padding: '0 22px', borderRadius: 4,
               border: '1px solid var(--ink-300)', background: 'var(--paper-0)',
@@ -159,7 +187,7 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
               </div>
               <div style={{ fontSize: 12.5, color: 'var(--ink-500)', marginTop: 2 }}>
                 这些问题可能导致查重系统将非正文内容计入重复率，
-                修复后查重率<strong style={{ color: 'var(--leaf-700)' }}>预计可再压低 3–5 个百分点</strong>，更接近安心送审的状态。
+                安全写回会优先降低非正文被误计入查重的风险。
               </div>
             </div>
           </div>
@@ -185,14 +213,9 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
             ))}
           </div>
 
-          <button onClick={() => onStep(4)} style={{
-            marginTop: 12, height: 38, padding: '0 20px', borderRadius: 4,
-            border: 'none', background: 'var(--rust-600)', color: '#fff',
-            fontSize: 13, fontWeight: 600, fontFamily: 'var(--sans)',
-            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-          }}>
-            🔧 先处理这些送审风险项
-          </button>
+          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--sun-700)', lineHeight: 1.55 }}>
+            这些风险会在 Step4 安全写回中优先呈现，Step5 确认前不会开放定稿下载。
+          </div>
         </div>
 
         {/* Issue list */}
@@ -247,36 +270,6 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
 
       {/* Right column */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}>
-        <div className="parse-main-chain-card" data-testid="parse-main-chain">
-          <div className="parse-main-chain-head">
-            <div>
-              <div className="mono parse-main-chain-kicker">MAIN CHAIN · STEP3 → STEP4 → STEP5</div>
-              <strong>后续链路已经排好，下一步进入安全写回。</strong>
-            </div>
-            <span>{fixableIssues || totalIssues} / {Math.max(fixableIssues || totalIssues, 1)}</span>
-          </div>
-          <div className="parse-main-chain-rail" aria-hidden="true">
-            <i />
-          </div>
-          <div className="parse-main-chain-steps">
-            {mainChainSteps.map((item) => (
-              <div className={`parse-main-chain-step is-${item.tone}`} key={item.step}>
-                <div className="parse-main-chain-node">
-                  <span>{item.step}</span>
-                  <b>{item.status}</b>
-                </div>
-                <div className="parse-main-chain-copy">
-                  <strong>{item.title}</strong>
-                  <small>{item.detail}</small>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button type="button" className="parse-main-chain-cta" onClick={() => onStep(4)}>
-            进入 Step4 查看修改 →
-          </button>
-        </div>
-
         <div style={{
           background: 'var(--ink-900)', borderRadius: 6, padding: '16px 18px',
           color: 'var(--paper-0)',
@@ -399,18 +392,9 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
     }}>
       <div style={{ fontSize: 13, color: 'var(--ink-700)' }}>
         发现 <strong style={{ color: totalIssues > 0 ? 'var(--rust-700)' : 'var(--leaf-700)' }}>{totalIssues}</strong> 项需要终审
-        {fixableIssues > 0 && <span> · <strong style={{ color: 'var(--brand-700)' }}>{fixableIssues}</strong> 项可进入处理工作台</span>}
+        {fixableIssues > 0 && <span> · <strong style={{ color: 'var(--brand-700)' }}>{fixableIssues}</strong> 项可进入安全写回</span>}
       </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-<button onClick={() => onStep(4)} style={{
-          height: 38, padding: '0 22px', borderRadius: 4,
-          border: 'none', background: 'var(--ink-900)', color: 'var(--paper-0)',
-          fontSize: 13, fontWeight: 600, fontFamily: 'var(--sans)',
-          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-        }}>
-          <span>🔎</span> 查看 {fixableIssues || totalIssues} 项发现并处理
-        </button>
-      </div>
+      <div style={{ fontSize: 12, color: 'var(--ink-500)' }}>唯一下一步入口在顶部主链路工作台</div>
     </div>
 
     {showShare && (

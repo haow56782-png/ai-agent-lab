@@ -22,7 +22,7 @@ export const FixInfoCard: React.FC<FixInfoCardProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
         <span>当前规范</span>
         <span className="mono" style={{ color: 'var(--ink-900)' }}>
-          {schoolName ? `${schoolName}${schoolVersion ? ` · ${schoolVersion}` : ''}` : '浏览模式'}
+          {schoolName ? `${schoolName}${schoolVersion ? ` · ${schoolVersion}` : ''}` : '当前规则基线'}
         </span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderTop: '1px dashed var(--hair)' }}>

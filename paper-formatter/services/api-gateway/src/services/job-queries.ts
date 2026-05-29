@@ -29,6 +29,11 @@ function requireDiffJob(job: JobRecord): JobRecord {
   return job;
 }
 
+function buildAttachmentDisposition(filename: string): string {
+  const fallback = filename.replace(/[^\x20-\x7E]+/g, "_").replace(/["\\]/g, "_") || "download.bin";
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
 function getFixTypesFromResult(result: Record<string, any>, completedSteps: CompletedFixStep[]): FixType[] {
   if (Array.isArray(result.fixTypes)) return result.fixTypes;
   if (Array.isArray(result.selectedFixes)) return result.selectedFixes;
@@ -187,6 +192,24 @@ export async function writeJobDownload(jobId: string, type: string | undefined, 
   const job = requireCompletedJob(requireJob(await jobRepo.getJob(jobId)));
   const result = (job.result_json || {}) as Record<string, any>;
   const document = await docRepo.getDocument(job.doc_id);
+
+  if (type === "original") {
+    const doc = document ?? await docRepo.getDocument(job.doc_id);
+    if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, "Original document not found");
+
+    const storagePath = storage.getStoragePath("uploads", doc.doc_id, doc.filename);
+    const originalBuffer = await storage.downloadFile("uploads", storagePath);
+    const ext = doc.filename.split(".").pop()?.toLowerCase() || "docx";
+    const contentTypes: Record<string, string> = {
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      pdf: "application/pdf",
+    };
+    res.setHeader("Content-Type", contentTypes[ext] || "application/octet-stream");
+    res.setHeader("Content-Disposition", buildAttachmentDisposition(doc.filename));
+    res.send(originalBuffer);
+    return;
+  }
+
   const canonicalDocumentId = document?.canonical_document_id
     || (Array.isArray(result.findings) ? result.findings[0]?.document_id : undefined)
     || job.doc_id;
@@ -232,23 +255,6 @@ export async function writeJobDownload(jobId: string, type: string | undefined, 
       warnings: [],
       errors: [],
     });
-    return;
-  }
-
-  if (type === "original") {
-    const doc = await docRepo.getDocument(job.doc_id);
-    if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, "Original document not found");
-
-    const storagePath = storage.getStoragePath("uploads", doc.doc_id, doc.filename);
-    const originalBuffer = await storage.downloadFile("uploads", storagePath);
-    const ext = doc.filename.split(".").pop()?.toLowerCase() || "docx";
-    const contentTypes: Record<string, string> = {
-      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      pdf: "application/pdf",
-    };
-    res.setHeader("Content-Type", contentTypes[ext] || "application/octet-stream");
-    res.setHeader("Content-Disposition", `attachment; filename="${doc.filename}"`);
-    res.send(originalBuffer);
     return;
   }
 

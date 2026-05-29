@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useApp, findSchoolById, getCanonicalDocumentId, getLegacyDocumentId } from '../components/AppFrame';
-import type { RuleHitItem } from '../api/client';
+import type { FindingContract, RuleHitItem } from '../api/client';
 import { api } from '../api/client';
 import { ExportOverlay } from '../components/ExportOverlay';
 import { useUndoWindow } from '../hooks/useUndoWindow';
@@ -61,6 +61,13 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
   const visibleServerFindings = useMemo(() => (
     humanitiesOverride ? serverFindings.filter((finding) => !isDisciplineFinding(finding)) : serverFindings
   ), [humanitiesOverride, serverFindings]);
+  const disciplineFindingsForOverride = useMemo(() => {
+    const byId = new Map<string, FindingContract>();
+    [...(state.parseResults?.findings ?? []), ...serverFindings].forEach((finding) => {
+      if (isDisciplineFinding(finding)) byId.set(finding.finding_id, finding);
+    });
+    return [...byId.values()];
+  }, [serverFindings, state.parseResults?.findings]);
   const rawRuleGroups = useMemo(() => {
     const groups = state.parseResults?.ruleDetails as Array<{ cat: string; items: Array<RuleHitItem | [string, 'pass' | 'warn' | 'fail']> }> | undefined;
     if (!groups || !humanitiesOverride) return groups;
@@ -217,6 +224,17 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
     undo.dismissBatchUndo();
   }
 
+  function persistDisciplineLayerRemoval() {
+    if (!analyzeJobId || analyzeJobId === 'demo' || disciplineFindingsForOverride.length === 0) return;
+    void Promise.all(
+      disciplineFindingsForOverride.map((finding) => (
+        api.rejectFinding(finding.finding_id, '用户切换为文科口径，摘除理工科学科补充规则层。')
+      )),
+    ).catch(() => {
+      showToast('理工科补充规则已在本页摘除，审计同步暂时失败。');
+    });
+  }
+
   useEffect(() => {
     reviewActions.initializeHashSync();
   }, []);
@@ -292,6 +310,7 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
             }}
             onSwitchHumanities={() => {
               setDisciplineChoice('humanities');
+              persistDisciplineLayerRemoval();
               showToast('已切换为文科口径，本页不再展示理工科补充规则');
             }}
             title={bannerTitle}

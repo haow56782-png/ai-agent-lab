@@ -362,6 +362,18 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.locator(`[data-finding-id="${secondFindingId}"]`)).toHaveCount(1);
   });
 
+  test('Step4Diff rule card click focuses the matching review card instead of jumping to the first item', async ({ page }) => {
+    await bootstrapState(page, seedAppStatePatch(5));
+    await page.goto('/');
+
+    await page.getByRole('button', { name: '文档对比' }).click();
+    await page.getByRole('button', { name: /缺 DOI/ }).click();
+
+    await expect(reviewCard(page, canonicalFindingIds.third)).toHaveClass(/is-focus/);
+    await expect(page.getByTestId('diff-review-panel').getByRole('progressbar', { name: '确认进度' })).toHaveAttribute('aria-valuenow', '3');
+    expect(await hashFindingId(page)).toBe(canonicalFindingIds.third);
+  });
+
   test('Step4Diff canvas anchors and review cards subscribe to the same finding_id focus', async ({ page }) => {
     await bootstrapState(page, seedAppStatePatch(5));
     await page.goto('/');

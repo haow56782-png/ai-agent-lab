@@ -41,6 +41,23 @@
   background: #2f8f57;
 }
 
+.fix-runtime-inline-progress {
+  position: relative;
+  height: 6px;
+  margin: -2px 0 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(42, 77, 58, .12);
+}
+
+.fix-runtime-inline-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2a4d3a, #c27b43);
+  transition: width 320ms var(--ease-standard);
+}
+
 .fix-runtime-mini-paper {
   display: flex;
   align-items: center;

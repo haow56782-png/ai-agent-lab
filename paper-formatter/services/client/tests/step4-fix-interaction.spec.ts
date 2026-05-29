@@ -8,7 +8,8 @@ test.describe('Step4Fix interaction optimisations', () => {
 
     // Jump to completion, then explicitly open the full process list.
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前发现项');
+    await expect(page.getByRole('progressbar', { name: '发现项写回进度' })).toHaveAttribute('aria-valuenow', '3');
     await expect(page.getByTestId('fix-runtime-current-task-card')).toBeVisible();
     await page.getByRole('button', { name: /查看完整修复过程/ }).click();
 
@@ -50,6 +51,7 @@ test.describe('Step4Fix interaction optimisations', () => {
     // After jumping to completion, still no start button (progress exists)
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
     await expect(page.getByRole('button', { name: '启动修复' })).toHaveCount(0);
+    await expect(page.getByRole('progressbar', { name: '发现项写回进度' })).toHaveAttribute('aria-valuenow', '3');
   });
 
   test('action card click scrolls the card into the top of the feed in one pass', async ({ page }) => {
@@ -57,7 +59,8 @@ test.describe('Step4Fix interaction optimisations', () => {
     await page.goto('/');
 
     await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前修复');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前发现项');
+    await expect(page.getByRole('progressbar', { name: '发现项写回进度' })).toHaveAttribute('aria-valuenow', '3');
     await page.getByRole('button', { name: /查看完整修复过程/ }).click();
 
     const feed = page.getByTestId('fix-runtime-action-feed');

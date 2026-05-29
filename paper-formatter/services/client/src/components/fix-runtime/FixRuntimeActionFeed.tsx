@@ -77,6 +77,9 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
     if (activeFilter === 'review') return row.status === 'needs-review';
     return false;
   });
+  const progressTotal = Math.max(1, findingStatusSummary.autoFixableTotal || findingStatusSummary.total || timelineRows.length);
+  const progressCurrent = Math.min(progressTotal, findingStatusSummary.writtenBack);
+  const progressPercent = Math.round((progressCurrent / progressTotal) * 100);
   const currentTaskRow = filteredRows.find((row) => row.status === 'live')
     || (focusedRowId ? filteredRows.find((row) => row.id === focusedRowId) : null)
     || filteredRows.find((row) => row.status === 'done')
@@ -119,9 +122,19 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
       <div className="fix-runtime-cockpit-head" data-testid="fix-runtime-action-count">
         <div>
           <div className="fix-runtime-note-head">当前发现项</div>
-          <strong>{findingStatusSummary.writtenBack} / {findingStatusSummary.autoFixableTotal || findingStatusSummary.total}</strong>
+          <strong>{progressCurrent} / {progressTotal}</strong>
         </div>
         <span>{findingStatusSummary.needsReview} 项待确认</span>
+      </div>
+      <div
+        className="fix-runtime-inline-progress"
+        role="progressbar"
+        aria-label="发现项写回进度"
+        aria-valuemin={0}
+        aria-valuemax={progressTotal}
+        aria-valuenow={progressCurrent}
+      >
+        <span style={{ width: `${progressPercent}%` }} />
       </div>
 
       {currentTaskRow && currentTaskExplanation ? (

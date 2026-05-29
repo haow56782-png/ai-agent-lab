@@ -581,6 +581,201 @@ button:disabled {
   margin-bottom: 4px;
 }
 
+.parse-main-chain-card {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(42,77,58,.18);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(194,123,67,.18), transparent 34%),
+    linear-gradient(135deg, #fbfaf6 0%, #eee8d9 100%);
+  box-shadow: 0 18px 44px -34px rgba(21,23,27,.38);
+}
+
+.parse-main-chain-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.72) 38%, transparent 68%);
+  transform: translateX(-110%);
+  animation: parseMainChainSweep 3.2s ease-in-out infinite;
+}
+
+.parse-main-chain-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.parse-main-chain-kicker {
+  margin-bottom: 5px;
+  color: var(--brand-700);
+  font-size: 10px;
+  letter-spacing: .14em;
+}
+
+.parse-main-chain-head strong {
+  color: var(--ink-900);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.parse-main-chain-head > span {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(42,77,58,.1);
+  color: var(--brand-700);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.parse-main-chain-rail {
+  position: relative;
+  z-index: 1;
+  height: 3px;
+  margin: 0 26px -13px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(42,77,58,.14);
+}
+
+.parse-main-chain-rail i {
+  display: block;
+  width: 58%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand-700), var(--sun-500));
+  animation: parseMainChainFill 1.8s var(--ease-emphasized) both;
+}
+
+.parse-main-chain-steps {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.parse-main-chain-step {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.parse-main-chain-node {
+  display: grid;
+  gap: 3px;
+  min-height: 54px;
+  padding: 9px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(21,23,27,.08);
+  background: rgba(255,255,255,.66);
+}
+
+.parse-main-chain-node span {
+  color: var(--ink-500);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .04em;
+}
+
+.parse-main-chain-node b {
+  color: var(--ink-900);
+  font-size: 12px;
+}
+
+.parse-main-chain-step.is-done .parse-main-chain-node {
+  border-color: rgba(42,77,58,.22);
+  background: rgba(42,77,58,.08);
+}
+
+.parse-main-chain-step.is-active .parse-main-chain-node {
+  border-color: rgba(194,123,67,.42);
+  background: rgba(250,238,218,.9);
+  box-shadow: 0 0 0 4px rgba(194,123,67,.12);
+  animation: parseMainChainPulse 1.8s ease-in-out infinite;
+}
+
+.parse-main-chain-step.is-waiting .parse-main-chain-node {
+  opacity: .72;
+}
+
+.parse-main-chain-copy strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--ink-900);
+  font-size: 12px;
+}
+
+.parse-main-chain-copy small {
+  display: block;
+  color: var(--ink-500);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.parse-main-chain-cta {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 36px;
+  border: none;
+  border-radius: 5px;
+  background: var(--ink-900);
+  color: var(--paper-0);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .16s ease, filter .16s ease;
+}
+
+.parse-main-chain-cta:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+@keyframes parseMainChainFill {
+  0% {
+    width: 0;
+  }
+
+  100% {
+    width: 58%;
+  }
+}
+
+@keyframes parseMainChainPulse {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 4px rgba(194,123,67,.12);
+  }
+
+  50% {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 7px rgba(194,123,67,.08);
+  }
+}
+
+@keyframes parseMainChainSweep {
+  0%, 38% {
+    transform: translateX(-110%);
+  }
+
+  72%, 100% {
+    transform: translateX(110%);
+  }
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

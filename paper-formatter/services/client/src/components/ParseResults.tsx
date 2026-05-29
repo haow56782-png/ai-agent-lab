@@ -59,6 +59,29 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
     { time: 'T+02', action: '归并发现项', object: `${totalIssues} 项发现 · ${fixableIssues} 项可处理` },
     { time: 'T+03', action: '生成处理工作台', object: '进入 Step4 前保留人工确认边界' },
   ];
+  const mainChainSteps = [
+    {
+      step: 'Step3',
+      title: '正在检查',
+      status: '已完成',
+      detail: `${totalIssues} 项发现已归档`,
+      tone: 'done',
+    },
+    {
+      step: 'Step4',
+      title: '查看修改',
+      status: '下一步',
+      detail: `${fixableIssues || totalIssues} 项进入安全写回`,
+      tone: 'active',
+    },
+    {
+      step: 'Step5',
+      title: '确认门',
+      status: '待开启',
+      detail: '逐项确认后才开放定稿',
+      tone: 'waiting',
+    },
+  ];
 
   return (
   <>
@@ -224,6 +247,36 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
 
       {/* Right column */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}>
+        <div className="parse-main-chain-card" data-testid="parse-main-chain">
+          <div className="parse-main-chain-head">
+            <div>
+              <div className="mono parse-main-chain-kicker">MAIN CHAIN · STEP3 → STEP4 → STEP5</div>
+              <strong>后续链路已经排好，下一步进入安全写回。</strong>
+            </div>
+            <span>{fixableIssues || totalIssues} / {Math.max(fixableIssues || totalIssues, 1)}</span>
+          </div>
+          <div className="parse-main-chain-rail" aria-hidden="true">
+            <i />
+          </div>
+          <div className="parse-main-chain-steps">
+            {mainChainSteps.map((item) => (
+              <div className={`parse-main-chain-step is-${item.tone}`} key={item.step}>
+                <div className="parse-main-chain-node">
+                  <span>{item.step}</span>
+                  <b>{item.status}</b>
+                </div>
+                <div className="parse-main-chain-copy">
+                  <strong>{item.title}</strong>
+                  <small>{item.detail}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button type="button" className="parse-main-chain-cta" onClick={() => onStep(4)}>
+            进入 Step4 查看修改 →
+          </button>
+        </div>
+
         <div style={{
           background: 'var(--ink-900)', borderRadius: 6, padding: '16px 18px',
           color: 'var(--paper-0)',

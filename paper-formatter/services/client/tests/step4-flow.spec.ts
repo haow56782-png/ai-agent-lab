@@ -74,6 +74,8 @@ test.describe('Step4 baseline behaviors', () => {
     await page.goto('/');
 
     await expect(page.getByText(/待处理发现项/)).toBeVisible();
+    await expect(page.getByText(/GLASS BOX/)).toBeVisible();
+    await expect(page.getByText(/WORK EVIDENCE/)).toBeVisible();
     await expect(page.getByRole('button', { name: /查看 .* 项发现并处理/ }).first()).toBeVisible();
     await expect(page.getByText('查看差异详情')).toHaveCount(0);
 

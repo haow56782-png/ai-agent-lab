@@ -46,7 +46,21 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
   animatedScore, scoreTone, scoreBg,
   issueGroups, findingSourceGroups, evidenceHighlights, coveredPageCount, school, elapsedStr, logs,
   showShare, onStep, onCloseShare, onShareClick,
-}) => (
+}) => {
+  const admissionSteps = [
+    { label: '文件可读', detail: '已识别论文结构与正文片段' },
+    { label: '规则可用', detail: school ? `${school.name} · ${school.version}` : '当前规则基线' },
+    { label: '证据归档', detail: `${coveredPageCount || 1} 个证据位置` },
+    { label: '工作台就绪', detail: `${fixableIssues || totalIssues} 项可进入处理` },
+  ];
+  const workEvidenceRows = [
+    { time: 'T+00', action: '读取文档结构', object: `${coveredPageCount || 1} 个证据位置` },
+    { time: 'T+01', action: '匹配规则包', object: school ? `${school.name} · ${school.version}` : '学校规则 + GB/T 7713.1' },
+    { time: 'T+02', action: '归并发现项', object: `${totalIssues} 项发现 · ${fixableIssues} 项可处理` },
+    { time: 'T+03', action: '生成处理工作台', object: '进入 Step4 前保留人工确认边界' },
+  ];
+
+  return (
   <>
     <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 28, paddingBottom: 80 }}>
       <div>
@@ -215,12 +229,31 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
           color: 'var(--paper-0)',
         }}>
           <div className="mono" style={{ fontSize: 10, letterSpacing: '.16em', color: 'rgba(255,255,255,.55)', marginBottom: 10 }}>
-            FINDING MAP · {elapsedStr}
+            GLASS BOX · {elapsedStr}
           </div>
           <div style={{ fontSize: 14, lineHeight: 1.6, color: 'rgba(255,255,255,.86)', marginBottom: 14 }}>
             这次体检已经整理出 <strong style={{ color: '#fff' }}>{totalIssues}</strong> 项发现，
             覆盖 <strong style={{ color: '#fff' }}>{coveredPageCount || 1}</strong> 个证据位置，
             {school ? `并按 ${school.name} ${school.version} 的规则包归档。` : '并按当前规则基线归档。'}
+          </div>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gap: 6, marginBottom: 14,
+          }}>
+            {admissionSteps.map((step, index) => (
+              <div key={step.label} style={{
+                border: '1px solid rgba(255,255,255,.12)', borderRadius: 5,
+                padding: '8px 7px', background: 'rgba(255,255,255,.05)',
+              }}>
+                <div className="mono" style={{ fontSize: 10, color: '#9ee6b7', marginBottom: 4 }}>
+                  {index + 1}/4
+                </div>
+                <div style={{ fontSize: 11.5, color: '#fff', fontWeight: 600 }}>{step.label}</div>
+                <div style={{ fontSize: 9.5, color: 'rgba(255,255,255,.42)', marginTop: 2, lineHeight: 1.35 }}>
+                  {step.detail}
+                </div>
+              </div>
+            ))}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {findingSourceGroups.map((group) => (
@@ -246,7 +279,26 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
           background: 'var(--paper-0)', borderRadius: 6, border: '1px solid var(--hair)',
           padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
         }}>
-          <div className="mono" style={{ fontSize: 10, letterSpacing: '.16em', color: 'var(--ink-400)', marginBottom: 10 }}>EVIDENCE</div>
+          <div className="mono" style={{ fontSize: 10, letterSpacing: '.16em', color: 'var(--ink-400)', marginBottom: 10 }}>
+            WORK EVIDENCE · 4/4
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+            {workEvidenceRows.map((row) => (
+              <div key={`${row.time}-${row.action}`} style={{
+                display: 'grid', gridTemplateColumns: '42px minmax(0, 1fr)',
+                gap: 8, alignItems: 'baseline',
+                padding: '7px 8px', borderRadius: 4,
+                background: 'var(--paper-1)', border: '1px solid rgba(21,23,27,.06)',
+              }}>
+                <span className="mono" style={{ fontSize: 10, color: 'var(--brand-700)' }}>{row.time}</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-700)', lineHeight: 1.45 }}>
+                  <strong style={{ color: 'var(--ink-900)', fontWeight: 600 }}>{row.action}</strong>
+                  <span style={{ color: 'var(--ink-400)' }}> · </span>
+                  {row.object}
+                </span>
+              </div>
+            ))}
+          </div>
           <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {evidenceHighlights.map((item, i) => (
               <div
@@ -321,4 +373,5 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
       />
     )}
   </>
-);
+  );
+};

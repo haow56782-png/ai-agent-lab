@@ -703,9 +703,9 @@ button:disabled {
 }
 
 .parse-main-chain-step.is-active .parse-main-chain-node {
-  border-color: rgba(194,123,67,.42);
-  background: rgba(250,238,218,.9);
-  box-shadow: 0 0 0 4px rgba(194,123,67,.12);
+  border-color: rgba(42,77,58,.28);
+  background: rgba(255,255,255,.78);
+  box-shadow: inset 0 0 0 1px rgba(42,77,58,.08), 0 0 0 3px rgba(42,77,58,.06);
   animation: parseMainChainPulse 1.8s ease-in-out infinite;
 }
 
@@ -786,12 +786,12 @@ button:disabled {
 @keyframes parseMainChainPulse {
   0%, 100% {
     transform: translateY(0);
-    box-shadow: 0 0 0 4px rgba(194,123,67,.12);
+    box-shadow: inset 0 0 0 1px rgba(42,77,58,.08), 0 0 0 3px rgba(42,77,58,.06);
   }
 
   50% {
     transform: translateY(-1px);
-    box-shadow: 0 0 0 7px rgba(194,123,67,.08);
+    box-shadow: inset 0 0 0 1px rgba(42,77,58,.12), 0 0 0 6px rgba(42,77,58,.05);
   }
 }
 

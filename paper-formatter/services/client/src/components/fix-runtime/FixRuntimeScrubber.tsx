@@ -73,11 +73,11 @@ export const FixRuntimeScrubber: React.FC<Props> = ({
       </div>
       <button
         type="button"
-        className={viewDiffEnabled ? 'fix-runtime-scrubber-cta is-ready' : 'fix-runtime-scrubber-cta'}
+        className={viewDiffEnabled ? 'fix-runtime-scrubber-cta is-complete' : 'fix-runtime-scrubber-cta'}
         onClick={onViewDiff}
         disabled={!viewDiffEnabled}
       >
-        进入校对台
+        {viewDiffEnabled ? '已完成' : '进入校对台'}
       </button>
     </footer>
   );

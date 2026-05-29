@@ -16,6 +16,10 @@
   padding-bottom: 10px;
 }
 
+.fix-runtime-topbar.is-completed {
+  background: var(--paper-0);
+}
+
 .fix-runtime-document-meta,
 .fix-runtime-stage-status {
   min-width: 0;
@@ -70,9 +74,21 @@
 }
 
 .fix-runtime-finding-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--brand-700);
   font-weight: 700;
   font-size: 12px;
+}
+
+.fix-runtime-finding-meta b {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--brand-50);
+  color: var(--brand-700);
+  font-size: 10.5px;
+  font-weight: 700;
 }
 
 .fix-runtime-progress-meta span:last-child {
@@ -111,6 +127,16 @@
   border: 1px solid rgba(21,23,27,.14);
   background: var(--paper-0);
   color: var(--ink-700);
+}
+
+.fix-control-button.is-primary {
+  border-color: var(--brand-700);
+  background: var(--brand-700);
+  color: var(--paper-0);
+}
+
+.fix-control-button.is-primary:hover {
+  filter: brightness(1.06);
 }
 
 .fix-control-button.is-subtle {
@@ -169,7 +195,7 @@
 
 .fix-runtime-stage {
   display: grid;
-  grid-template-columns: 190px minmax(560px, 1fr) 360px;
+  grid-template-columns: 228px minmax(560px, 1fr) 300px;
   min-height: 0;
   overflow: hidden;
   align-items: stretch;

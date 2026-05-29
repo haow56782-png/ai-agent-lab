@@ -367,6 +367,12 @@
   color: var(--paper-0);
 }
 
+.fix-runtime-scrubber-cta.is-complete {
+  border-color: var(--brand-700);
+  background: var(--brand-50);
+  color: var(--brand-700);
+}
+
 .fix-runtime-paper-header,
 .fix-runtime-paper-footer {
   position: absolute;

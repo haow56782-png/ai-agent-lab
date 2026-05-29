@@ -186,6 +186,23 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByTestId('fix-runtime-current-task-card')).toBeVisible();
   });
 
+  test('Step4Fix completed view matches the fixed review-modification layout', async ({ page }) => {
+    await bootstrapState(page, seedAppStatePatch(4));
+    await page.goto('/');
+
+    await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
+
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('修复完成 · 共 3 项');
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('已写回');
+    await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('修复进度');
+    await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('3 / 3');
+    await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('待确认');
+    await expect(page.getByRole('button', { name: /进入校对台/ })).toBeVisible();
+    await expect(page.getByText('修复记录')).toBeVisible();
+    await expect(page.getByText('安全修复模式已开启')).toBeVisible();
+    await expect(page.getByRole('button', { name: /写回中/ })).toHaveCount(0);
+  });
+
   test('Step4Fix keeps visual progress sequential when server reports batched writebacks', async ({ page }) => {
     const state = seedAppStatePatch(4);
     state.documentIdentity = {

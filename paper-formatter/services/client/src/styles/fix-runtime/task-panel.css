@@ -58,6 +58,139 @@
   transition: width 320ms var(--ease-standard);
 }
 
+.fix-runtime-inline-progress.is-complete span {
+  background: var(--brand-700);
+}
+
+.fix-runtime-complete-card {
+  padding: 15px 16px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--paper-0);
+}
+
+.fix-runtime-complete-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.fix-runtime-complete-head span {
+  color: var(--ink-500);
+  font-size: 13px;
+}
+
+.fix-runtime-complete-head strong {
+  color: var(--brand-700);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fix-runtime-complete-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.fix-runtime-complete-stats div {
+  padding: 11px 12px;
+  border-radius: 8px;
+  background: var(--paper-2);
+}
+
+.fix-runtime-complete-stats span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--ink-500);
+  font-size: 12px;
+}
+
+.fix-runtime-complete-stats b {
+  color: var(--ink-900);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.fix-runtime-complete-primary,
+.fix-runtime-complete-secondary {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
+}
+
+.fix-runtime-complete-primary {
+  border: none;
+  background: var(--brand-700);
+  color: var(--paper-0);
+  font-weight: 700;
+}
+
+.fix-runtime-complete-primary:hover {
+  filter: brightness(1.06);
+}
+
+.fix-runtime-complete-secondary {
+  margin-top: 8px;
+  border: 1px solid var(--hair-strong);
+  background: transparent;
+  color: var(--ink-700);
+}
+
+.fix-runtime-complete-secondary:hover,
+.fix-runtime-process-toggle.is-compact:hover {
+  background: var(--paper-2);
+}
+
+.fix-runtime-complete-secondary:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.fix-runtime-complete-note {
+  margin: 8px 0 16px;
+  padding-left: 8px;
+  border-left: 2px solid var(--hair);
+  color: var(--ink-400);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.fix-runtime-complete-flat {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--paper-2);
+}
+
+.fix-runtime-complete-flat h3 {
+  margin: 0 0 5px;
+  color: var(--ink-900);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.fix-runtime-complete-flat p {
+  margin: 0;
+  color: var(--ink-600);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.fix-runtime-process-toggle.is-compact {
+  height: 34px;
+  margin-top: 10px;
+  margin-bottom: 0;
+  font-size: 12.5px;
+}
+
 .fix-runtime-mini-paper {
   display: flex;
   align-items: center;

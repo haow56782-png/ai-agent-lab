@@ -95,8 +95,8 @@ export const FixRuntimeManuscriptMap: React.FC<Props> = ({
 
       <div className="fix-runtime-map-legend">
         <span><i className="is-done" />已写回</span>
-        <span><i className="is-live" />当前</span>
-        <span><i className="is-review" />待确认</span>
+        <span><i className="is-live" />有发现项</span>
+        <span><i className="is-review" />待确认 / 复核</span>
       </div>
 
       <article className="fix-runtime-map-rule">

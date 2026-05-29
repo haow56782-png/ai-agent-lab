@@ -13,7 +13,6 @@ interface SelectedProfileSummaryProps {
   effectiveFromLabel: string;
   onShowRules: () => void;
   onStartParse: () => void;
-  onOpenTemplateUpload?: () => void;
 }
 
 export const SelectedProfileSummary: React.FC<SelectedProfileSummaryProps> = ({
@@ -23,7 +22,6 @@ export const SelectedProfileSummary: React.FC<SelectedProfileSummaryProps> = ({
   effectiveFromLabel,
   onShowRules,
   onStartParse,
-  onOpenTemplateUpload,
 }) => {
   const profileTitle = [profile.name, profile.faculty].filter(Boolean).join(' · ');
   const previewRows = buildProfilePreviewRows(profileDetail);
@@ -125,9 +123,6 @@ export const SelectedProfileSummary: React.FC<SelectedProfileSummaryProps> = ({
       </span>
       <div style={{ display: 'flex', gap: 8 }}>
         <Btn kind="ghost" onClick={onShowRules}>查看完整规则</Btn>
-        {isPendingRuleProfile && onOpenTemplateUpload ? (
-          <Btn kind="ghost" icon="upload" onClick={onOpenTemplateUpload}>补充规则模板</Btn>
-        ) : null}
         <Btn
           kind="primary"
           icon="sparkle"

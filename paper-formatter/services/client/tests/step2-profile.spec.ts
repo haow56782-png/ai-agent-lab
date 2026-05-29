@@ -758,7 +758,8 @@ test.describe('RulesModal two-column layout', () => {
     await expect(page.getByText(/0 条规则/)).toBeVisible();
     await expect(page.getByRole('button', { name: '按这套规范开始解析' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '待补规则，暂不能解析' })).toBeDisabled();
-    await expect(page.getByRole('button', { name: '补充规则模板' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '补充规则模板' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '补充模板' })).toBeVisible();
     await page.getByRole('button', { name: '查看完整规则' }).click();
 
     await expect(page.getByText('这篇论文将遵循的完整规则')).toBeVisible();

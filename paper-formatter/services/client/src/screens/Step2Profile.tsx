@@ -437,7 +437,6 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
             effectiveFromLabel={fmtDate(selected.effectiveFrom)}
             onShowRules={() => setShowRules(true)}
             onStartParse={startParse}
-            onOpenTemplateUpload={() => templateInputRef.current?.click()}
           />
         )}
       </div>

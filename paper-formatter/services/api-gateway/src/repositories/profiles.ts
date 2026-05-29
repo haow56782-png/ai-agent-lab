@@ -42,6 +42,42 @@ function isInvalidDetectedSchoolName(name: string | null | undefined): boolean {
   return INVALID_DETECTED_NAME_TOKENS.some((token) => normalized.includes(normalizeSchoolName(token)));
 }
 
+function profileFromCanonicalSeed(seed: CanonicalProfileSeed): SchoolProfile {
+  const timestamp = `${seed.effectiveFrom}T00:00:00.000Z`;
+  return {
+    id: seed.schoolId,
+    school_id: seed.schoolId,
+    name: seed.name,
+    version: seed.version,
+    effective_from: seed.effectiveFrom,
+    effective_to: null,
+    faculty: seed.faculty,
+    major: null,
+    gb_version: "GB/T 7713.1-2025",
+    rules_json: seed.rulesJson,
+    style_map: seed.styleMap,
+    source_type: "seed",
+    source_hash: null,
+    upload_count: 0,
+    recent_usage_count_7d: 0,
+    recent_hit_rate_7d: 0,
+    last_used_at: null,
+    created_at: timestamp,
+    updated_at: timestamp,
+  };
+}
+
+function listCanonicalSeedProfiles(q?: string): SchoolProfile[] {
+  const normalizedQuery = normalizeSchoolName(q || "");
+  const seedProfiles = CANONICAL_PROFILE_SEEDS.map(profileFromCanonicalSeed);
+  if (!normalizedQuery) return collapseProfiles(seedProfiles);
+  return collapseProfiles(seedProfiles.filter((profile) => (
+    normalizeSchoolName(profile.name).includes(normalizedQuery)
+    || normalizeSchoolName(profile.school_id).includes(normalizedQuery)
+    || normalizeSchoolName(profile.faculty || "").includes(normalizedQuery)
+  )));
+}
+
 export async function searchProfiles(params: {
   schoolId?: string;
   faculty?: string;
@@ -77,7 +113,8 @@ export async function searchProfiles(params: {
 export async function getProfile(profileId: string): Promise<SchoolProfile | null> {
   const canonicalSeed = resolveCanonicalProfileSeed(profileId);
   if (canonicalSeed) {
-    const profile = await ensureCanonicalProfile(canonicalSeed);
+    const profile = await ensureCanonicalProfile(canonicalSeed)
+      .catch(() => profileFromCanonicalSeed(canonicalSeed));
     return hydrateProfileRulesFromRuleTable(profile);
   }
 
@@ -91,7 +128,9 @@ export async function getProfile(profileId: string): Promise<SchoolProfile | nul
 export async function getProfileRules(profileId: string): Promise<Pick<SchoolProfile, "school_id" | "rules_json" | "style_map"> | null> {
   const canonicalSeed = resolveCanonicalProfileSeed(profileId);
   if (canonicalSeed) {
-    const profile = await hydrateProfileRulesFromRuleTable(await ensureCanonicalProfile(canonicalSeed));
+    const profile = await hydrateProfileRulesFromRuleTable(
+      await ensureCanonicalProfile(canonicalSeed).catch(() => profileFromCanonicalSeed(canonicalSeed)),
+    );
     return {
       school_id: profile.school_id,
       rules_json: profile.rules_json,
@@ -170,22 +209,32 @@ export async function listProfiles(q?: string): Promise<SchoolProfile[]> {
         ON profile_stats.school_id = p.school_id
   `;
   if (q) {
+    try {
+      const result = await query<SchoolProfile>(
+        `${statsSelect}
+          WHERE (p.name ILIKE $1 OR p.school_id ILIKE $1)
+            AND source_type <> $2
+          ORDER BY p.upload_count DESC, p.name`,
+        [`%${q}%`, ARCHIVED_DETECTED_SOURCE_TYPE],
+      );
+      return collapseProfiles(result.rows);
+    } catch (error) {
+      console.warn("[profiles] database unavailable, falling back to canonical seeds", error);
+      return listCanonicalSeedProfiles(q);
+    }
+  }
+  try {
     const result = await query<SchoolProfile>(
       `${statsSelect}
-        WHERE (p.name ILIKE $1 OR p.school_id ILIKE $1)
-          AND source_type <> $2
+        WHERE p.source_type <> $1
         ORDER BY p.upload_count DESC, p.name`,
-      [`%${q}%`, ARCHIVED_DETECTED_SOURCE_TYPE],
+      [ARCHIVED_DETECTED_SOURCE_TYPE],
     );
     return collapseProfiles(result.rows);
+  } catch (error) {
+    console.warn("[profiles] database unavailable, falling back to canonical seeds", error);
+    return listCanonicalSeedProfiles();
   }
-  const result = await query<SchoolProfile>(
-    `${statsSelect}
-      WHERE p.source_type <> $1
-      ORDER BY p.upload_count DESC, p.name`,
-    [ARCHIVED_DETECTED_SOURCE_TYPE],
-  );
-  return collapseProfiles(result.rows);
 }
 
 export async function findProfileByName(name: string): Promise<SchoolProfile | null> {

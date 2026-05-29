@@ -1,4 +1,5 @@
 export type FindingSeverity = "P0" | "P1" | "P2";
+export type FindingRuleSource = "user" | "school" | "discipline" | "CAFA" | "GB" | "system";
 export type FindingStatus =
   | "pending"
   | "accepted"
@@ -74,6 +75,8 @@ export interface FindingContract {
   document_id: string;
   document_version: number;
   rule_id: string;
+  ruleSource?: FindingRuleSource;
+  ruleLevel?: string;
   rule_group?: string;
   rule_snapshot: RuleSnapshot;
   severity: FindingSeverity;

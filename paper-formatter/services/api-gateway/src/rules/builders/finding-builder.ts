@@ -37,6 +37,8 @@ export function buildFindingsFromDetections(input: {
       document_id: input.doc.canonical_document_id,
       document_version: 1,
       rule_id: detection.ruleId,
+      ruleSource: detection.ruleSource,
+      ruleLevel: detection.ruleLevel,
       rule_group: detection.group,
       rule_snapshot: {
         rule_text: detection.label,

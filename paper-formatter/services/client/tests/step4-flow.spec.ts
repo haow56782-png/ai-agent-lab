@@ -264,6 +264,8 @@ test.describe('Step4 baseline behaviors', () => {
         ...state.parseResults.findings[0],
         finding_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
         rule_id: 'FORMULA_NUMBERING',
+        ruleSource: 'discipline',
+        ruleLevel: 'discipline',
         rule_group: '公式',
         rule_snapshot: {
           ...state.parseResults.findings[0].rule_snapshot,
@@ -282,12 +284,40 @@ test.describe('Step4 baseline behaviors', () => {
           explanation: '公式编号需要连续。',
         },
       },
-      ...state.parseResults.findings.slice(1),
+      {
+        ...state.parseResults.findings[1],
+        finding_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        rule_id: 'FIGURE_CAPTION_STYLE',
+        ruleSource: 'school',
+        ruleLevel: 'school',
+        rule_group: '图表',
+        rule_snapshot: {
+          ...state.parseResults.findings[1].rule_snapshot,
+          rule_text: '图表题注格式',
+          rule_description: '图表题注按学校模板统一。',
+        },
+        evidence_spans: [{ page: 5, char_start: 0, char_end: 8, snippet: '图表题注格式' }],
+        evidence_snapshot: '图表题注格式',
+        suggestion: {
+          ...state.parseResults.findings[1].suggestion,
+          fix_diff: {
+            before: '图表题注格式',
+            after: '图表题注格式按学校模板统一',
+            spans_affected: [{ page: 5, char_start: 0, char_end: 8, snippet: '图表题注格式' }],
+          },
+          explanation: '图表题注按学校模板统一。',
+        },
+      },
+      state.parseResults.findings[2],
     ];
     state.parseResults.ruleDetails = [
       {
         cat: '公式',
-        items: [{ label: '公式连续编号', status: 'warn', location: { pageIndex: 2 } }],
+        items: [{ ruleId: 'FORMULA_NUMBERING', ruleSource: 'discipline', ruleLevel: 'discipline', label: '公式连续编号', status: 'warn', location: { pageIndex: 2 } }],
+      },
+      {
+        cat: '图表',
+        items: [{ ruleId: 'FIGURE_CAPTION_STYLE', ruleSource: 'school', ruleLevel: 'school', label: '图表题注格式', status: 'warn', location: { pageIndex: 4 } }],
       },
       ...state.parseResults.ruleDetails,
     ];
@@ -299,12 +329,14 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByText('已按理工科规则校验')).toBeVisible();
     await expect(page.getByText('公式对象密度: 2 个公式 / 6 段')).toBeVisible();
     await expect(page.getByText('公式编号 (3-3)').first()).toBeVisible();
+    await expect(page.getByText('图表题注格式').first()).toBeVisible();
 
     await page.getByRole('button', { name: '改为文科' }).click();
 
     await expect(page.getByTestId('discipline-confirm-banner')).toHaveCount(0);
     await expect(page.getByText('公式编号 (3-3)')).toHaveCount(0);
-    await expect(page.getByText('脚注格式不在白名单').first()).toBeVisible();
+    await expect(page.getByText('图表题注格式').first()).toBeVisible();
+    await expect(page.getByText('参考文献缺少 DOI 信息').first()).toBeVisible();
   });
 
   test('Step4Diff review cards expose canonical finding_id and write hash focus from card clicks', async ({ page }) => {

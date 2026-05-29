@@ -42,6 +42,7 @@ export interface RuleDetection {
   group: string;
   severity: RuleSeverity;
   ruleSource?: RuleSource;
+  ruleLevel?: string;
   confidence: number;
   page: number;
   snippet: string;

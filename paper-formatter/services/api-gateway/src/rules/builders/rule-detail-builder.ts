@@ -17,6 +17,8 @@ import type { RuleDetection } from "../rule-types.js";
 function detectionToRuleHitItem(detection: RuleDetection): JobRuleHitItem {
   return {
     ruleId: detection.ruleId,
+    ruleSource: detection.ruleSource,
+    ruleLevel: detection.ruleLevel,
     label: detection.label,
     status: detection.severity === "P0" || detection.severity === "P1" ? "warn" : "warn",
     location: {

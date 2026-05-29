@@ -82,6 +82,12 @@ function getProfileRuleSource(profile: ParsedDocumentContext["profile"], ruleId:
   return entry.ruleSource || entry.rule_source || "school";
 }
 
+function getProfileRuleLevel(profile: ParsedDocumentContext["profile"], ruleId: string): string | undefined {
+  const entry = getProfileRuleEntry(profile, ruleId);
+  if (!entry) return undefined;
+  return entry.ruleLevel || entry.rule_level || entry.source;
+}
+
 export function resolveCanonicalRuleId(input: {
   detectorRuleId: string;
   profile: ParsedDocumentContext["profile"];
@@ -150,6 +156,9 @@ export function canonicalizeRuleDetections(input: {
         ?? getProfileRuleSource(input.profile, canonicalMapping.canonicalRuleId || "")
         ?? detection.ruleSource
         ?? "system",
+      ruleLevel: getProfileRuleLevel(input.profile, canonicalMapping.resolvedRuleId)
+        ?? getProfileRuleLevel(input.profile, canonicalMapping.canonicalRuleId || "")
+        ?? detection.ruleLevel,
     };
   });
 }

@@ -54,6 +54,8 @@ export interface JobRuleHitLocation {
 
 export interface JobRuleHitItem {
   ruleId?: string;
+  ruleSource?: "user" | "school" | "discipline" | "CAFA" | "GB" | "system";
+  ruleLevel?: string;
   label: string;
   status: "pass" | "warn" | "fail";
   location?: JobRuleHitLocation;

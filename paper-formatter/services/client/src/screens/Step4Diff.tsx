@@ -22,24 +22,13 @@ interface Props {
   showToast: (msg: string) => void;
 }
 
-const STEM_RULE_PATTERN = /公式|三线表|有效数字|坐标轴|图例|矢量|分辨率|符号表|物理量|代码块|算法|文献类型|出版年份|卷期页码|作者著录|编号与正文引用|参考文献编号/;
-
-function ruleHitLabel(ruleHit: RuleHitItem | [string, 'pass' | 'warn' | 'fail']): string {
-  if (Array.isArray(ruleHit)) return ruleHit[0];
-  return ruleHit.label || '';
+function isDisciplineFinding(finding: { ruleSource?: string; ruleLevel?: string }): boolean {
+  return finding.ruleSource === 'discipline' || finding.ruleLevel === 'discipline';
 }
 
-function isStemRuleGroup(cat: string): boolean {
-  return /公式|表格对象|图片对象|代码|算法|前置部分|参考文献/.test(cat);
-}
-
-function isStemFinding(finding: { rule_group?: string; rule_snapshot?: { rule_text?: string }; suggestion?: { explanation?: string } }): boolean {
-  const haystack = [
-    finding.rule_group,
-    finding.rule_snapshot?.rule_text,
-    finding.suggestion?.explanation,
-  ].filter(Boolean).join(' ');
-  return STEM_RULE_PATTERN.test(haystack);
+function isDisciplineRuleHit(ruleHit: RuleHitItem | [string, 'pass' | 'warn' | 'fail']): boolean {
+  if (Array.isArray(ruleHit)) return false;
+  return ruleHit.ruleSource === 'discipline' || ruleHit.ruleLevel === 'discipline';
 }
 
 const Step4Diff: React.FC<Props> = ({ showToast }) => {
@@ -60,7 +49,7 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
   const humanitiesOverride = disciplineChoice === 'humanities';
   const parseResultFindings = useMemo(() => {
     const findings = state.parseResults?.findings ?? [];
-    return humanitiesOverride ? findings.filter((finding) => !isStemFinding(finding)) : findings;
+    return humanitiesOverride ? findings.filter((finding) => !isDisciplineFinding(finding)) : findings;
   }, [humanitiesOverride, state.parseResults?.findings]);
   const { diffResult, serverFindings } = useStep4DiffDataSource({
     analyzeJobId,
@@ -70,7 +59,7 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
     showToast,
   });
   const visibleServerFindings = useMemo(() => (
-    humanitiesOverride ? serverFindings.filter((finding) => !isStemFinding(finding)) : serverFindings
+    humanitiesOverride ? serverFindings.filter((finding) => !isDisciplineFinding(finding)) : serverFindings
   ), [humanitiesOverride, serverFindings]);
   const rawRuleGroups = useMemo(() => {
     const groups = state.parseResults?.ruleDetails as Array<{ cat: string; items: Array<RuleHitItem | [string, 'pass' | 'warn' | 'fail']> }> | undefined;
@@ -78,9 +67,7 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
     return groups
       .map((group) => ({
         ...group,
-        items: isStemRuleGroup(group.cat)
-          ? group.items.filter((item) => !STEM_RULE_PATTERN.test(ruleHitLabel(item)))
-          : group.items,
+        items: group.items.filter((item) => !isDisciplineRuleHit(item)),
       }))
       .filter((group) => group.items.length > 0);
   }, [humanitiesOverride, state.parseResults?.ruleDetails]);

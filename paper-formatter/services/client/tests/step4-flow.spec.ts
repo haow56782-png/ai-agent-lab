@@ -186,6 +186,55 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByTestId('fix-runtime-current-task-card')).toBeVisible();
   });
 
+  test('Step4Fix keeps visual progress sequential when server reports batched writebacks', async ({ page }) => {
+    const state = seedAppStatePatch(4);
+    state.documentIdentity = {
+      legacyDocId: 'doc_running_batch',
+      canonicalDocumentId: '11111111-1111-4111-8111-111111111111',
+    };
+    state.schoolId = 'thu';
+    state.fixJobId = 'job_running_batch';
+    state.jobStatus = 'running';
+
+    await page.route('**/api/v1/jobs/job_running_batch/fix-status', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'running',
+          completedSteps: [
+            { type: 'heading', status: 'done', summary: '标题层级已写回', duration: 1 },
+            { type: 'body_style', status: 'done', summary: '正文样式已写回', duration: 1 },
+            { type: 'reference_format', status: 'done', summary: '参考文献已写回', duration: 1 },
+          ],
+          currentStep: 'reference_format',
+          progress: 80,
+          stage: 'writing',
+          message: '服务端已批量写回，前端仍逐项展示',
+          artifacts: [
+            { id: 'art_heading', fixType: 'heading', title: '标题层级', summary: '已写回标题层级', details: [], status: 'ready', finding_id: canonicalFindingIds.first },
+            { id: 'art_body', fixType: 'body_style', title: '正文样式', summary: '已写回正文样式', details: [], status: 'ready', finding_id: canonicalFindingIds.second },
+            { id: 'art_reference', fixType: 'reference_format', title: '参考文献', summary: '已写回参考文献', details: [], status: 'ready', finding_id: canonicalFindingIds.third },
+          ],
+          findingTotal: 3,
+          autoFixableFindingTotal: 3,
+          fixedFindingTotal: 3,
+          needsReviewFindingTotal: 0,
+          notAutoFixedFindingTotal: 0,
+        }),
+      });
+    });
+
+    await bootstrapState(page, state);
+    await page.goto('/');
+
+    const stepProgress = page.getByRole('progressbar', { name: '修复步骤进度' });
+    await expect(stepProgress).toHaveAttribute('aria-valuemax', '3');
+    await expect(stepProgress).toHaveAttribute('aria-valuenow', '0');
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('正在修复 0/3');
+    await expect(page.getByRole('button', { name: /写回中 · 0\/3/ })).toBeDisabled();
+  });
+
   test('Step4Fix right action card click reframes the card upward and syncs the paper page', async ({ page }) => {
     await bootstrapState(page, seedAppStatePatch(4));
     await page.goto('/');

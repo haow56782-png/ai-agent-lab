@@ -766,4 +766,39 @@ test.describe('RulesModal two-column layout', () => {
     await expect(page.getByText('还处在待补规则状态')).toBeVisible();
     await expect(page.getByText('当前识别到的是学校档案')).toBeVisible();
   });
+
+  test('uploaded template for a pending school can start parsing without backend review', async ({ page }) => {
+    await bootstrapStep2WithProfile(page, EMPTY_DETAIL);
+    await page.route('**/api/v1/profiles/import-template', async (route) => {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          profileId: 'prof_draft_test',
+          status: 'draft',
+          ruleCount: 65,
+          confidence: 0.72,
+          manualReviewRequired: true,
+          suggestedSchool: '空白规则大学',
+        }),
+      });
+    });
+
+    await page.getByRole('button', { name: /全部/ }).click();
+    await page.getByRole('button', { name: /继续查看待补规则/ }).click();
+    await page.getByText('空白规则大学').click();
+    await expect(page.getByRole('button', { name: '待补规则，暂不能解析' })).toBeDisabled();
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: '空白规则大学格式手册.docx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      buffer: Buffer.from('template'),
+    });
+
+    await expect(page.locator('.chip.leaf').getByText('无需后台审核', { exact: true })).toBeVisible();
+    await expect(page.getByText('无需等待后台审核，可以先用于当前论文解析')).toBeVisible();
+    await page.getByRole('button', { name: '使用这套临时规则开始解析' }).click();
+
+    await expect(page.getByText('系统正在替你拆开这篇论文的结构')).toBeVisible();
+  });
 });

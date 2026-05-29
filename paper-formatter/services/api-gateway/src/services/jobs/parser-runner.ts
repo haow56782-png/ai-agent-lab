@@ -5,7 +5,7 @@ import path from "path";
 import { v4 as uuid } from "uuid";
 
 const DOCX_PARSER_SCRIPT = process.env.DOCX_PARSER_SCRIPT ||
-  path.resolve(import.meta.dirname, "../../parser/parse.py");
+  path.resolve(process.cwd(), "src/parser/parse.py");
 const PARSER_TEMP_DIR = path.join(os.tmpdir(), "zheng-gao-parser");
 
 function ensureParserTempDir() {

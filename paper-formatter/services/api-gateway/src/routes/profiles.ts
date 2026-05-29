@@ -20,7 +20,7 @@ import os from "os";
 export const profileRoutes = Router();
 
 const DETECT_SCRIPT = process.env.DETECT_SCHOOL_SCRIPT ||
-  path.resolve(import.meta.dirname, "../parser/detect_school.py");
+  path.resolve(process.cwd(), "src/parser/detect_school.py");
 const TEMP_DIR = path.join(os.tmpdir(), "zheng-gao-detect");
 
 function ensureTempDir() {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useApp, findSchoolById, getCanonicalDocumentId, getLegacyDocumentId } from '../components/AppFrame';
 import type { RuleHitItem } from '../api/client';
 import { api } from '../api/client';
@@ -22,9 +22,30 @@ interface Props {
   showToast: (msg: string) => void;
 }
 
+const STEM_RULE_PATTERN = /公式|三线表|有效数字|坐标轴|图例|矢量|分辨率|符号表|物理量|代码块|算法|文献类型|出版年份|卷期页码|作者著录|编号与正文引用|参考文献编号/;
+
+function ruleHitLabel(ruleHit: RuleHitItem | [string, 'pass' | 'warn' | 'fail']): string {
+  if (Array.isArray(ruleHit)) return ruleHit[0];
+  return ruleHit.label || '';
+}
+
+function isStemRuleGroup(cat: string): boolean {
+  return /公式|表格对象|图片对象|代码|算法|前置部分|参考文献/.test(cat);
+}
+
+function isStemFinding(finding: { rule_group?: string; rule_snapshot?: { rule_text?: string }; suggestion?: { explanation?: string } }): boolean {
+  const haystack = [
+    finding.rule_group,
+    finding.rule_snapshot?.rule_text,
+    finding.suggestion?.explanation,
+  ].filter(Boolean).join(' ');
+  return STEM_RULE_PATTERN.test(haystack);
+}
+
 const Step4Diff: React.FC<Props> = ({ showToast }) => {
   const { state, set } = useApp();
   const { copy, t } = createDiffTranslator('zh-CN');
+  const [disciplineChoice, setDisciplineChoice] = useState<'stem' | 'humanities' | null>(null);
 
   const school = findSchoolById(state.schoolId);
   const analyzeJobId = state.analyzeJobId;
@@ -32,7 +53,15 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
   const parsedTexts = useMemo(() => state.parseResults?.parsedTexts ?? [], [state.parseResults?.parsedTexts]);
   const legacyDocId = getLegacyDocumentId(state);
   const canonicalDocumentId = getCanonicalDocumentId(state);
-  const parseResultFindings = state.parseResults?.findings ?? [];
+  const disciplineHint = state.parseResults?.disciplineHint;
+  const disciplineConfirmVisible = !!disciplineHint?.needsBanner
+    && disciplineHint.discipline === 'stem'
+    && disciplineChoice === null;
+  const humanitiesOverride = disciplineChoice === 'humanities';
+  const parseResultFindings = useMemo(() => {
+    const findings = state.parseResults?.findings ?? [];
+    return humanitiesOverride ? findings.filter((finding) => !isStemFinding(finding)) : findings;
+  }, [humanitiesOverride, state.parseResults?.findings]);
   const { diffResult, serverFindings } = useStep4DiffDataSource({
     analyzeJobId,
     formatJobId,
@@ -40,7 +69,21 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
     parseResultFindingCount: parseResultFindings.length,
     showToast,
   });
-  const rawRuleGroups = state.parseResults?.ruleDetails as Array<{ cat: string; items: Array<RuleHitItem | [string, 'pass' | 'warn' | 'fail']> }> | undefined;
+  const visibleServerFindings = useMemo(() => (
+    humanitiesOverride ? serverFindings.filter((finding) => !isStemFinding(finding)) : serverFindings
+  ), [humanitiesOverride, serverFindings]);
+  const rawRuleGroups = useMemo(() => {
+    const groups = state.parseResults?.ruleDetails as Array<{ cat: string; items: Array<RuleHitItem | [string, 'pass' | 'warn' | 'fail']> }> | undefined;
+    if (!groups || !humanitiesOverride) return groups;
+    return groups
+      .map((group) => ({
+        ...group,
+        items: isStemRuleGroup(group.cat)
+          ? group.items.filter((item) => !STEM_RULE_PATTERN.test(ruleHitLabel(item)))
+          : group.items,
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [humanitiesOverride, state.parseResults?.ruleDetails]);
   const focusFindingId = useReviewStore((reviewState) => reviewState.focusFindingId);
   const p1Exemption = useReviewStore((reviewState) => reviewState.p1Exemption);
   const {
@@ -58,7 +101,7 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
     parsedTexts,
     rawRuleGroups,
     school,
-    serverFindings,
+    serverFindings: visibleServerFindings,
   });
   const pendingFindings = effectiveFindings.filter((finding) => finding.status === 'pending');
   const p0PendingFindings = pendingFindings.filter((finding) => finding.severity === 'P0');
@@ -252,9 +295,18 @@ const Step4Diff: React.FC<Props> = ({ showToast }) => {
             body={bannerBody}
             contentIntegrity={contentIntegrityView}
             countText={bannerCountText}
+            disciplineHint={disciplineConfirmVisible ? disciplineHint : undefined}
             iconGlyph={bannerIconGlyph}
             isComplete={bannerState === 'all-accepted'}
             label={bannerLabel}
+            onKeepStem={() => {
+              setDisciplineChoice('stem');
+              showToast('已保持理工科校验规则');
+            }}
+            onSwitchHumanities={() => {
+              setDisciplineChoice('humanities');
+              showToast('已切换为文科口径，本页不再展示理工科补充规则');
+            }}
             title={bannerTitle}
             visible={controller.bannerVisible}
           />

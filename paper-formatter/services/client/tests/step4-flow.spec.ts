@@ -250,6 +250,63 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByTestId('diff-paper-page-3')).toContainText('本文围绕论文排版中的标题层级');
   });
 
+  test('Step5 discipline banner lets users switch ambiguous STEM inference to humanities view', async ({ page }) => {
+    const state = seedAppStatePatch(5);
+    state.parseResults = JSON.parse(JSON.stringify(state.parseResults));
+    state.parseResults.disciplineHint = {
+      discipline: 'stem',
+      confidence: 0.62,
+      needsBanner: true,
+      topSignals: [{ label: '公式对象密度', detail: '2 个公式 / 6 段' }],
+    };
+    state.parseResults.findings = [
+      {
+        ...state.parseResults.findings[0],
+        finding_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        rule_id: 'FORMULA_NUMBERING',
+        rule_group: '公式',
+        rule_snapshot: {
+          ...state.parseResults.findings[0].rule_snapshot,
+          rule_text: '公式连续编号',
+          rule_description: '独立公式按章节连续编号。',
+        },
+        evidence_spans: [{ page: 3, char_start: 0, char_end: 8, snippet: '公式编号 (3-3)' }],
+        evidence_snapshot: '公式编号 (3-3)',
+        suggestion: {
+          ...state.parseResults.findings[0].suggestion,
+          fix_diff: {
+            before: '公式编号 (3-3)',
+            after: '公式编号 (3-2)',
+            spans_affected: [{ page: 3, char_start: 0, char_end: 8, snippet: '公式编号 (3-3)' }],
+          },
+          explanation: '公式编号需要连续。',
+        },
+      },
+      ...state.parseResults.findings.slice(1),
+    ];
+    state.parseResults.ruleDetails = [
+      {
+        cat: '公式',
+        items: [{ label: '公式连续编号', status: 'warn', location: { pageIndex: 2 } }],
+      },
+      ...state.parseResults.ruleDetails,
+    ];
+
+    await bootstrapState(page, state);
+    await page.goto('/');
+
+    await expect(page.getByTestId('discipline-confirm-banner')).toBeVisible();
+    await expect(page.getByText('已按理工科规则校验')).toBeVisible();
+    await expect(page.getByText('公式对象密度: 2 个公式 / 6 段')).toBeVisible();
+    await expect(page.getByText('公式编号 (3-3)').first()).toBeVisible();
+
+    await page.getByRole('button', { name: '改为文科' }).click();
+
+    await expect(page.getByTestId('discipline-confirm-banner')).toHaveCount(0);
+    await expect(page.getByText('公式编号 (3-3)')).toHaveCount(0);
+    await expect(page.getByText('脚注格式不在白名单').first()).toBeVisible();
+  });
+
   test('Step4Diff review cards expose canonical finding_id and write hash focus from card clicks', async ({ page }) => {
     await bootstrapState(page, seedAppStatePatch(5));
     await page.goto('/');

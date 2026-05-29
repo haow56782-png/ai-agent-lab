@@ -76,6 +76,8 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByText(/待处理发现项/)).toBeVisible();
     await expect(page.getByTestId('parse-main-chain')).toContainText('STEP3 → STEP4 → STEP5');
     await expect(page.getByTestId('parse-main-chain')).toContainText('进入 Step4 查看修改');
+    await expect(page.getByText('交稿前需要确认的格式问题已整理完成')).toBeVisible();
+    await expect(page.getByText(/AI 已整理出/)).toHaveCount(0);
     await expect(page.getByRole('button', { name: /查看 .* 项发现并处理/ })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /先处理这些送审风险项/ })).toHaveCount(0);
     await expect(page.getByText(/GLASS BOX/)).toBeVisible();

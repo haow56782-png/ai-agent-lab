@@ -86,7 +86,7 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
     <div className="parse-main-chain-card parse-main-chain-card-hero" data-testid="parse-main-chain">
       <div className="parse-main-chain-head">
         <div>
-          <div className="mono parse-main-chain-kicker">MAIN CHAIN · STEP3 → STEP4 → STEP5</div>
+          <div className="mono parse-main-chain-kicker">主链路 · STEP3 → STEP4 → STEP5</div>
           <strong>第 3 步已完成：发现项已归档，等待进入安全写回。</strong>
         </div>
         <span>{fixableIssues || totalIssues} / {Math.max(fixableIssues || totalIssues, 1)}</span>
@@ -137,41 +137,25 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
         )}
 
         {/* Finding summary card */}
-        <div style={{
-          background: scoreBg, border: `1.5px solid ${scoreTone}30`, borderRadius: 6,
-          padding: '32px 32px 28px', marginBottom: 18, textAlign: 'center',
-          transition: 'background .3s',
-        }}>
-          <div className="serif" style={{ fontSize: 20, fontWeight: 600, color: 'var(--ink-900)', marginBottom: 8, letterSpacing: -.2 }}>
-            AI 已整理出交稿前需要你确认的发现项
+        <div
+          className="parse-finding-summary-card"
+          style={{ '--summary-tone': scoreTone, '--summary-bg': scoreBg } as React.CSSProperties}
+        >
+          <div className="parse-finding-summary-copy">
+            <span className="mono">发现项已归档</span>
+            <strong>交稿前需要确认的格式问题已整理完成</strong>
+            <p>
+              共 <b>{totalIssues}</b> 项发现，其中 <b>{fixableIssues}</b> 项可进入 Step4 安全写回；
+              正文语义不会被自动改动，最终仍由你逐项确认。
+            </p>
           </div>
-          <div style={{
-            width: 120, height: 120, borderRadius: 60,
-            background: animatedScore < 60 ? 'var(--rust-100)' : animatedScore < 80 ? 'var(--sun-100)' : 'var(--leaf-100)',
-            border: `4px solid ${scoreTone}`,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-          }}>
-            <span className="mono num" style={{ fontSize: 42, fontWeight: 700, color: scoreTone, lineHeight: 1 }}>
-              {totalIssues}
-            </span>
-            <span className="mono" style={{ fontSize: 13, color: scoreTone, opacity: .7 }}>FINDINGS</span>
+          <div className="parse-finding-summary-meter" aria-label={`共 ${totalIssues} 项发现`}>
+            <span className="mono num">{totalIssues}</span>
+            <small className="mono">FOUND</small>
           </div>
-          <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--ink-700)', marginBottom: 4 }}>
-            共 <strong style={{ color: totalIssues > 0 ? 'var(--rust-700)' : 'var(--leaf-700)' }}>{totalIssues}</strong> 项发现，
-            其中 <strong style={{ color: 'var(--brand-700)' }}>{fixableIssues}</strong> 项可以进入逐条处理工作台
-          </div>
-          <div style={{ marginTop: 18, display: 'flex', gap: 10, justifyContent: 'center', alignItems: 'center' }}>
-            <button onClick={onShareClick} style={{
-              height: 44, padding: '0 22px', borderRadius: 4,
-              border: '1px solid var(--ink-300)', background: 'var(--paper-0)',
-              fontSize: 14, fontWeight: 500, fontFamily: 'var(--sans)',
-              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-              color: 'var(--ink-700)',
-            }}>
-              📤 分享这次进度
-            </button>
-          </div>
+          <button type="button" className="parse-finding-summary-share" onClick={onShareClick}>
+            分享这次进度
+          </button>
         </div>
 
         {/* Duplication risk card */}

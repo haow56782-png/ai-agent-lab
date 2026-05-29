@@ -159,6 +159,13 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
     () => profileOptions.find((profile) => profile.id === state.schoolId) || null,
     [profileOptions, state.schoolId],
   );
+  const selectedRuleCount = React.useMemo(() => {
+    const detailRuleCount = (selectedProfileDetail?.rulesJson?.length || 0) + (selectedProfileDetail?.styleMap?.length || 0);
+    return Math.max(selected?.rules || 0, detailRuleCount);
+  }, [selected?.rules, selectedProfileDetail]);
+  const selectedRuleStatus = selected
+    ? getProfileRuleStatus({ sourceType: selected.sourceType, rules: selectedRuleCount })
+    : null;
   const queryMatchedProfiles = profileOptions.filter((profile) => {
     const matchesQuery = !q || profile.name.includes(q) || profile.faculty.includes(q);
     return matchesQuery;
@@ -210,6 +217,10 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
 
   const startParse = () => {
     if (!state.doc) { showToast('请先上传论文文档'); return; }
+    if (selectedRuleStatus === 'pending') {
+      showToast('这所学校还处在待补规则状态，请先补充模板或改选已有规则包');
+      return;
+    }
     set({ step: 3, parsePct: 0, parsePhase: 0, parseDone: false });
   };
 
@@ -426,6 +437,7 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
             effectiveFromLabel={fmtDate(selected.effectiveFrom)}
             onShowRules={() => setShowRules(true)}
             onStartParse={startParse}
+            onOpenTemplateUpload={() => templateInputRef.current?.click()}
           />
         )}
       </div>

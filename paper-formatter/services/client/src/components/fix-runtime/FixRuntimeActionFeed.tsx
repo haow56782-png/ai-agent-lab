@@ -7,6 +7,7 @@ import {
   rowStatusLabel,
   rowStatusTone,
 } from './FixProcessDrawer';
+import { FixRuntimeStreamReport } from './FixRuntimeStreamReport';
 import { FixSafetyNotice } from './FixSafetyNotice';
 import type { TimelineRow, FixRuntimeStore, FixFindingStatusSummary, FixTaskFilter } from './types';
 
@@ -36,11 +37,15 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
   const [activeFilter, setActiveFilter] = useState<FixTaskFilter>('all');
   const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
   const [processOpen, setProcessOpen] = useState(false);
+  const [safetyHighlighted, setSafetyHighlighted] = useState(false);
   const focusTimerRef = useRef<number | null>(null);
+  const safetyNoticeRef = useRef<HTMLElement | null>(null);
+  const safetyTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (focusTimerRef.current !== null) clearTimeout(focusTimerRef.current);
+      if (safetyTimerRef.current !== null) clearTimeout(safetyTimerRef.current);
     };
   }, []);
 
@@ -69,6 +74,21 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
       const targetTop = Math.max(0, currentNode.offsetTop - 96);
       feedNode.scrollTo({ top: targetTop, behavior: 'auto' });
     });
+  };
+
+  const focusSafetyNotice = () => {
+    if (safetyTimerRef.current !== null) {
+      clearTimeout(safetyTimerRef.current);
+      safetyTimerRef.current = null;
+    }
+
+    setSafetyHighlighted(true);
+    safetyNoticeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    safetyNoticeRef.current?.focus({ preventScroll: true });
+    safetyTimerRef.current = window.setTimeout(() => {
+      setSafetyHighlighted(false);
+      safetyTimerRef.current = null;
+    }, 1800);
   };
 
   const filteredRows = timelineRows.filter((row) => {
@@ -170,15 +190,12 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
 
           <section className="fix-runtime-complete-flat">
             <h3>修复记录</h3>
-            <p>{findingStatusSummary.writtenBack} 项修复已全部写回文档。可查看完整过程或逐项回退。</p>
-            <button
-              type="button"
-              className="fix-runtime-process-toggle is-compact"
-              onClick={() => setProcessOpen((current) => !current)}
-              aria-expanded={processOpen}
-            >
-              {processOpen ? '收起完整修复过程' : `查看完整修复过程 · ${filteredRows.length} 项`}
-            </button>
+            <FixRuntimeStreamReport
+              writtenBack={findingStatusSummary.writtenBack}
+              processCount={filteredRows.length}
+              onOpenProcess={() => setProcessOpen(true)}
+              onShowSafety={focusSafetyNotice}
+            />
           </section>
 
           <FixProcessDrawer
@@ -190,7 +207,7 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
             focusedRowId={focusedRowId}
           />
 
-          <FixSafetyNotice />
+          <FixSafetyNotice ref={safetyNoticeRef} highlighted={safetyHighlighted} />
           <FixBeforeAfterModal row={compareRow} onClose={() => setCompareRow(null)} />
         </>
       ) : (

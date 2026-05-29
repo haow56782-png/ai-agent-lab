@@ -199,6 +199,11 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('待确认');
     await expect(page.getByRole('button', { name: /进入校对台/ })).toBeVisible();
     await expect(page.getByText('修复记录')).toBeVisible();
+    await expect(page.getByTestId('fix-runtime-stream-report')).toContainText('已完成 3 项格式写回');
+    await page.getByTestId('fix-runtime-stream-report').getByRole('button', { name: /查看完整修复过程 · 3 项/ }).click();
+    await expect(page.getByTestId('fix-process-drawer')).toContainText('完整修复过程');
+    await page.getByTestId('fix-runtime-stream-report').getByRole('button', { name: '安全说明' }).click();
+    await expect(page.getByLabel('安全修复模式')).toHaveClass(/is-highlighted/);
     await expect(page.getByText('安全修复模式已开启')).toBeVisible();
     await expect(page.getByRole('button', { name: /写回中/ })).toHaveCount(0);
   });

@@ -184,6 +184,97 @@
   line-height: 1.6;
 }
 
+.fix-runtime-stream-card {
+  position: relative;
+  margin-top: 10px;
+  padding: 12px 12px 11px;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(42,77,58,.14);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(194,123,67,.12), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,.78), rgba(239,244,239,.72));
+}
+
+.fix-runtime-stream-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,.48) 42%, transparent 70%);
+  transform: translateX(-110%);
+  animation: fixRuntimeStreamSweep 2.4s ease .2s 1;
+}
+
+.fix-runtime-stream-kicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--brand-700);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.fix-runtime-stream-kicker span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--brand-700);
+  box-shadow: 0 0 0 4px rgba(42,77,58,.1);
+}
+
+.fix-runtime-stream-line {
+  margin: 0;
+  color: var(--ink-700);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.fix-runtime-stream-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin: 0 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(42,77,58,.18);
+  background: rgba(42,77,58,.08);
+  color: var(--brand-700);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.35;
+  vertical-align: baseline;
+}
+
+button.fix-runtime-stream-link {
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+button.fix-runtime-stream-link:hover,
+button.fix-runtime-stream-link:focus-visible {
+  border-color: rgba(42,77,58,.34);
+  background: rgba(42,77,58,.14);
+  transform: translateY(-1px);
+}
+
+.fix-runtime-stream-link.is-typing {
+  min-width: 28px;
+  color: rgba(42,77,58,.62);
+}
+
+.fix-runtime-stream-caret {
+  display: inline-block;
+  width: 7px;
+  height: 1.15em;
+  margin-left: 2px;
+  border-right: 2px solid var(--brand-700);
+  animation: fixRuntimeStreamCaret .9s step-end infinite;
+  vertical-align: -2px;
+}
+
 .fix-runtime-process-toggle.is-compact {
   height: 34px;
   margin-top: 10px;
@@ -399,4 +490,27 @@
 
 .fix-diff-button.is-pulsing {
   animation: fixDiffPulse 1s ease-out 1;
+}
+
+@keyframes fixRuntimeStreamCaret {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes fixRuntimeStreamSweep {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fix-runtime-stream-card::before,
+  .fix-runtime-stream-caret {
+    animation: none;
+  }
 }

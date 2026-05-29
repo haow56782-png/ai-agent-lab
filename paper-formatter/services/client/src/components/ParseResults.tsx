@@ -61,21 +61,21 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
   ];
   const mainChainSteps = [
     {
-      step: 'Step3',
+      step: '已归档',
       title: '正在检查',
       status: '已完成',
       detail: `${totalIssues} 项发现已归档`,
       tone: 'done',
     },
     {
-      step: 'Step4',
+      step: '安全写回',
       title: '查看修改',
       status: '下一步',
       detail: `${fixableIssues || totalIssues} 项进入安全写回`,
       tone: 'active',
     },
     {
-      step: 'Step5',
+      step: '人工确认',
       title: '确认门',
       status: '待开启',
       detail: '逐项确认后才开放定稿',

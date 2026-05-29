@@ -24,6 +24,7 @@ interface Props {
 }
 
 export const FixRuntimeActionFeed: React.FC<Props> = ({
+  runtimeStore,
   findingStatusSummary,
   timelineRows,
   viewDiffEnabled,
@@ -108,7 +109,8 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
   const compareCandidate = currentTaskRow;
   const currentTaskExplanation = currentTaskRow ? buildRepairExplanation(currentTaskRow) : null;
   const completedTotal = findingStatusSummary.total || findingStatusSummary.autoFixableTotal || timelineRows.length;
-  const isCompleted = viewDiffEnabled;
+  const completedProgressTotal = Math.max(1, completedTotal);
+  const isCompleted = viewDiffEnabled || runtimeStore.status === 'completed';
   const locateCompareCandidate = () => {
     if (!compareCandidate) return;
     const node = rightFeedRef.current?.querySelector<HTMLElement>(`[data-testid="fix-runtime-action-card-${compareCandidate.id}"]`);
@@ -153,7 +155,7 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
               role="progressbar"
               aria-label="发现项写回进度"
               aria-valuemin={0}
-              aria-valuemax={completedTotal}
+              aria-valuemax={completedProgressTotal}
               aria-valuenow={findingStatusSummary.writtenBack}
             >
               <span style={{ width: '100%' }} />

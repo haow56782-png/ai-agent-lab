@@ -34,9 +34,15 @@ export const FixRuntimeStreamReport: React.FC<Props> = ({
   onOpenProcess,
   onShowSafety,
 }) => {
+  const introText = writtenBack > 0
+    ? `已完成 ${writtenBack} 项格式写回。`
+    : '未发现需要写回的格式项。';
+  const actionText = writtenBack > 0
+    ? '系统只调整版式属性，正文语义保持不动；你可以继续 '
+    : '系统已完成结构校验，正文语义保持不动；你可以继续 ';
   const segments: StreamReportSegment[] = [
-    { type: 'text', text: `已完成 ${writtenBack} 项格式写回。` },
-    { type: 'text', text: '系统只调整版式属性，正文语义保持不动；你可以继续 ' },
+    { type: 'text', text: introText },
+    { type: 'text', text: actionText },
     { type: 'link', link: { label: `查看完整修复过程 · ${processCount} 项`, onClick: onOpenProcess } },
     { type: 'text', text: '，或核对 ' },
     { type: 'link', link: { label: '安全说明', onClick: onShowSafety } },

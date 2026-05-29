@@ -426,7 +426,7 @@ export function useFixRuntimePlayback({
   }, [appliedCount, playbackActions.length, progressRatio, serverCompletedReplayDone]);
 
   const visualCompleted = serverCompleted && (!shouldReplayCompletedServerResult || serverCompletedReplayDone);
-  const viewDiffEnabled = visualCompleted && totalFindingCount > 0;
+  const viewDiffEnabled = visualCompleted;
 
   const visualRuntimeStore = useMemo<FixRuntimeStore>(() => {
     const derivedFixedItems = totalFindingCount <= 0

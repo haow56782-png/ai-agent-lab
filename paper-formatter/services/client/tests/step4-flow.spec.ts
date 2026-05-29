@@ -208,6 +208,26 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByRole('button', { name: /写回中/ })).toHaveCount(0);
   });
 
+  test('Step4Fix completed zero-finding browse mode still shows the streaming report', async ({ page }) => {
+    const state = seedAppStatePatch(4);
+    state.parseResults = {
+      ...state.parseResults!,
+      findings: [],
+      ruleDetails: [],
+      rules: { passed: 14, warnings: 0, failed: 0 },
+    };
+
+    await bootstrapState(page, state);
+    await page.goto('/');
+
+    await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
+
+    await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('修复进度');
+    await expect(page.getByTestId('fix-runtime-stream-report')).toContainText('未发现需要写回的格式项');
+    await expect(page.getByTestId('fix-runtime-stream-report')).toContainText('查看完整修复过程 · 0 项');
+    await expect(page.getByRole('button', { name: /写回中/ })).toHaveCount(0);
+  });
+
   test('Step4Fix keeps visual progress sequential when server reports batched writebacks', async ({ page }) => {
     const state = seedAppStatePatch(4);
     state.documentIdentity = {

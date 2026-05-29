@@ -206,7 +206,7 @@ export const ProfileSelectionPanel: React.FC<ProfileSelectionPanelProps> = ({
         <div style={{ fontSize: 13, color: 'var(--ink-900)', fontWeight: 500 }}>没找到我的学校？</div>
         <div style={{ fontSize: 11.5, color: 'var(--ink-500)', marginTop: 2 }}>上传学校格式手册或一份范文，让系统为你的论文补出一套可用规则</div>
       </div>
-      <Btn kind="ghost" size="sm" onClick={onOpenTemplateUpload}>补充模板</Btn>
+      <Btn kind="ghost" size="sm">补充模板</Btn>
     </div>
   </div>
 );

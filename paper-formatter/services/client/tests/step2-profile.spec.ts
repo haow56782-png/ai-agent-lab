@@ -767,6 +767,25 @@ test.describe('RulesModal two-column layout', () => {
     await expect(page.getByText('当前识别到的是学校档案')).toBeVisible();
   });
 
+  test('supplement template button opens the file picker only once per click', async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as any).__templateInputClickCount = 0;
+      const originalClick = HTMLInputElement.prototype.click;
+      HTMLInputElement.prototype.click = function clickOnceSpy() {
+        if (this.type === 'file' && this.accept.includes('.docx')) {
+          (window as any).__templateInputClickCount += 1;
+          return undefined;
+        }
+        return originalClick.call(this);
+      };
+    });
+    await bootstrapStep2WithProfile(page, EMPTY_DETAIL);
+
+    await page.getByRole('button', { name: '补充模板' }).click();
+
+    await expect.poll(() => page.evaluate(() => (window as any).__templateInputClickCount)).toBe(1);
+  });
+
   test('uploaded template for a pending school can start parsing without backend review', async ({ page }) => {
     await bootstrapStep2WithProfile(page, EMPTY_DETAIL);
     await page.route('**/api/v1/profiles/import-template', async (route) => {

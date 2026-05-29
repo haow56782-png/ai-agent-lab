@@ -36,8 +36,25 @@ except ImportError as e:
     print(json.dumps({"error": f"Missing dependency: {e}. Run: pip install python-docx"}), file=sys.stderr)
     sys.exit(1)
 
+from parse_enrich import enrich_parse_result
+
 # ── OLE2 (old .doc) detection ──
 OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
+_REF_ENTRY_PATTERNS = [
+    re.compile(r'^\[\s*\d+\s*\]'),
+    re.compile(r'^\d+\s*[.．]\s'),
+    re.compile(r'^[(（]\s*\d+\s*[)）]'),
+    re.compile(r'^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]'),
+]
+
+
+def looks_like_reference_entry(text: str) -> bool:
+    """Return whether a paragraph looks like a GB/T 7714 reference entry."""
+    candidate = (text or "").strip()
+    if len(candidate) < 6:
+        return False
+    return any(pattern.match(candidate) for pattern in _REF_ENTRY_PATTERNS)
 
 
 def _is_ole2_format(filepath: str) -> bool:
@@ -191,7 +208,7 @@ def parse_docx(filepath: str) -> dict:
     tables = extract_tables(doc, flow_bundle["tables"])
     images = extract_images(doc, flow_bundle["paragraphs"])
 
-    return {
+    result = {
         "metadata": extract_metadata(doc),
         "sections": extract_sections(doc),
         "paragraphs": paragraphs,
@@ -201,6 +218,7 @@ def parse_docx(filepath: str) -> dict:
         "structure": detect_structure(doc, flow_bundle["paragraphs"]),
         "flow": flow_bundle["items"],
     }
+    return enrich_parse_result(doc, result)
 
 
 def extract_metadata(doc: Document) -> dict:
@@ -700,13 +718,13 @@ def detect_structure(doc: Document, paragraph_flow: dict[int, dict] | None = Non
             })
             continue
 
-        # Reference entries (numbered citations like [1], [1-3], etc.)
-        if in_references and re.match(r'^\[\d+', text):
+        # Reference entries: support bracket, dotted, parenthesized, and circled numbering.
+        if in_references and looks_like_reference_entry(text):
             append_structure({
                 "index": i,
                 "type": "reference_entry",
-                "text": text[:120],
-                "confidence": 0.75,
+                "text": text,
+                "confidence": 0.8,
             })
             continue
 

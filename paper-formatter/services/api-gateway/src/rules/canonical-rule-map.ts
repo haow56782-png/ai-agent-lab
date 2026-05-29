@@ -14,6 +14,8 @@ import { TABLE_KEEP_TOGETHER_RULE_ID } from "./detectors/table-keep-together.det
 import { TOC_REFRESH_RULE_ID } from "./detectors/toc.detector.js";
 import { SUB_SUP_SCRIPT_RULE_ID } from "./detectors/sub-sup-script.detector.js";
 import { CAPTION_NUMBERING_CONTINUITY_RULE_ID } from "./detectors/caption-numbering-continuity.detector.js";
+import { DISCIPLINE_DETECTOR_CANONICAL_MAP } from "./detectors/discipline.detectors.js";
+import { REFERENCE_FIELD_CANONICAL_MAP } from "./detectors/reference-fields.detector.js";
 import type { CanonicalRuleMapping, ParsedDocumentContext, RuleDetection } from "./rule-types.js";
 
 export const DETECTOR_TO_CANONICAL_RULE_ID: Record<string, string> = {
@@ -35,8 +37,10 @@ export const DETECTOR_TO_CANONICAL_RULE_ID: Record<string, string> = {
   [REFERENCE_MISSING_DOI_RULE_ID]: "canonical_reference_06",
   [TOC_REFRESH_RULE_ID]: "canonical_toc_04",
   [FIGURE_DIRECTORY_RULE_ID]: "canonical_directory_field_02",
-  [SUB_SUP_SCRIPT_RULE_ID]: "canonical_formula_01",
+  [SUB_SUP_SCRIPT_RULE_ID]: "canonical_formula_font",
   [CAPTION_NUMBERING_CONTINUITY_RULE_ID]: "canonical_table_05",
+  ...DISCIPLINE_DETECTOR_CANONICAL_MAP,
+  ...REFERENCE_FIELD_CANONICAL_MAP,
 };
 
 export const CANONICAL_RULE_ID_EXEMPTIONS: Record<string, string> = {};
@@ -63,6 +67,19 @@ function getProfileRuleIds(profile: ParsedDocumentContext["profile"]): Set<strin
     ...((profile?.rules_json || []).map((rule: any) => String(rule?.ruleId || rule?.rule_id || "")).filter(Boolean)),
     ...((profile?.style_map || []).map((rule: any) => String(rule?.ruleId || rule?.rule_id || "")).filter(Boolean)),
   ]);
+}
+
+function getProfileRuleEntry(profile: ParsedDocumentContext["profile"], ruleId: string): any | undefined {
+  return [
+    ...((profile?.rules_json || []) as any[]),
+    ...((profile?.style_map || []) as any[]),
+  ].find((rule: any) => String(rule?.ruleId || rule?.rule_id || "") === ruleId);
+}
+
+function getProfileRuleSource(profile: ParsedDocumentContext["profile"], ruleId: string): RuleDetection["ruleSource"] | undefined {
+  const entry = getProfileRuleEntry(profile, ruleId);
+  if (!entry) return undefined;
+  return entry.ruleSource || entry.rule_source || "school";
 }
 
 export function resolveCanonicalRuleId(input: {
@@ -129,6 +146,10 @@ export function canonicalizeRuleDetections(input: {
       detectorRuleId,
       canonicalMapping,
       ruleId: canonicalMapping.resolvedRuleId,
+      ruleSource: getProfileRuleSource(input.profile, canonicalMapping.resolvedRuleId)
+        ?? getProfileRuleSource(input.profile, canonicalMapping.canonicalRuleId || "")
+        ?? detection.ruleSource
+        ?? "system",
     };
   });
 }

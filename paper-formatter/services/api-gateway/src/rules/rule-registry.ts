@@ -14,9 +14,11 @@ import { tableKeepTogetherDetector } from "./detectors/table-keep-together.detec
 import { tocRefreshDetector } from "./detectors/toc.detector.js";
 import { subSupScriptDetector } from "./detectors/sub-sup-script.detector.js";
 import { captionNumberingContinuityDetector } from "./detectors/caption-numbering-continuity.detector.js";
-import type { ParsedDocumentContext, RuleDetection } from "./rule-types.js";
+import { disciplineDetectors, REFERENCE_TYPE_MARKER_RULE_ID } from "./detectors/discipline.detectors.js";
+import { referenceFieldsDetector } from "./detectors/reference-fields.detector.js";
+import type { FormatRuleDetector, ParsedDocumentContext, RuleDetection } from "./rule-types.js";
 
-export const FORMAT_RULE_DETECTORS = [
+export const FORMAT_RULE_DETECTORS: FormatRuleDetector[] = [
   floatingObjectOverlapDetector,
   pageMarginDetector,
   bodyStyleDetector,
@@ -52,8 +54,15 @@ export const FORMAT_RULE_DETECTORS = [
   pageSectionDetector,
   subSupScriptDetector,
   captionNumberingContinuityDetector,
+  ...disciplineDetectors.filter((detector) => detector.ruleId !== REFERENCE_TYPE_MARKER_RULE_ID),
+  referenceFieldsDetector,
 ];
 
 export function runFormatRuleDetectors(ctx: ParsedDocumentContext): RuleDetection[] {
-  return FORMAT_RULE_DETECTORS.flatMap((detector) => detector.detect(ctx));
+  return FORMAT_RULE_DETECTORS.flatMap((detector) => {
+    if (disciplineDetectors.includes(detector) || detector === referenceFieldsDetector) {
+      return ctx.discipline === "stem" ? detector.detect(ctx) : [];
+    }
+    return detector.detect(ctx);
+  });
 }

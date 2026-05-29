@@ -1,0 +1,252 @@
+discipline: STEM
+ruleVersion: "2025"
+fixtureVersion: "v0.1"
+baselineStandard: GB/T 7713.1-2025
+# 学科层:优先级介于 school(400)与 GB(200)之间。
+# 作为「回落层 + 补充层」存在 —— 学校 profile 已规定的细则优先;
+# 学校未覆盖的理工科细则,由本层补齐。冲突一律 warn,不静默覆盖。
+ruleSourceWeight: 250
+rules:
+  # ───────────────────────── 公式 ─────────────────────────
+  - ruleId: canonical_formula_numbering
+    ruleName: 公式连续编号
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 公式
+    condition: display formula
+    expectedFormat: 独立公式按章节连续编号(如 (3-1)),编号右对齐
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: FORMULA_NUMBERING_WARNING
+    fixable: true
+    autoFixStrategy: numbering_update
+    evidence: formula object, numbering field, paragraph alignment
+
+  - ruleId: canonical_formula_alignment
+    ruleName: 公式居中与编号右对齐
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 公式
+    condition: display formula paragraph
+    expectedFormat: 独立公式居中排版,公式编号置于行末右对齐
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: FORMULA_ALIGNMENT_WARNING
+    fixable: true
+    autoFixStrategy: style_update
+    evidence: paragraph alignment, tab stops, formula bbox
+
+  - ruleId: canonical_formula_font
+    ruleName: 公式变量字体规范
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 公式
+    condition: formula run
+    expectedFormat: 变量斜体,单位与函数名正体,矢量加粗,符合理工排版惯例
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: FORMULA_FONT_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: run italic, bold, font name, math zone
+
+  - ruleId: canonical_formula_citation
+    ruleName: 公式引用格式
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 公式引用
+    condition: in-text formula reference
+    expectedFormat: 正文引用公式用「式(3-1)」形式,编号与公式一致
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: FORMULA_CITATION_WARNING
+    fixable: true
+    autoFixStrategy: numbering_update
+    evidence: in-text reference pattern, formula numbering map
+
+  # ───────────────────────── 三线表 ─────────────────────────
+  - ruleId: canonical_three_line_table_enforce
+    ruleName: 三线表强制
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 表
+    condition: data table
+    expectedFormat: 数据表采用三线表(顶线、栏目线、底线),无竖线、无多余内部横线
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: TABLE_THREE_LINE_WARNING
+    fixable: true
+    autoFixStrategy: style_update
+    evidence: table borders, tblBorders, inside borders, vertical lines
+
+  - ruleId: canonical_table_unit_consistency
+    ruleName: 表内单位与有效数字一致
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 表
+    condition: numeric table column
+    expectedFormat: 同列数据单位统一,有效数字位数一致,单位标于表头或列首
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: TABLE_UNIT_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: column cell values, unit text, decimal places
+
+  # ───────────────────────── 图 ─────────────────────────
+  - ruleId: canonical_figure_axis_legend
+    ruleName: 图坐标轴与图例完整
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 图
+    condition: data chart figure
+    expectedFormat: 数据图含坐标轴标注(量与单位)与图例,多子图按 (a)(b)(c) 编号
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: FIGURE_AXIS_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: figure object, embedded text, sub-figure captions
+
+  - ruleId: canonical_figure_vector_resolution
+    ruleName: 图清晰度与矢量优先
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 图
+    condition: figure image
+    expectedFormat: 线条图优先矢量格式,位图分辨率不低于规定阈值,避免模糊
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: FIGURE_RESOLUTION_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: image format, dpi, dimensions
+
+  # ───────────────────────── 符号表 ─────────────────────────
+  - ruleId: canonical_symbol_table_presence
+    ruleName: 符号表 / 物理量单位表
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 符号表
+    condition: front matter symbol list
+    expectedFormat: 含主要物理量、符号、单位说明的符号表,位置与格式符合规则
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: SYMBOL_TABLE_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: symbol table heading, table structure, unit column
+
+  # ───────────────────────── 代码 / 算法 ─────────────────────────
+  - ruleId: canonical_code_block_style
+    ruleName: 代码块格式
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 代码块
+    condition: code listing
+    expectedFormat: 代码块用等宽字体,保留缩进,必要时带行号,与正文区分
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: CODE_BLOCK_WARNING
+    fixable: true
+    autoFixStrategy: style_update
+    evidence: paragraph style, font name, monospace, indentation
+
+  - ruleId: canonical_algorithm_caption
+    ruleName: 算法伪代码题注
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 算法
+    condition: algorithm environment
+    expectedFormat: 算法块含编号题注(如「算法 3-1」),与图表题注体系一致
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: ALGORITHM_CAPTION_WARNING
+    fixable: true
+    autoFixStrategy: caption_reposition
+    evidence: algorithm heading, caption numbering
+
+  # ───────────────────────── 参考文献(理工倾向)─────────────────────────
+  - ruleId: canonical_reference_type_marker
+    ruleName: 文献类型标识符
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 参考文献
+    condition: reference entry
+    expectedFormat: 按 GB/T 7714 标注文献类型([J]/[M]/[D]/[C] 等),编号与正文数字制引用对应
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: REFERENCE_FORMAT_WARNING
+    fixable: true
+    autoFixStrategy: reference_format_update
+    evidence: raw entry, type marker, index, in-text citation map
+
+  - ruleId: canonical_reference_numbering
+    ruleName: 参考文献编号格式
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 参考文献
+    condition: reference entry
+    expectedFormat: 顺序编码制参考文献以 [1][2] 连续编号
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: REFERENCE_NUMBERING_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: raw entry, reference index
+
+  - ruleId: canonical_reference_author
+    ruleName: 作者著录
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 参考文献
+    condition: reference entry
+    expectedFormat: 文献条目以作者著录起始,多作者按规范分隔
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: REFERENCE_AUTHOR_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: raw entry, author field
+
+  - ruleId: canonical_reference_year
+    ruleName: 出版年份
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 参考文献
+    condition: reference entry
+    expectedFormat: 每条参考文献包含 4 位出版年份
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: REFERENCE_YEAR_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: raw entry, year field
+
+  - ruleId: canonical_reference_vol_pages
+    ruleName: 卷期页码
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 参考文献
+    condition: journal reference entry
+    expectedFormat: 期刊文献包含卷(期):起止页码
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: REFERENCE_VOL_PAGES_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: raw entry, volume, issue, pages
+
+  - ruleId: canonical_reference_citation_match
+    ruleName: 编号与正文引用对应
+    ruleSource: discipline
+    ruleLevel: discipline
+    targetObject: 参考文献
+    condition: in-text numeric citation
+    expectedFormat: 正文引用编号与参考文献列表一一对应
+    priority: 250
+    conflictPolicy: warn_and_adopt_higher_priority
+    warningCode: REFERENCE_CITATION_MATCH_WARNING
+    fixable: false
+    autoFixStrategy: manual_review
+    evidence: in-text citation, reference index

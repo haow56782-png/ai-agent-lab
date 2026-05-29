@@ -10,7 +10,10 @@ import * as ruleSetRepo from "../../repositories/rule-sets.js";
 import { buildFindingsFromDetections } from "../../rules/builders/finding-builder.js";
 import { buildRuleDetailsFromDetections } from "../../rules/builders/rule-detail-builder.js";
 import { canonicalizeRuleDetections } from "../../rules/canonical-rule-map.js";
+import { inferDiscipline } from "../../rules/discipline-inference.js";
+import { loadDisciplineRuleLayer, mergeDisciplineLayer } from "../../rules/discipline-layer.js";
 import { sortDetectionsByPriority } from "../../rules/priority.js";
+import type { ParsedDocumentContext } from "../../rules/rule-types.js";
 import { runFormatRuleDetectors } from "../../rules/rule-registry.js";
 import { loadUploadedDocumentBuffer } from "./document-loader.js";
 import { buildAutoFormatIssues } from "./no-profile-format-evaluator.js";
@@ -87,7 +90,7 @@ export async function processAnalyzeJob(jobId: string, documentRecord: documentR
 
     const paragraphs = parseResult.paragraphs || [];
     const images = parseResult.images || [];
-    const detectionContext = {
+    const detectionContext: ParsedDocumentContext = {
       doc: documentRecord,
       profile: profileRules,
       profileId,
@@ -100,10 +103,22 @@ export async function processAnalyzeJob(jobId: string, documentRecord: documentR
       flowItems: parseResult.flow || [],
       objectGraph,
     };
+    const disciplineInference = inferDiscipline(detectionContext);
+    let effectiveProfileRules = profileRules;
+    if (disciplineInference.discipline === "stem") {
+      try {
+        effectiveProfileRules = mergeDisciplineLayer(profileRules, loadDisciplineRuleLayer("stem"));
+        detectionContext.profile = effectiveProfileRules;
+      } catch (disciplineLayerError: any) {
+        console.warn("[analyze] Discipline rule layer unavailable:", disciplineLayerError.message);
+      }
+    }
+    detectionContext.discipline = disciplineInference.discipline;
+
     const detectedRuleDetections = profileId
       ? sortDetectionsByPriority(canonicalizeRuleDetections({
           detections: runFormatRuleDetectors(detectionContext),
-          profile: profileRules,
+          profile: effectiveProfileRules,
         }))
       : [];
 
@@ -178,6 +193,17 @@ export async function processAnalyzeJob(jobId: string, documentRecord: documentR
       rules: { passed, warnings, failed: 0 },
       ruleDetails,
       findings,
+      disciplineHint: {
+        discipline: disciplineInference.discipline,
+        confidence: Number(disciplineInference.confidence.toFixed(3)),
+        needsBanner: disciplineInference.needsBanner,
+        bannerReason: disciplineInference.bannerReason,
+        topSignals: disciplineInference.signals
+          .slice()
+          .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+          .slice(0, 3)
+          .map((signal) => ({ label: signal.label, detail: signal.detail })),
+      },
       rawHeadings: headings,
       rawSections: sections,
       parsedTexts: (parseResult.paragraphs || []).map((paragraph: any) => paragraph.text || ""),

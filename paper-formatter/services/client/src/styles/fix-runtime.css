@@ -269,7 +269,32 @@
   white-space: nowrap;
 }
 
+.fix-runtime-scrubber-track-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.fix-runtime-scrubber-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 14px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(21,23,27,.12);
+  overflow: hidden;
+}
+
+.fix-runtime-scrubber-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand-700), var(--rust-500));
+  transition: width .25s ease;
+}
+
 .fix-runtime-scrubber-track {
+  position: relative;
   display: flex;
   align-items: center;
   min-width: 0;
@@ -284,16 +309,6 @@
   border: none;
   background: transparent;
   color: var(--ink-400);
-}
-
-.fix-runtime-scrubber-node::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 14px;
-  height: 1px;
-  background: var(--hair-strong);
 }
 
 .fix-runtime-scrubber-node i {
@@ -314,11 +329,19 @@
 
 .fix-runtime-scrubber-node.is-live i {
   background: var(--rust-500);
-  animation: protoPulse 1.1s ease-in-out infinite;
+  box-shadow: 0 0 0 4px var(--paper-0), 0 0 0 7px rgba(184,84,47,.18);
 }
 
 .fix-runtime-scrubber-node.is-review i {
   background: var(--sun-500);
+}
+
+.fix-runtime-scrubber-node.is-placeholder {
+  cursor: default;
+}
+
+.fix-runtime-scrubber-node.is-placeholder i {
+  background: var(--paper-3);
 }
 
 .fix-runtime-scrubber-node span {

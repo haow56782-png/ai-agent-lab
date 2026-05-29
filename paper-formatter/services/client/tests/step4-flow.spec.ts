@@ -101,9 +101,8 @@ test.describe('Step4 baseline behaviors', () => {
     const livePage = page.getByTestId('fix-runtime-live-page');
 
     await expect(pageMeta).toContainText('第 3 页');
-    await expect(findingMeta).toContainText('当前正在修复');
-    await expect(pageMeta).toContainText('写回进度 0/3');
-    await expect(actionCount).toContainText('完整修复过程');
+    await expect(findingMeta).toContainText('正在修复 0/3');
+    await expect(actionCount).toContainText('当前发现项');
     await expect(livePage).toHaveAttribute('data-page-number', '3');
 
     await expect(remainingMeta).not.toContainText('剩余 0s');
@@ -177,12 +176,14 @@ test.describe('Step4 baseline behaviors', () => {
     await bootstrapState(page, state);
     await page.goto('/');
 
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('完整修复过程');
-    await expect(page.getByTestId('fix-runtime-topbar-page')).toContainText('写回进度 0/3');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前发现项');
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('正在修复 0/3');
     await expect(page.getByTestId('fix-runtime-topbar-remaining')).not.toContainText('已完成');
     await expect(page.getByRole('button', { name: /写回中 · 0\/3/ })).toBeDisabled();
-    await expect(page.getByTestId('fix-runtime-paper-scanner')).toBeVisible();
-    await expect(page.locator('.fix-runtime-action-card.is-live').first()).toBeVisible();
+    await expect(page.getByTestId('fix-runtime-paper-scanner')).toHaveCount(0);
+    await expect(page.getByRole('progressbar', { name: '修复步骤进度' })).toHaveAttribute('aria-valuenow', '0');
+    await expect(page.getByRole('progressbar', { name: '修复步骤进度' })).toHaveAttribute('aria-valuemax', '3');
+    await expect(page.getByTestId('fix-runtime-current-task-card')).toBeVisible();
   });
 
   test('Step4Fix right action card click reframes the card upward and syncs the paper page', async ({ page }) => {

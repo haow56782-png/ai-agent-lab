@@ -1,4 +1,3 @@
-import { v4 as uuid } from "uuid";
 import type { FindingContract, FindingSeverity } from "../../../../../packages/shared-types/src/finding-contract";
 import type { DocumentRecord } from "../../repositories/documents.js";
 import type { RuleDetection, RuleSeverity } from "../rule-types.js";
@@ -33,7 +32,7 @@ export function buildFindingsFromDetections(input: {
   return input.detections.map((detection) => {
     const evidenceSpan = createEvidenceSpan(detection);
     return {
-      finding_id: uuid(),
+      finding_id: crypto.randomUUID(),
       document_id: input.doc.canonical_document_id,
       document_version: 1,
       rule_id: detection.ruleId,

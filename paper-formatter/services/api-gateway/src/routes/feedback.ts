@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { v4 as uuid } from "uuid";
 
 export const feedbackRoutes = Router();
 
@@ -8,7 +7,7 @@ const feedbacks: any[] = [];
 feedbackRoutes.post("/", (req, res) => {
   const { jobId, type, detail } = req.body;
   const record = {
-    feedbackId: `fb_${uuid().slice(0, 8)}`,
+    feedbackId: `fb_${crypto.randomUUID().slice(0, 8)}`,
     jobId,
     type: type || "general",
     detail,

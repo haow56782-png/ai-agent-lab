@@ -10,6 +10,7 @@ import Step3Parse from './screens/Step3Parse';
 import Step4Fix from './screens/Step4Fix';
 import Step4Diff from './screens/Step4Diff';
 import Step5Output from './screens/Step5Output';
+import AdminRuleLedger from './screens/AdminRuleLedger';
 import { loadBootstrappedAppState } from './test-support/bootstrapAppState';
 import { reviewActions } from './stores/reviewStore';
 
@@ -27,8 +28,17 @@ function useAppToast() {
   return { toast: t, show };
 }
 
+function readAdminSurface() {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  if (window.location.hash === '#admin-rule-ledger') return 'rule-ledger';
+  if (params.get('admin') === 'rule-ledger') return 'rule-ledger';
+  return null;
+}
+
 const App: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, undefined, loadBootstrappedAppState);
+  const [adminSurface, setAdminSurface] = useState<string | null>(readAdminSurface);
   const set = useCallback((patch: Partial<AppState>) => dispatch(patch), []);
   const { toast, show: showToast } = useAppToast();
   const prevStepRef = useRef(state.step);
@@ -47,11 +57,32 @@ const App: React.FC = () => {
     });
   }, [state.step]);
 
+  useEffect(() => {
+    const syncAdminSurface = () => setAdminSurface(readAdminSurface());
+    window.addEventListener('hashchange', syncAdminSurface);
+    window.addEventListener('popstate', syncAdminSurface);
+    return () => {
+      window.removeEventListener('hashchange', syncAdminSurface);
+      window.removeEventListener('popstate', syncAdminSurface);
+    };
+  }, []);
+
   const stepAnim = stepDirRef.current === 'fwd'
     ? 'protoFade .28s var(--ease-emphasized-out), protoSlideIn .32s var(--ease-emphasized)'
     : 'protoFade .28s var(--ease-emphasized-out), protoSlideOut .32s var(--ease-emphasized)';
 
   const ctx = useMemo(() => ({ state, set }), [state, set]);
+
+  if (adminSurface === 'rule-ledger') {
+    return (
+      <AdminRuleLedger
+        onBack={() => {
+          window.history.pushState(null, '', window.location.pathname);
+          setAdminSurface(null);
+        }}
+      />
+    );
+  }
 
   return (
     <AppCtx.Provider value={ctx}>

@@ -53,13 +53,17 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
     .replace(/^P\d+\s*发现\s*·\s*/u, '')
     .replace(/canonical_[\w-]+/gi, '页面格式')
     .replace(/body_fonts/gi, '正文英文字体');
+  const taskTitle = isCompleted
+    ? `修复完成 · 共 ${findingStatusSummary.total || findingStatusSummary.writtenBack} 项`
+    : `正在修复 ${findingProgressLabel}：${activeFixLabel}`;
+  const taskBadge = isCompleted ? '已写回' : null;
 
   return (
-    <header className="fix-runtime-topbar">
+    <header className={isCompleted ? 'fix-runtime-topbar is-completed' : 'fix-runtime-topbar'}>
       <div className="fix-runtime-document-meta">
-        <div className="fix-runtime-title">修复产物 · {documentTitle}</div>
+        <div className="fix-runtime-title">{isCompleted ? '修复完成' : '修复产物'} · {documentTitle}</div>
         <div className="fix-runtime-subtitle">
-          修复完成后进入人工确认，可逐项确认或回退。
+          依据：学校规则 + GB/T 7713.1 · 只改格式，不改正文语义。
         </div>
       </div>
 
@@ -76,7 +80,8 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
         </div>
         <div className="fix-runtime-progress-meta">
           <span className="fix-runtime-finding-meta" data-testid="fix-runtime-topbar-finding">
-            正在修复 {findingProgressLabel}：{activeFixLabel}
+            {taskTitle}
+            {taskBadge ? <b>{taskBadge}</b> : null}
           </span>
           <span data-testid="fix-runtime-topbar-page">
             对象：{activeTargetLabel}
@@ -91,7 +96,7 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
       </div>
 
       <div className="fix-runtime-toolbar-actions fix-runtime-controls">
-        {notStarted && onStartFix ? (
+        {isCompleted ? null : notStarted && onStartFix ? (
           <button type="button" className="fix-control-button is-start" onClick={onStartFix}>
             启动修复
           </button>
@@ -105,15 +110,16 @@ export const FixRuntimeTopbar: React.FC<Props> = ({
             {isPaused ? '继续' : '暂停'}
           </button>
         )}
-        <button
-          type="button"
-          className="fix-control-button"
-          onClick={onJumpToComplete}
-          disabled={isCompleted}
-        >
-          跳过动画，查看结果
-        </button>
-        {onViewDiff ? (
+        {!isCompleted ? (
+          <button
+            type="button"
+            className="fix-control-button"
+            onClick={onJumpToComplete}
+          >
+            跳过动画，查看结果
+          </button>
+        ) : null}
+        {!isCompleted && onViewDiff ? (
           <button
             type="button"
             className="fix-control-button"

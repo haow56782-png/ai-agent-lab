@@ -7,6 +7,7 @@ import {
   rowStatusLabel,
   rowStatusTone,
 } from './FixProcessDrawer';
+import { FixRuntimeStreamReport } from './FixRuntimeStreamReport';
 import { FixSafetyNotice } from './FixSafetyNotice';
 import type { TimelineRow, FixRuntimeStore, FixFindingStatusSummary, FixTaskFilter } from './types';
 
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export const FixRuntimeActionFeed: React.FC<Props> = ({
+  runtimeStore,
   findingStatusSummary,
   timelineRows,
   viewDiffEnabled,
@@ -36,11 +38,15 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
   const [activeFilter, setActiveFilter] = useState<FixTaskFilter>('all');
   const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
   const [processOpen, setProcessOpen] = useState(false);
+  const [safetyHighlighted, setSafetyHighlighted] = useState(false);
   const focusTimerRef = useRef<number | null>(null);
+  const safetyNoticeRef = useRef<HTMLElement | null>(null);
+  const safetyTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (focusTimerRef.current !== null) clearTimeout(focusTimerRef.current);
+      if (safetyTimerRef.current !== null) clearTimeout(safetyTimerRef.current);
     };
   }, []);
 
@@ -71,12 +77,30 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
     });
   };
 
+  const focusSafetyNotice = () => {
+    if (safetyTimerRef.current !== null) {
+      clearTimeout(safetyTimerRef.current);
+      safetyTimerRef.current = null;
+    }
+
+    setSafetyHighlighted(true);
+    safetyNoticeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    safetyNoticeRef.current?.focus({ preventScroll: true });
+    safetyTimerRef.current = window.setTimeout(() => {
+      setSafetyHighlighted(false);
+      safetyTimerRef.current = null;
+    }, 1800);
+  };
+
   const filteredRows = timelineRows.filter((row) => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'written') return row.status === 'done' || row.status === 'live';
     if (activeFilter === 'review') return row.status === 'needs-review';
     return false;
   });
+  const progressTotal = Math.max(1, findingStatusSummary.autoFixableTotal || findingStatusSummary.total || timelineRows.length);
+  const progressCurrent = Math.min(progressTotal, findingStatusSummary.writtenBack);
+  const progressPercent = Math.round((progressCurrent / progressTotal) * 100);
   const currentTaskRow = filteredRows.find((row) => row.status === 'live')
     || (focusedRowId ? filteredRows.find((row) => row.id === focusedRowId) : null)
     || filteredRows.find((row) => row.status === 'done')
@@ -84,6 +108,9 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
     || null;
   const compareCandidate = currentTaskRow;
   const currentTaskExplanation = currentTaskRow ? buildRepairExplanation(currentTaskRow) : null;
+  const completedTotal = findingStatusSummary.total || findingStatusSummary.autoFixableTotal || timelineRows.length;
+  const completedProgressTotal = Math.max(1, completedTotal);
+  const isCompleted = viewDiffEnabled || runtimeStore.status === 'completed';
   const locateCompareCandidate = () => {
     if (!compareCandidate) return;
     const node = rightFeedRef.current?.querySelector<HTMLElement>(`[data-testid="fix-runtime-action-card-${compareCandidate.id}"]`);
@@ -116,12 +143,93 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
       onScroll={onScroll}
       data-testid="fix-runtime-action-feed"
     >
+      {isCompleted ? (
+        <>
+          <section className="fix-runtime-complete-card" data-testid="fix-runtime-complete-card">
+            <div className="fix-runtime-complete-head">
+              <span>修复进度</span>
+              <strong>✓ {findingStatusSummary.writtenBack} / {completedTotal}</strong>
+            </div>
+            <div
+              className="fix-runtime-inline-progress is-complete"
+              role="progressbar"
+              aria-label="发现项写回进度"
+              aria-valuemin={0}
+              aria-valuemax={completedProgressTotal}
+              aria-valuenow={findingStatusSummary.writtenBack}
+            >
+              <span style={{ width: '100%' }} />
+            </div>
+            <div className="fix-runtime-complete-stats">
+              <div>
+                <span>已写回</span>
+                <b>{findingStatusSummary.writtenBack}</b>
+              </div>
+              <div>
+                <span>待确认</span>
+                <b>{findingStatusSummary.needsReview}</b>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="fix-runtime-complete-primary"
+              onClick={onViewDiff}
+            >
+              进入校对台 →
+            </button>
+            <button
+              type="button"
+              className="fix-runtime-complete-secondary"
+              onClick={() => compareCandidate && setCompareRow(compareCandidate)}
+              disabled={!compareCandidate}
+            >
+              查看修复前后对比
+            </button>
+          </section>
+          <div className="fix-runtime-complete-note">
+            进度满格静止 + 品牌绿 CTA = 明确“已完成”；0 项待确认时文案为“进入校对台”。
+          </div>
+
+          <section className="fix-runtime-complete-flat">
+            <h3>修复记录</h3>
+            <FixRuntimeStreamReport
+              writtenBack={findingStatusSummary.writtenBack}
+              processCount={filteredRows.length}
+              onOpenProcess={() => setProcessOpen(true)}
+              onShowSafety={focusSafetyNotice}
+            />
+          </section>
+
+          <FixProcessDrawer
+            rows={filteredRows}
+            activeFilter={activeFilter}
+            open={processOpen}
+            onClose={() => setProcessOpen(false)}
+            onJumpToRow={jumpAndFrameCard}
+            focusedRowId={focusedRowId}
+          />
+
+          <FixSafetyNotice ref={safetyNoticeRef} highlighted={safetyHighlighted} />
+          <FixBeforeAfterModal row={compareRow} onClose={() => setCompareRow(null)} />
+        </>
+      ) : (
+        <>
       <div className="fix-runtime-cockpit-head" data-testid="fix-runtime-action-count">
         <div>
           <div className="fix-runtime-note-head">当前发现项</div>
-          <strong>{findingStatusSummary.writtenBack} / {findingStatusSummary.autoFixableTotal || findingStatusSummary.total}</strong>
+          <strong>{progressCurrent} / {progressTotal}</strong>
         </div>
         <span>{findingStatusSummary.needsReview} 项待确认</span>
+      </div>
+      <div
+        className="fix-runtime-inline-progress"
+        role="progressbar"
+        aria-label="发现项写回进度"
+        aria-valuemin={0}
+        aria-valuemax={progressTotal}
+        aria-valuenow={progressCurrent}
+      >
+        <span style={{ width: `${progressPercent}%` }} />
       </div>
 
       {currentTaskRow && currentTaskExplanation ? (
@@ -235,6 +343,8 @@ export const FixRuntimeActionFeed: React.FC<Props> = ({
       </div>
 
       <FixBeforeAfterModal row={compareRow} onClose={() => setCompareRow(null)} />
+        </>
+      )}
     </aside>
   );
 };

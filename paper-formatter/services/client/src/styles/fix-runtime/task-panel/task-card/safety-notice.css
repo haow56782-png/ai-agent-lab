@@ -9,6 +9,15 @@
   background: linear-gradient(135deg, rgba(232,240,235,.78), rgba(255,255,255,.74));
 }
 
+.fix-runtime-safety-notice:focus {
+  outline: none;
+}
+
+.fix-runtime-safety-notice.is-highlighted {
+  border-color: rgba(42,77,58,.36);
+  box-shadow: 0 0 0 4px rgba(42,77,58,.1);
+}
+
 .fix-runtime-safety-notice strong {
   color: var(--brand-700);
   font-size: 12px;

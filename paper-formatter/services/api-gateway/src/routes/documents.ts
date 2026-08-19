@@ -2,7 +2,6 @@ import { Router } from "express";
 import multer from "multer";
 import { createError, ERROR_CODES } from "../middleware/error-handler.js";
 import crypto from "crypto";
-import { v4 as uuid } from "uuid";
 import * as docRepo from "../repositories/documents.js";
 import * as storage from "../storage.js";
 import { normalizeDocumentFilename } from "../utils/document-filename.js";
@@ -50,8 +49,8 @@ documentRoutes.post("/", upload.single("file"), async (req, res, next) => {
     }
 
     const sha256 = crypto.createHash("sha256").update(req.file.buffer).digest("hex");
-    const docId = `doc_${uuid().slice(0, 8)}`;
-    const canonicalDocumentId = uuid();
+    const docId = `doc_${crypto.randomUUID().slice(0, 8)}`;
+    const canonicalDocumentId = crypto.randomUUID();
     const ext = normalizedFilename.toLowerCase().split(".").pop() as string;
 
     // Store file in MinIO

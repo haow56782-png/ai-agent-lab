@@ -107,6 +107,10 @@ http://localhost:5173
 
 更多契约见 [docs/api-spec.md](docs/api-spec.md)。
 
+## 更新日志
+
+依赖、安装方式、部署和主链路交互更新统一记录在 [docs/CHANGELOG.md](docs/CHANGELOG.md)。每次更新后都需要追加日期、影响范围和验证方式。
+
 ## 规则与 Finding
 
 规则系统正在从 JSONB 缓存形态收敛为标准表结构：

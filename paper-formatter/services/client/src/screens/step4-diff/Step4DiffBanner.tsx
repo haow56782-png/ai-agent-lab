@@ -4,9 +4,17 @@ interface Step4DiffBannerProps {
   body: string;
   countText: string;
   contentIntegrity: ContentIntegrityView;
+  disciplineHint?: {
+    discipline: 'stem' | 'humanities' | 'unknown';
+    confidence: number;
+    needsBanner: boolean;
+    topSignals?: Array<{ label: string; detail: string }>;
+  };
   iconGlyph: string;
   isComplete: boolean;
   label: string;
+  onKeepStem?: () => void;
+  onSwitchHumanities?: () => void;
   title: string;
   visible: boolean;
 }
@@ -15,14 +23,20 @@ export function Step4DiffBanner({
   body,
   countText,
   contentIntegrity,
+  disciplineHint,
   iconGlyph,
   isComplete,
   label,
+  onKeepStem,
+  onSwitchHumanities,
   title,
   visible,
 }: Step4DiffBannerProps) {
+  const showDisciplineConfirm = !!disciplineHint?.needsBanner && disciplineHint.discipline === 'stem';
+  const topSignal = disciplineHint?.topSignals?.[0];
   return (
     <section
+      data-testid={showDisciplineConfirm ? 'discipline-confirm-banner' : undefined}
       style={{
         minHeight: 144,
         padding: '24px 32px 20px',
@@ -116,6 +130,30 @@ export function Step4DiffBanner({
           <span>{contentIntegrity.title}</span>
           <span style={{ fontWeight: 400, color: 'var(--ink-secondary)' }}>{contentIntegrity.detail}</span>
         </div>
+        {showDisciplineConfirm && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 10,
+              marginTop: 12,
+              padding: '10px 12px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(255,255,255,.72)',
+              border: '1px solid rgba(41,78,58,.16)',
+              color: 'var(--ink-secondary)',
+              fontSize: 'var(--text-sm)',
+            }}
+          >
+            <strong style={{ color: 'var(--ink-primary)' }}>已按理工科规则校验</strong>
+            <span>
+              {topSignal ? `${topSignal.label}: ${topSignal.detail}` : `置信度 ${(disciplineHint.confidence * 100).toFixed(0)}%`}
+            </span>
+            <button type="button" className="btn btn-dark" onClick={onKeepStem}>保持理工科</button>
+            <button type="button" className="btn btn-secondary" onClick={onSwitchHumanities}>改为文科</button>
+          </div>
+        )}
       </div>
       <div
         style={{

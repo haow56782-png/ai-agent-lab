@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
 import { query } from "../db.js";
 import type {
   ActorRole,
@@ -52,7 +51,7 @@ function createAuditRecord(input: {
   timestamp?: string;
 }): AuditRecord {
   return {
-    audit_id: uuidv4(),
+    audit_id: crypto.randomUUID(),
     target_type: input.targetType,
     target_id: input.targetId,
     actor_id: input.actorId,

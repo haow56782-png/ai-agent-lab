@@ -25,4 +25,23 @@ describe("rule priority", () => {
     ]);
     expect(detections[0].ruleId).toBe("FLOATING_OBJECT_OVERLAP_TEXT");
   });
+
+  it("orders rule sources as user, school, CAFA, discipline, GB, system within one severity", () => {
+    const detections = sortDetectionsByPriority([
+      { ruleId: "SYSTEM_RULE", label: "system", group: "样式", severity: "P2", ruleSource: "system", confidence: 0.99, page: 1, snippet: "system", suggestion: { type: "replace", before: "A", after: "B", explanation: "system" } },
+      { ruleId: "GB_RULE", label: "gb", group: "样式", severity: "P2", ruleSource: "GB", confidence: 0.98, page: 1, snippet: "gb", suggestion: { type: "replace", before: "A", after: "B", explanation: "gb" } },
+      { ruleId: "DISCIPLINE_RULE", label: "discipline", group: "样式", severity: "P2", ruleSource: "discipline", confidence: 0.2, page: 1, snippet: "discipline", suggestion: { type: "replace", before: "A", after: "B", explanation: "discipline" } },
+      { ruleId: "SCHOOL_RULE", label: "school", group: "样式", severity: "P2", ruleSource: "school", confidence: 0.1, page: 1, snippet: "school", suggestion: { type: "replace", before: "A", after: "B", explanation: "school" } },
+      { ruleId: "CAFA_RULE", label: "cafa", group: "样式", severity: "P2", ruleSource: "CAFA", confidence: 0.1, page: 1, snippet: "cafa", suggestion: { type: "replace", before: "A", after: "B", explanation: "cafa" } },
+      { ruleId: "USER_RULE", label: "user", group: "样式", severity: "P2", ruleSource: "user", confidence: 0.1, page: 1, snippet: "user", suggestion: { type: "replace", before: "A", after: "B", explanation: "user" } },
+    ]);
+    expect(detections.map((detection) => detection.ruleId)).toEqual([
+      "USER_RULE",
+      "SCHOOL_RULE",
+      "CAFA_RULE",
+      "DISCIPLINE_RULE",
+      "GB_RULE",
+      "SYSTEM_RULE",
+    ]);
+  });
 });

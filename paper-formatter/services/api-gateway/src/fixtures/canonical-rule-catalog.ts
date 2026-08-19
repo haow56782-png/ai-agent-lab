@@ -50,6 +50,26 @@ export interface CanonicalRuleCatalogEntry {
   uiSection: string;
 }
 
+const EXPLICIT_CANONICAL_RULES: CanonicalRuleCatalogEntry[] = [
+  { ruleId: "canonical_formula_font", label: "公式变量字体规范", category: "13. 公式", categoryCode: "13", description: "变量斜体,单位与函数名正体,矢量符号加粗", type: "format", source: "school", thesisSubset: "formula", targetObject: "公式", uiSection: "正文" },
+  { ruleId: "canonical_formula_numbering", label: "公式连续编号", category: "13. 公式", categoryCode: "13", description: "独立公式使用章节序号连续编号,编号置于行末", type: "structure", source: "school", thesisSubset: "formula", targetObject: "公式", uiSection: "正文" },
+  { ruleId: "canonical_formula_alignment", label: "公式居中与编号右对齐", category: "13. 公式", categoryCode: "13", description: "独立公式居中排版,编号通过右对齐制表位落在行末", type: "layout", source: "school", thesisSubset: "formula", targetObject: "公式", uiSection: "正文" },
+  { ruleId: "canonical_formula_citation", label: "公式引用格式", category: "13. 公式", categoryCode: "13", description: "正文公式引用使用式加圆括号编号形式", type: "content", source: "school", thesisSubset: "formula", targetObject: "公式引用", uiSection: "正文" },
+  { ruleId: "canonical_three_line_table_enforce", label: "三线表强制", category: "14. 表格对象", categoryCode: "14", description: "数据表保留顶线,栏目线,底线,不使用竖线和多余内部横线", type: "format", source: "school", thesisSubset: "table", targetObject: "表格", uiSection: "图表" },
+  { ruleId: "canonical_table_unit_consistency", label: "表内单位与有效数字一致", category: "14. 表格对象", categoryCode: "14", description: "同列数据单位统一,有效数字位数一致", type: "content", source: "school", thesisSubset: "table", targetObject: "表格", uiSection: "图表" },
+  { ruleId: "canonical_figure_axis_legend", label: "图坐标轴与图例完整", category: "17. 图片对象", categoryCode: "17", description: "数据图包含坐标轴量名,单位和图例", type: "content", source: "school", thesisSubset: "figure", targetObject: "数据图", uiSection: "图表" },
+  { ruleId: "canonical_figure_vector_resolution", label: "图清晰度与矢量优先", category: "17. 图片对象", categoryCode: "17", description: "线条图优先使用矢量格式,位图达到印刷分辨率", type: "format", source: "school", thesisSubset: "figure", targetObject: "图片", uiSection: "图表" },
+  { ruleId: "canonical_symbol_table_presence", label: "符号表 / 物理量单位表", category: "05. 中文摘要", categoryCode: "05", description: "公式密集论文包含主要物理量,符号和单位说明表", type: "structure", source: "school", thesisSubset: "abstract_zh", targetObject: "符号表", uiSection: "摘要" },
+  { ruleId: "canonical_code_block_style", label: "代码块格式", category: "10. 正文段落", categoryCode: "10", description: "代码块使用等宽字体并保留缩进层级", type: "format", source: "school", thesisSubset: "paragraph", targetObject: "代码块", uiSection: "正文" },
+  { ruleId: "canonical_algorithm_caption", label: "算法伪代码题注", category: "18. 图题", categoryCode: "18", description: "算法块包含连续编号题注并支持正文引用", type: "structure", source: "school", thesisSubset: "figure_caption", targetObject: "算法", uiSection: "图表" },
+  { ruleId: "canonical_reference_type_marker", label: "文献类型标识符", category: "21. 参考文献", categoryCode: "21", description: "参考文献条目包含文献类型标识符", type: "content", source: "school", thesisSubset: "reference", targetObject: "参考文献条目", uiSection: "参考文献" },
+  { ruleId: "canonical_reference_numbering", label: "参考文献编号格式", category: "21. 参考文献", categoryCode: "21", description: "顺序编码制参考文献使用方括号数字连续编号", type: "content", source: "school", thesisSubset: "reference", targetObject: "参考文献条目", uiSection: "参考文献" },
+  { ruleId: "canonical_reference_author", label: "作者著录", category: "21. 参考文献", categoryCode: "21", description: "参考文献条目以作者著录起始", type: "content", source: "school", thesisSubset: "reference", targetObject: "参考文献条目", uiSection: "参考文献" },
+  { ruleId: "canonical_reference_year", label: "出版年份", category: "21. 参考文献", categoryCode: "21", description: "参考文献条目包含四位出版年份", type: "content", source: "school", thesisSubset: "reference", targetObject: "参考文献条目", uiSection: "参考文献" },
+  { ruleId: "canonical_reference_vol_pages", label: "卷期页码", category: "21. 参考文献", categoryCode: "21", description: "期刊参考文献包含卷号,期号和起止页码", type: "content", source: "school", thesisSubset: "reference", targetObject: "参考文献条目", uiSection: "参考文献" },
+  { ruleId: "canonical_reference_citation_match", label: "编号与正文引用对应", category: "21. 参考文献", categoryCode: "21", description: "正文引用编号与参考文献条目编号一一对应", type: "content", source: "school", thesisSubset: "reference", targetObject: "正文引用", uiSection: "参考文献" },
+];
+
 export const REQUIRED_THESIS_SUBSETS: ThesisObjectSubset[] = [
   "page_canvas",
   "cover",
@@ -283,7 +303,7 @@ function inferRuleType(group: CanonicalRuleGroup, text: string): CanonicalRuleTy
 }
 
 export function buildCanonicalRuleCatalog(): CanonicalRuleCatalogEntry[] {
-  return CANONICAL_RULE_GROUPS.flatMap((group) => {
+  const generated = CANONICAL_RULE_GROUPS.flatMap((group) => {
     const code = group.cat.split(".")[0].padStart(2, "0");
     return group.items.map((description, index) => ({
       ruleId: `canonical_${group.thesisSubset}_${String(index + 1).padStart(2, "0")}`,
@@ -298,4 +318,5 @@ export function buildCanonicalRuleCatalog(): CanonicalRuleCatalogEntry[] {
       uiSection: group.uiSection,
     }));
   });
+  return [...generated, ...EXPLICIT_CANONICAL_RULES];
 }

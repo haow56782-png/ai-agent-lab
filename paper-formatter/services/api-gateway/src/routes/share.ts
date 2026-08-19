@@ -1,6 +1,5 @@
 import type { Request } from "express";
 import { Router } from "express";
-import { v4 as uuid } from "uuid";
 import { createError, ERROR_CODES } from "../middleware/error-handler.js";
 import { parseShareReportCommand } from "../dto/document-requests.js";
 import * as shareRepo from "../repositories/share.js";
@@ -297,7 +296,7 @@ function renderOgSvg(shareId: string, payload: SharePayload, poster = false): st
 shareRoutes.post("/report", async (req, res, next) => {
   try {
     const command = parseShareReportCommand(req.body);
-    const shareId = `share_${uuid().slice(0, 8)}`;
+    const shareId = `share_${crypto.randomUUID().slice(0, 8)}`;
     const { payload, sourceJobId, docId, profileId } = await buildSharePayload(
       req,
       command.legacyDocId,

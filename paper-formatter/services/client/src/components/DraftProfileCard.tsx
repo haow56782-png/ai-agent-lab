@@ -36,10 +36,10 @@ export const DraftProfileCard: React.FC<DraftProfileCardProps> = ({ draft, onUse
           国标基线 · {draft.baseStandardVersion || 'GB/T 7713.1-2006'}
         </div>
       </div>
-      <span className="chip sun">待你确认</span>
+      <span className="chip leaf">无需后台审核</span>
     </div>
     <div style={{ padding: '12px 14px', background: 'var(--sun-100)', borderRadius: 4, marginBottom: 16, fontSize: 12, color: 'var(--sun-700)' }}>
-      <strong>这套规则是系统从范文里反推出来的</strong>，已经能帮你起步，但最好逐条确认后再拿去正式交稿。上传更完整的格式手册，可以继续提升覆盖度。
+      <strong>这套规则是系统从范文里反推出来的</strong>，无需等待后台审核，可以先用于当前论文解析。后续再把规则沉淀成正式学校规范包。
     </div>
     <div className="hrule" />
     <div style={{ flex: 1, overflow: 'auto', paddingTop: 14 }}>
@@ -65,7 +65,7 @@ export const DraftProfileCard: React.FC<DraftProfileCardProps> = ({ draft, onUse
       display: 'flex', justifyContent: 'flex-end', gap: 8,
       padding: '14px 0', borderTop: '1px solid var(--hair)',
     }}>
-      <Btn kind="primary" onClick={onUse}>先按这套规则继续</Btn>
+      <Btn kind="primary" onClick={onUse}>使用这套临时规则开始解析</Btn>
     </div>
   </div>
 );

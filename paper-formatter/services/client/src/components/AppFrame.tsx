@@ -10,6 +10,13 @@ export interface ParseResult {
   rules: { passed: number; warnings: number; failed: number };
   ruleDetails: { cat: string; items: (RuleHitItem | [string, 'pass' | 'warn'])[] }[];
   findings?: FindingContract[];
+  disciplineHint?: {
+    discipline: 'stem' | 'humanities' | 'unknown';
+    confidence: number;
+    needsBanner: boolean;
+    bannerReason?: string;
+    topSignals?: Array<{ label: string; detail: string }>;
+  };
   parsedTexts?: string[];
   rawHeadings?: string[];
 }

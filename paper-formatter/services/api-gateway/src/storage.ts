@@ -1,14 +1,6 @@
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-  DeleteObjectCommand,
-  ListObjectsV2Command,
-  CreateBucketCommand,
-} from "@aws-sdk/client-s3";
-import { Readable } from "stream";
 import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from "fs";
 import path from "path";
+import { createS3Client, type S3Client } from "./s3-lightweight.js";
 
 const BUCKETS = {
   uploads: "paper-uploads",
@@ -16,7 +8,7 @@ const BUCKETS = {
   reports: "paper-reports",
 } as const;
 
-let client: S3Client | null = null;
+let client: ReturnType<typeof createS3Client> | null = null;
 let initialized = false;
 
 function isLocalStorage(): boolean {
@@ -27,17 +19,13 @@ function getStorageDir(): string {
   return process.env.STORAGE_DIR || "/app/data";
 }
 
-function getClient(): S3Client {
+function getClient() {
   if (!client) {
-    const endpoint = process.env.MINIO_ENDPOINT || "http://localhost:9000";
-    const accessKey = process.env.MINIO_ACCESS_KEY || "minioadmin";
-    const secretKey = process.env.MINIO_SECRET_KEY || "minioadmin";
-
-    client = new S3Client({
-      endpoint,
+    client = createS3Client({
+      endpoint: process.env.MINIO_ENDPOINT || "http://localhost:9000",
       region: "us-east-1",
-      credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
-      forcePathStyle: true,
+      accessKeyId: process.env.MINIO_ACCESS_KEY || "minioadmin",
+      secretAccessKey: process.env.MINIO_SECRET_KEY || "minioadmin",
     });
   }
   return client;
@@ -45,22 +33,18 @@ function getClient(): S3Client {
 
 async function uploadToS3(bucketName: string, key: string, buffer: Buffer, contentType?: string): Promise<string> {
   const s3 = getClient();
-  await s3.send(new PutObjectCommand({
-    Bucket: bucketName, Key: key, Body: buffer,
-    ContentType: contentType || "application/octet-stream",
-  }));
+  await s3.putObject(bucketName, key, buffer, contentType);
   return `${bucketName}/${key}`;
 }
 
 async function downloadFromS3(bucketName: string, key: string): Promise<Buffer> {
   const s3 = getClient();
-  const response = await s3.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
-  return streamToBuffer(response.Body as Readable);
+  return await s3.getObject(bucketName, key);
 }
 
 async function deleteFromS3(bucketName: string, key: string): Promise<void> {
   const s3 = getClient();
-  await s3.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
+  await s3.deleteObject(bucketName, key);
 }
 
 // ── Local filesystem fallback ──
@@ -93,14 +77,6 @@ async function deleteLocal(bucketName: string, key: string): Promise<void> {
   if (existsSync(filePath)) unlinkSync(filePath);
 }
 
-async function streamToBuffer(stream: Readable): Promise<Buffer> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of stream) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  return Buffer.concat(chunks);
-}
-
 export async function ensureBuckets(): Promise<void> {
   if (initialized) return;
 
@@ -118,13 +94,16 @@ export async function ensureBuckets(): Promise<void> {
   const s3 = getClient();
   for (const bucket of Object.values(BUCKETS)) {
     try {
-      await s3.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }));
+      await s3.listObjectsV2(bucket, 1);
     } catch {
       try {
-        await s3.send(new CreateBucketCommand({ Bucket: bucket }));
+        await s3.createBucket(bucket);
         console.log(`[storage] Created bucket: ${bucket}`);
       } catch (createErr: any) {
-        if (createErr.name !== "BucketAlreadyOwnedByYou" && createErr.name !== "BucketAlreadyExists") {
+        if (
+          !String(createErr).includes("BucketAlreadyExists") &&
+          !String(createErr).includes("BucketAlreadyOwnedByYou")
+        ) {
           console.warn(`[storage] Bucket ${bucket} may not exist: ${createErr.message}`);
         }
       }

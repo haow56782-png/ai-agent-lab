@@ -30,6 +30,7 @@ export const SelectedProfileSummary: React.FC<SelectedProfileSummaryProps> = ({
     sourceType: profile.sourceType,
     rules: ruleStats.totalRules || profile.rules,
   });
+  const isPendingRuleProfile = sourceMeta.status === 'pending';
 
   return (
     <>
@@ -122,7 +123,15 @@ export const SelectedProfileSummary: React.FC<SelectedProfileSummaryProps> = ({
       </span>
       <div style={{ display: 'flex', gap: 8 }}>
         <Btn kind="ghost" onClick={onShowRules}>查看完整规则</Btn>
-        <Btn kind="primary" icon="sparkle" onClick={onStartParse}>按这套规范开始解析</Btn>
+        <Btn
+          kind="primary"
+          icon="sparkle"
+          onClick={isPendingRuleProfile ? undefined : onStartParse}
+          disabled={isPendingRuleProfile}
+          title={isPendingRuleProfile ? '待补规则还没有可执行规范，不能直接开始解析' : undefined}
+        >
+          {isPendingRuleProfile ? '待补规则，暂不能解析' : '按这套规范开始解析'}
+        </Btn>
       </div>
     </div>
   </>

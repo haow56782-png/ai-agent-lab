@@ -1,14 +1,12 @@
 import { readFileSync } from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import { buildCanonicalRuleCatalog } from "./canonical-rule-catalog.js";
 function loadCanonicalSchoolRegistry() {
-    const dirname = path.dirname(fileURLToPath(import.meta.url));
     const candidates = [
-        path.join(dirname, "canonical-school-registry.json"),
-        path.join(dirname, "../../fixtures/canonical-school-registry.json"),
-        path.join(dirname, "../../src/fixtures/canonical-school-registry.json"),
+        path.join(process.cwd(), "api/fixtures/canonical-school-registry.json"),
         path.join(process.cwd(), "src/fixtures/canonical-school-registry.json"),
+        path.join(process.cwd(), "services/api-gateway/fixtures/canonical-school-registry.json"),
+        path.join(process.cwd(), "services/api-gateway/dist/fixtures/canonical-school-registry.json"),
     ];
     for (const candidate of candidates) {
         try {

@@ -51,7 +51,7 @@ export const RulePane: React.FC<Props> = ({ findings, onMissingFinding }) => {
                           onMissingFinding('这条规则暂时没有对应的发现项');
                           return;
                         }
-                        reviewActions.setFocus(finding.finding_id, 'rule');
+                        reviewActions.setFocus(finding.finding_id, 'pane');
                       }}
                     >
                       <span>{clause}</span>

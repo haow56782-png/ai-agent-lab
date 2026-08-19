@@ -28,6 +28,10 @@ vi.mock("../src/repositories/findings.js", () => ({
 
 vi.mock("../src/storage.js", () => ({
   downloadFile: vi.fn(),
+  getStoragePath: vi.fn((_: string, docId: string, filename: string) => {
+    const ext = filename.split(".").pop() || "bin";
+    return `${docId}/${docId}.${ext}`;
+  }),
 }));
 
 function sampleFinding(overrides: Partial<FindingContract> = {}): FindingContract {
@@ -173,6 +177,19 @@ describe("job download finding guard", () => {
     expect(storage.downloadFile).toHaveBeenCalledWith("outputs", "legacy-doc-1/fixed.docx");
   });
 
+  it("allows original document download even when delivery findings are still blocked", async () => {
+    vi.mocked(findingRepo.listFindings).mockResolvedValue([
+      sampleFinding({ finding_id: "finding-p1", severity: "P1", status: "pending" }),
+    ]);
+
+    const result = await requestDownload("/jobs/job_download/download?type=original");
+
+    expect(result.response.status).toBe(200);
+    expect(result.body).toEqual(Buffer.from("docx"));
+    expect(findingRepo.listFindings).not.toHaveBeenCalled();
+    expect(storage.downloadFile).toHaveBeenCalledWith("uploads", "legacy-doc-1/legacy-doc-1.docx");
+  });
+
   it("allows download when blocking findings are resolved or rejected", async () => {
     vi.mocked(findingRepo.listFindings).mockResolvedValue([
       sampleFinding({ finding_id: "finding-p0", severity: "P0", status: "resolved" }),
@@ -186,4 +203,3 @@ describe("job download finding guard", () => {
     expect(storage.downloadFile).toHaveBeenCalledWith("outputs", "legacy-doc-1/fixed.docx");
   });
 });
-

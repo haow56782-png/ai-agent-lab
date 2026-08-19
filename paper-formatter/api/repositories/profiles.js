@@ -13,6 +13,39 @@ function isInvalidDetectedSchoolName(name) {
         return true;
     return INVALID_DETECTED_NAME_TOKENS.some((token) => normalized.includes(normalizeSchoolName(token)));
 }
+function profileFromCanonicalSeed(seed) {
+    const timestamp = `${seed.effectiveFrom}T00:00:00.000Z`;
+    return {
+        id: seed.schoolId,
+        school_id: seed.schoolId,
+        name: seed.name,
+        version: seed.version,
+        effective_from: seed.effectiveFrom,
+        effective_to: null,
+        faculty: seed.faculty,
+        major: null,
+        gb_version: "GB/T 7713.1-2025",
+        rules_json: seed.rulesJson,
+        style_map: seed.styleMap,
+        source_type: "seed",
+        source_hash: null,
+        upload_count: 0,
+        recent_usage_count_7d: 0,
+        recent_hit_rate_7d: 0,
+        last_used_at: null,
+        created_at: timestamp,
+        updated_at: timestamp,
+    };
+}
+function listCanonicalSeedProfiles(q) {
+    const normalizedQuery = normalizeSchoolName(q || "");
+    const seedProfiles = CANONICAL_PROFILE_SEEDS.map(profileFromCanonicalSeed);
+    if (!normalizedQuery)
+        return collapseProfiles(seedProfiles);
+    return collapseProfiles(seedProfiles.filter((profile) => (normalizeSchoolName(profile.name).includes(normalizedQuery)
+        || normalizeSchoolName(profile.school_id).includes(normalizedQuery)
+        || normalizeSchoolName(profile.faculty || "").includes(normalizedQuery))));
+}
 export async function searchProfiles(params) {
     const conditions = [];
     const values = [];
@@ -38,7 +71,8 @@ export async function searchProfiles(params) {
 export async function getProfile(profileId) {
     const canonicalSeed = resolveCanonicalProfileSeed(profileId);
     if (canonicalSeed) {
-        const profile = await ensureCanonicalProfile(canonicalSeed);
+        const profile = await ensureCanonicalProfile(canonicalSeed)
+            .catch(() => profileFromCanonicalSeed(canonicalSeed));
         return hydrateProfileRulesFromRuleTable(profile);
     }
     const result = await query("SELECT * FROM school_profiles WHERE school_id = $1 AND source_type <> $2", [profileId, ARCHIVED_DETECTED_SOURCE_TYPE]);
@@ -47,7 +81,7 @@ export async function getProfile(profileId) {
 export async function getProfileRules(profileId) {
     const canonicalSeed = resolveCanonicalProfileSeed(profileId);
     if (canonicalSeed) {
-        const profile = await hydrateProfileRulesFromRuleTable(await ensureCanonicalProfile(canonicalSeed));
+        const profile = await hydrateProfileRulesFromRuleTable(await ensureCanonicalProfile(canonicalSeed).catch(() => profileFromCanonicalSeed(canonicalSeed)));
         return {
             school_id: profile.school_id,
             rules_json: profile.rules_json,
@@ -107,18 +141,30 @@ export async function listProfiles(q) {
          GROUP BY school_id
       ) AS profile_stats
         ON profile_stats.school_id = p.school_id
-  `;
+    `;
     if (q) {
-        const result = await query(`${statsSelect}
+        try {
+            const result = await query(`${statsSelect}
         WHERE (p.name ILIKE $1 OR p.school_id ILIKE $1)
           AND source_type <> $2
         ORDER BY p.upload_count DESC, p.name`, [`%${q}%`, ARCHIVED_DETECTED_SOURCE_TYPE]);
-        return collapseProfiles(result.rows);
+            return collapseProfiles(result.rows);
+        }
+        catch (error) {
+            console.warn("[profiles] database unavailable, falling back to canonical seeds", error);
+            return listCanonicalSeedProfiles(q);
+        }
     }
-    const result = await query(`${statsSelect}
+    try {
+        const result = await query(`${statsSelect}
       WHERE p.source_type <> $1
       ORDER BY p.upload_count DESC, p.name`, [ARCHIVED_DETECTED_SOURCE_TYPE]);
-    return collapseProfiles(result.rows);
+        return collapseProfiles(result.rows);
+    }
+    catch (error) {
+        console.warn("[profiles] database unavailable, falling back to canonical seeds", error);
+        return listCanonicalSeedProfiles();
+    }
 }
 export async function findProfileByName(name) {
     const result = await query(`SELECT * FROM school_profiles

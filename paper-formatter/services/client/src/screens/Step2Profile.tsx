@@ -159,6 +159,13 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
     () => profileOptions.find((profile) => profile.id === state.schoolId) || null,
     [profileOptions, state.schoolId],
   );
+  const selectedRuleCount = React.useMemo(() => {
+    const detailRuleCount = (selectedProfileDetail?.rulesJson?.length || 0) + (selectedProfileDetail?.styleMap?.length || 0);
+    return Math.max(selected?.rules || 0, detailRuleCount);
+  }, [selected?.rules, selectedProfileDetail]);
+  const selectedRuleStatus = selected
+    ? getProfileRuleStatus({ sourceType: selected.sourceType, rules: selectedRuleCount })
+    : null;
   const queryMatchedProfiles = profileOptions.filter((profile) => {
     const matchesQuery = !q || profile.name.includes(q) || profile.faculty.includes(q);
     return matchesQuery;
@@ -210,6 +217,10 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
 
   const startParse = () => {
     if (!state.doc) { showToast('请先上传论文文档'); return; }
+    if (selectedRuleStatus === 'pending') {
+      showToast('这所学校还处在待补规则状态，请先补充模板或改选已有规则包');
+      return;
+    }
     set({ step: 3, parsePct: 0, parsePhase: 0, parseDone: false });
   };
 
@@ -235,7 +246,7 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
           baseStandardVersion: baseStandard,
         },
       });
-      showToast(`已生成规则草案 · ${inferred.name}，确认后可以继续体检`);
+      showToast(`已生成临时规则 · ${inferred.name}，无需后台审核，可直接开始解析`);
     } catch (err: any) {
       showToast(`模板解析失败: ${err.message}`);
     }
@@ -249,9 +260,13 @@ const Step2Profile: React.FC<Props> = ({ showToast }) => {
 
   const useDraftProfile = useCallback(() => {
     const name = state.draftSchool?.name || '自定义';
-    set({ schoolId: 'draft', draftSchool: null });
-    showToast(`已选用 · ${name} 规则包`);
-  }, [set, showToast, state.draftSchool]);
+    if (!state.doc) {
+      showToast('请先上传论文文档');
+      return;
+    }
+    set({ schoolId: 'draft', draftSchool: null, step: 3, parsePct: 0, parsePhase: 0, parseDone: false });
+    showToast(`已使用 ${name} 临时规则，开始解析`);
+  }, [set, showToast, state.doc, state.draftSchool]);
 
   useEffect(() => {
     if (!legacyDocId) return;

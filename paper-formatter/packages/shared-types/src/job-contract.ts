@@ -54,6 +54,8 @@ export interface JobRuleHitLocation {
 
 export interface JobRuleHitItem {
   ruleId?: string;
+  ruleSource?: "user" | "school" | "discipline" | "CAFA" | "GB" | "system";
+  ruleLevel?: string;
   label: string;
   status: "pass" | "warn" | "fail";
   location?: JobRuleHitLocation;
@@ -76,6 +78,13 @@ export interface PublicJobResult {
   rules?: JobSummaryMetrics;
   ruleDetails?: JobRuleDetail[];
   findings?: FindingContract[];
+  disciplineHint?: {
+    discipline: "stem" | "humanities" | "unknown";
+    confidence: number;
+    needsBanner: boolean;
+    bannerReason?: string;
+    topSignals?: Array<{ label: string; detail: string }>;
+  };
   outputPath?: string;
   diffPath?: string;
   summary?: string[];

@@ -653,6 +653,7 @@ const Step3Parse: React.FC<Props> = ({ showToast }) => {
             rules: result.rules || { passed: 0, warnings: 0, failed: 0 },
             ruleDetails: result.ruleDetails || [],
             findings: result.findings || [],
+            disciplineHint: result.disciplineHint,
             parsedTexts: texts,
             rawHeadings,
           },

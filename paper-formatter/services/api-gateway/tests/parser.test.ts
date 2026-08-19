@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import { unlinkSync, existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 import { tmpdir } from "os";
-import { v4 as uuid } from "uuid";
+
 import { detectCaptionPosition } from "../src/rules/detectors/caption-position.detector.js";
 
 const PARSER_SCRIPT = path.resolve(__dirname, "../../docx-parser/src/parse.py");
@@ -24,7 +24,7 @@ describe("Python Parser Integration", () => {
   }
 
   function createMinimalDocx(): string {
-    const tmpPath = path.join(tmpDir, `${uuid().slice(0, 8)}_test.docx`);
+    const tmpPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_test.docx`);
     execSync(
       `python3 -c "
 from docx import Document
@@ -57,7 +57,7 @@ doc.save('${tmpPath}')
   });
 
   it("detects headings correctly", () => {
-    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_h.docx`);
+    const docxPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_h.docx`);
     execSync(
       `python3 -c "
 from docx import Document
@@ -85,7 +85,7 @@ doc.save('${docxPath}')
   });
 
   it("detects figure captions", () => {
-    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_fig.docx`);
+    const docxPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_fig.docx`);
     execSync(
       `python3 -c "
 from docx import Document
@@ -107,7 +107,7 @@ doc.save('${docxPath}')
   });
 
   it("detects references section header", () => {
-    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_ref.docx`);
+    const docxPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_ref.docx`);
     execSync(
       `python3 -c "
 from docx import Document
@@ -132,8 +132,8 @@ doc.save('${docxPath}')
   });
 
   it("emits document flow anchors and footer page field signals", () => {
-    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_flow.docx`);
-    const pngPath = path.join(tmpDir, `${uuid().slice(0, 8)}_pixel.png`);
+    const docxPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_flow.docx`);
+    const pngPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_pixel.png`);
     writeFileSync(pngPath, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9JwAAAAASUVORK5CYII=", "base64"));
     execSync(
       `python3 -c "
@@ -179,8 +179,8 @@ doc.save('${docxPath}')
   });
 
   it("feeds parser flow anchors into caption detector for real object ordering", () => {
-    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_caption_flow.docx`);
-    const pngPath = path.join(tmpDir, `${uuid().slice(0, 8)}_pixel.png`);
+    const docxPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_caption_flow.docx`);
+    const pngPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_pixel.png`);
     writeFileSync(pngPath, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9JwAAAAASUVORK5CYII=", "base64"));
     execSync(
       `python3 -c "
@@ -221,8 +221,8 @@ doc.save('${docxPath}')
   });
 
   it("feeds real multi-figure and multi-table anchors into caption detector", () => {
-    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_multi_caption_flow.docx`);
-    const pngPath = path.join(tmpDir, `${uuid().slice(0, 8)}_pixel.png`);
+    const docxPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_multi_caption_flow.docx`);
+    const pngPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_pixel.png`);
     writeFileSync(pngPath, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9l9JwAAAAASUVORK5CYII=", "base64"));
     execSync(
       `python3 -c "
@@ -328,7 +328,7 @@ describe("Analyze result format (frontend contract)", () => {
   }
 
   it("builds correct items from real parser output", () => {
-    const docxPath = path.join(tmpDir, `${uuid().slice(0, 8)}_full.docx`);
+    const docxPath = path.join(tmpDir, `${crypto.randomUUID().slice(0, 8)}_full.docx`);
     execSync(
       `python3 -c "
 from docx import Document

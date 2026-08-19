@@ -7,6 +7,7 @@ import { findingRoutes } from "./routes/findings.js";
 import { feedbackRoutes } from "./routes/feedback.js";
 import { analyticsRoutes } from "./routes/analytics.js";
 import { shareRoutes, sharePageRoutes } from "./routes/share.js";
+import { adminRoutes } from "./routes/admin.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import { runtimeConfig } from "./config.js";
@@ -43,6 +44,7 @@ export function createApp() {
   app.use("/api/v1/feedbacks", feedbackRoutes);
   app.use("/api/v1/analytics", analyticsRoutes);
   app.use("/api/v1/share", shareRoutes);
+  app.use("/api/v1/admin", adminRoutes);
   app.use("/share", sharePageRoutes);
 
   app.get("/api/v1/health", (_req, res) =>

@@ -46,11 +46,76 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
   animatedScore, scoreTone, scoreBg,
   issueGroups, findingSourceGroups, evidenceHighlights, coveredPageCount, school, elapsedStr, logs,
   showShare, onStep, onCloseShare, onShareClick,
-}) => (
+}) => {
+  const admissionSteps = [
+    { label: '文件可读', detail: '已识别论文结构与正文片段' },
+    { label: '规则可用', detail: school ? `${school.name} · ${school.version}` : '当前规则基线' },
+    { label: '证据归档', detail: `${coveredPageCount || 1} 个证据位置` },
+    { label: '工作台就绪', detail: `${fixableIssues || totalIssues} 项可进入处理` },
+  ];
+  const workEvidenceRows = [
+    { time: 'T+00', action: '读取文档结构', object: `${coveredPageCount || 1} 个证据位置` },
+    { time: 'T+01', action: '匹配规则包', object: school ? `${school.name} · ${school.version}` : '学校规则 + GB/T 7713.1' },
+    { time: 'T+02', action: '归并发现项', object: `${totalIssues} 项发现 · ${fixableIssues} 项可处理` },
+    { time: 'T+03', action: '生成处理工作台', object: '进入 Step4 前保留人工确认边界' },
+  ];
+  const mainChainCard = (
+    <div
+      className="parse-main-chain-card parse-main-chain-card-hero"
+      data-testid="parse-main-chain"
+      style={{ '--summary-tone': scoreTone, '--summary-bg': scoreBg } as React.CSSProperties}
+    >
+      <div className="parse-main-chain-head">
+        <div>
+          <div className="mono parse-main-chain-kicker">主链路 · STEP3 → STEP4 → STEP5</div>
+          <strong>检查完成，准备进入安全写回。</strong>
+          <p>交稿前需要确认的格式问题已整理完成；正文语义不会被自动改动，最终仍由你逐项确认。</p>
+        </div>
+        <span>{fixableIssues || totalIssues} 项可处理</span>
+      </div>
+      <div className="parse-main-chain-rail" aria-hidden="true">
+        <i />
+      </div>
+      <div className="parse-main-chain-dashboard">
+        <div className="parse-main-chain-stat">
+          <span className="mono">发现项</span>
+          <strong>{totalIssues}</strong>
+          <small>{fixableIssues || totalIssues} 项进入 Step4</small>
+        </div>
+        <div className="parse-main-chain-stat">
+          <span className="mono">证据位置</span>
+          <strong>{coveredPageCount || 1}</strong>
+          <small>已和规则命中归档</small>
+        </div>
+        <div className="parse-main-chain-stat is-boundary">
+          <span className="mono">安全边界</span>
+          <strong>只改格式</strong>
+          <small>Step5 确认前不开放下载</small>
+        </div>
+      </div>
+      <div className="parse-main-chain-actions">
+        <button type="button" className="parse-main-chain-cta" onClick={() => onStep(4)}>
+          进入 Step4 查看修改 →
+        </button>
+        <button type="button" className="parse-main-chain-secondary" onClick={onShareClick}>
+          分享进度
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
   <>
+    {mainChainCard}
     <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 28, paddingBottom: 80 }}>
       <div>
-        <div className="secdex" style={{ marginBottom: 10 }}>发现项 · FINDINGS</div>
+        <div className="parse-section-head">
+          <div>
+            <span className="secdex">发现项 · FINDINGS</span>
+            <strong>待处理发现项 · {totalIssues} 项</strong>
+          </div>
+          <small>进入 Step4 后逐项查看修改，不直接覆盖正文。</small>
+        </div>
 
         {legacyDocWarning && (
           <div style={{
@@ -63,107 +128,7 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
           </div>
         )}
 
-        {/* Finding summary card */}
-        <div style={{
-          background: scoreBg, border: `1.5px solid ${scoreTone}30`, borderRadius: 6,
-          padding: '32px 32px 28px', marginBottom: 18, textAlign: 'center',
-          transition: 'background .3s',
-        }}>
-          <div className="serif" style={{ fontSize: 20, fontWeight: 600, color: 'var(--ink-900)', marginBottom: 8, letterSpacing: -.2 }}>
-            AI 已整理出交稿前需要你确认的发现项
-          </div>
-          <div style={{
-            width: 120, height: 120, borderRadius: 60,
-            background: animatedScore < 60 ? 'var(--rust-100)' : animatedScore < 80 ? 'var(--sun-100)' : 'var(--leaf-100)',
-            border: `4px solid ${scoreTone}`,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px',
-          }}>
-            <span className="mono num" style={{ fontSize: 42, fontWeight: 700, color: scoreTone, lineHeight: 1 }}>
-              {totalIssues}
-            </span>
-            <span className="mono" style={{ fontSize: 13, color: scoreTone, opacity: .7 }}>FINDINGS</span>
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--ink-700)', marginBottom: 4 }}>
-            共 <strong style={{ color: totalIssues > 0 ? 'var(--rust-700)' : 'var(--leaf-700)' }}>{totalIssues}</strong> 项发现，
-            其中 <strong style={{ color: 'var(--brand-700)' }}>{fixableIssues}</strong> 项可以进入逐条处理工作台
-          </div>
-          <div style={{ marginTop: 18, display: 'flex', gap: 10, justifyContent: 'center', alignItems: 'center' }}>
-            <button onClick={() => onStep(4)} style={{
-              height: 44, padding: '0 28px', borderRadius: 4,
-              border: 'none', background: 'var(--ink-900)', color: 'var(--paper-0)',
-              fontSize: 14, fontWeight: 600, fontFamily: 'var(--sans)',
-              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8,
-            }}>
-              <span>🔎</span> 查看 {fixableIssues || totalIssues} 项发现并处理
-            </button>
-            <button onClick={onShareClick} style={{
-              height: 44, padding: '0 22px', borderRadius: 4,
-              border: '1px solid var(--ink-300)', background: 'var(--paper-0)',
-              fontSize: 14, fontWeight: 500, fontFamily: 'var(--sans)',
-              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-              color: 'var(--ink-700)',
-            }}>
-              📤 分享这次进度
-            </button>
-          </div>
-        </div>
-
-        {/* Duplication risk card */}
-        <div style={{
-          background: 'var(--sun-100)', border: '1.5px solid var(--sun-500)', borderRadius: 6,
-          padding: '20px 22px', marginBottom: 18,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 18 }}>⚠️</span>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink-900)' }}>
-                检测到 <strong style={{ color: 'var(--rust-700)' }}>4</strong> 个可能影响查重率的格式问题
-              </div>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-500)', marginTop: 2 }}>
-                这些问题可能导致查重系统将非正文内容计入重复率，
-                修复后查重率<strong style={{ color: 'var(--leaf-700)' }}>预计可再压低 3–5 个百分点</strong>，更接近安心送审的状态。
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 0, background: 'var(--paper-0)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--hair)' }}>
-            {DUPLICATION_ITEMS.map((item, i, arr) => (
-              <div key={i} style={{
-                padding: '11px 14px', borderBottom: i < arr.length - 1 ? '1px solid var(--hair)' : 'none',
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <span style={{ fontSize: 16, flex: '0 0 auto' }}>{item.icon}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink-900)' }}>{item.title}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--ink-500)', marginTop: 1 }}>{item.desc}</div>
-                </div>
-                <span style={{
-                  flex: '0 0 auto', padding: '2px 8px', borderRadius: 3,
-                  fontSize: 10.5, fontWeight: 600, fontFamily: 'var(--mono)',
-                  background: item.fixable ? 'var(--brand-50)' : 'var(--paper-2)',
-                  color: item.fixable ? 'var(--brand-700)' : 'var(--ink-500)',
-                }}>{item.fixable ? '可修复' : '手动'}</span>
-              </div>
-            ))}
-          </div>
-
-          <button onClick={() => onStep(4)} style={{
-            marginTop: 12, height: 38, padding: '0 20px', borderRadius: 4,
-            border: 'none', background: 'var(--rust-600)', color: '#fff',
-            fontSize: 13, fontWeight: 600, fontFamily: 'var(--sans)',
-            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-          }}>
-            🔧 先处理这些送审风险项
-          </button>
-        </div>
-
         {/* Issue list */}
-        <div
-          style={{ fontSize: 10, color: 'var(--ink-400)', letterSpacing: '.12em', textTransform: 'uppercase', marginBottom: 8 }}
-        >
-          待处理发现项 · {totalIssues} 项
-        </div>
         <div style={{ background: 'var(--paper-0)', border: '1px solid var(--hair)', borderRadius: 4 }}>
           {issueGroups.length > 0 ? issueGroups.map((g, gi) => (
             <div key={gi}>
@@ -206,105 +171,91 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
             </div>
           )}
         </div>
+
+        {/* Duplication risk card */}
+        <div className="parse-risk-card">
+          <div className="parse-risk-card-head">
+            <span>!</span>
+            <div>
+              <strong>送审风险 · 4 个可能影响查重率的格式问题</strong>
+              <small>安全写回会优先降低非正文被误计入查重的风险。</small>
+            </div>
+          </div>
+
+          <div className="parse-risk-list">
+            {DUPLICATION_ITEMS.map((item) => (
+              <div key={item.title} className="parse-risk-item">
+                <span>{item.icon}</span>
+                <div>
+                  <strong>{item.title}</strong>
+                  <small>{item.desc}</small>
+                </div>
+                <b>{item.fixable ? '可修复' : '手动'}</b>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Right column */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0 }}>
-        <div style={{
-          background: 'var(--ink-900)', borderRadius: 6, padding: '16px 18px',
-          color: 'var(--paper-0)',
-        }}>
-          <div className="mono" style={{ fontSize: 10, letterSpacing: '.16em', color: 'rgba(255,255,255,.55)', marginBottom: 10 }}>
-            FINDING MAP · {elapsedStr}
+        <div className="parse-evidence-panel">
+          <div className="parse-evidence-head">
+            <span className="mono">处理证据 · {elapsedStr}</span>
+            <strong>{totalIssues} 项发现已归档</strong>
+            <p>
+              覆盖 {coveredPageCount || 1} 个证据位置，
+              {school ? `按 ${school.name} ${school.version} 规则包归档。` : '按当前规则基线归档。'}
+            </p>
           </div>
-          <div style={{ fontSize: 14, lineHeight: 1.6, color: 'rgba(255,255,255,.86)', marginBottom: 14 }}>
-            这次体检已经整理出 <strong style={{ color: '#fff' }}>{totalIssues}</strong> 项发现，
-            覆盖 <strong style={{ color: '#fff' }}>{coveredPageCount || 1}</strong> 个证据位置，
-            {school ? `并按 ${school.name} ${school.version} 的规则包归档。` : '并按当前规则基线归档。'}
+          <div className="parse-evidence-gates">
+            {admissionSteps.map((step, index) => (
+              <div key={step.label}>
+                <span className="mono">{index + 1}/4</span>
+                <strong>{step.label}</strong>
+                <small>{step.detail}</small>
+              </div>
+            ))}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="parse-evidence-groups">
             {findingSourceGroups.map((group) => (
-              <div key={group.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <span style={{
-                  width: 18, height: 18, borderRadius: 9,
-                  background: 'rgba(98, 163, 127, .18)', color: '#9ee6b7',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--mono)', fontSize: 9, fontWeight: 700, marginTop: 1,
-                }}>{group.count}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: 'var(--paper-0)' }}>{group.label}</div>
-                  <div className="mono" style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginTop: 1 }}>
-                    {group.hint}
-                  </div>
+              <div key={group.label}>
+                <span className="mono">{group.count}</span>
+                <div>
+                  <strong>{group.label}</strong>
+                  <small>{group.hint}</small>
                 </div>
               </div>
             ))}
           </div>
-        </div>
 
-        <div style={{
-          background: 'var(--paper-0)', borderRadius: 6, border: '1px solid var(--hair)',
-          padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
-        }}>
-          <div className="mono" style={{ fontSize: 10, letterSpacing: '.16em', color: 'var(--ink-400)', marginBottom: 10 }}>EVIDENCE</div>
-          <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="parse-evidence-timeline">
+            {workEvidenceRows.map((row) => (
+              <div key={`${row.time}-${row.action}`}>
+                <span className="mono">{row.time}</span>
+                <p>
+                  <strong>{row.action}</strong>
+                  <i> · </i>
+                  {row.object}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="parse-evidence-samples">
             {evidenceHighlights.map((item, i) => (
-              <div
-                key={`${item.label}-${i}`}
-                style={{
-                  borderBottom: i < evidenceHighlights.length - 1 ? '1px dashed var(--hair)' : 'none',
-                  paddingBottom: 10,
-                  marginBottom: i < evidenceHighlights.length - 1 ? 2 : 0,
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-900)', marginBottom: 4 }}>
-                  {item.label}
-                </div>
-                <div style={{ fontSize: 12, lineHeight: 1.55, color: 'var(--ink-600)' }}>
-                  {item.snippet}
-                </div>
+              <div key={`${item.label}-${i}`}>
+                <strong>{item.label}</strong>
+                <p>{item.snippet}</p>
               </div>
             ))}
             {evidenceHighlights.length === 0 && logs.map((l, i) => (
-              <div key={i} className="mono" style={{
-                fontSize: 11.5, lineHeight: 1.5,
-                color: l.t === 'warn' ? 'var(--sun-700)' : l.t === 'phase' ? 'var(--ink-500)' : 'var(--ink-700)',
-              }}>
+              <div key={i} className="mono parse-evidence-log">
                 <span style={{ color: 'var(--ink-400)' }}>{`> `}</span>
                 {l.text}
               </div>
             ))}
-            <div className="mono" style={{ fontSize: 11.5, color: 'var(--leaf-700)', marginTop: 4 }}>
-              <span style={{ color: 'var(--ink-400)' }}>{`> `}</span>
-              已整理成可逐条确认的发现项工作台
-            </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    {/* Sticky CTA */}
-    <div style={{
-      position: 'sticky', bottom: 0, left: 0, right: 0,
-      background: 'var(--paper-0)', borderTop: '1px solid var(--hair)',
-      padding: '12px 56px',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      boxShadow: '0 -4px 12px rgba(0,0,0,.06)',
-      zIndex: 10,
-    }}>
-      <div style={{ fontSize: 13, color: 'var(--ink-700)' }}>
-        发现 <strong style={{ color: totalIssues > 0 ? 'var(--rust-700)' : 'var(--leaf-700)' }}>{totalIssues}</strong> 项需要终审
-        {fixableIssues > 0 && <span> · <strong style={{ color: 'var(--brand-700)' }}>{fixableIssues}</strong> 项可进入处理工作台</span>}
-      </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-<button onClick={() => onStep(4)} style={{
-          height: 38, padding: '0 22px', borderRadius: 4,
-          border: 'none', background: 'var(--ink-900)', color: 'var(--paper-0)',
-          fontSize: 13, fontWeight: 600, fontFamily: 'var(--sans)',
-          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6,
-        }}>
-          <span>🔎</span> 查看 {fixableIssues || totalIssues} 项发现并处理
-        </button>
       </div>
     </div>
 
@@ -321,4 +272,5 @@ export const ParseResults: React.FC<ParseResultsProps> = ({
       />
     )}
   </>
-);
+  );
+};

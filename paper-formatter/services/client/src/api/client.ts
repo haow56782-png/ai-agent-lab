@@ -136,6 +136,47 @@ export interface DuplicationRisk {
   severity: 'high' | 'medium' | 'low';
 }
 
+export type AdminOperation = 'create' | 'read' | 'update' | 'delete';
+
+export interface AdminOperationCapability {
+  enabled: boolean;
+  label: string;
+  endpoint?: string;
+  reason?: string;
+}
+
+export interface AdminDomainSummary {
+  id: string;
+  navLabel: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  tables: string[];
+  positioning: string;
+  lifecycle: string[];
+  primaryKey: string;
+  operations: Record<AdminOperation, AdminOperationCapability>;
+}
+
+export interface AdminRecordRow {
+  id: string;
+  name: string;
+  status: string;
+  owner: string;
+  evidence: string;
+}
+
+export interface AdminOverview {
+  domains: AdminDomainSummary[];
+  tables: string[];
+  flowSteps: string[];
+  capabilityTotals: {
+    enabled: number;
+    total: number;
+  };
+  tableCounts: Record<string, number>;
+}
+
 const FILENAME_MOJIBAKE_PATTERN = /[ÃÂåæçéèêëîïôöùûüÿ¢£¥¤½¼»«�]/;
 
 function normalizeDocumentFilename(filename: string): string {
@@ -463,4 +504,28 @@ export const api = {
   }> => runRecentRequest(`profiles:${q || 'all'}`, () =>
     request('/profiles' + (q ? `?q=${encodeURIComponent(q)}` : '')),
   ),
+
+  adminOverview: (): Promise<AdminOverview> =>
+    request('/admin/overview'),
+
+  adminDomainRecords: (domainId: string, filter?: { search?: string; limit?: number }): Promise<{
+    domain: AdminDomainSummary;
+    records: AdminRecordRow[];
+  }> => {
+    const params = new URLSearchParams();
+    if (filter?.search) params.set('search', filter.search);
+    if (filter?.limit) params.set('limit', String(filter.limit));
+    const query = params.toString();
+    return request(`/admin/domains/${encodeURIComponent(domainId)}/records${query ? `?${query}` : ''}`);
+  },
+
+  adminAuditRecords: (filter?: { search?: string; limit?: number }): Promise<{
+    records: AdminRecordRow[];
+  }> => {
+    const params = new URLSearchParams();
+    if (filter?.search) params.set('search', filter.search);
+    if (filter?.limit) params.set('limit', String(filter.limit));
+    const query = params.toString();
+    return request(`/admin/audit-records${query ? `?${query}` : ''}`);
+  },
 };

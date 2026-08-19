@@ -10,7 +10,6 @@ import {
 } from "../dto/document-requests.js";
 import { query } from "../db.js";
 import { getCache } from "../cache/index.js";
-import { v4 as uuid } from "uuid";
 import crypto from "crypto";
 import { spawnSync } from "child_process";
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from "fs";
@@ -20,7 +19,7 @@ import os from "os";
 export const profileRoutes = Router();
 
 const DETECT_SCRIPT = process.env.DETECT_SCHOOL_SCRIPT ||
-  path.resolve(import.meta.dirname, "../parser/detect_school.py");
+  path.resolve(process.cwd(), "src/parser/detect_school.py");
 const TEMP_DIR = path.join(os.tmpdir(), "zheng-gao-detect");
 
 function ensureTempDir() {
@@ -97,7 +96,7 @@ profileRoutes.post("/detect", async (req, res, next) => {
     // Save to temp file and run detection
     ensureTempDir();
     const ext = path.extname(doc.filename) || ".docx";
-    const tmpPath = path.join(TEMP_DIR, `${uuid().slice(0, 8)}${ext}`);
+    const tmpPath = path.join(TEMP_DIR, `${crypto.randomUUID().slice(0, 8)}${ext}`);
     try {
       writeFileSync(tmpPath, buffer);
       const result = spawnSync("python3", [DETECT_SCRIPT, tmpPath], {

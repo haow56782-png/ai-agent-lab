@@ -22,7 +22,7 @@ export const FIX_STEPS: FixStep[] = [
 export const PAYWALL_PRICE = '¥9.9';
 export const DEFAULT_FREE_FIX_LIMIT = 3;
 export const LEGACY_DOC_HINT = '当前文件是旧版 .doc 格式（WPS 兼容模式），暂不支持直接排版。请先用 WPS 或 Word 打开后，另存为 .docx 再重新上传。';
-export const BROWSE_MODE_FIX_HINT = '当前是浏览模式，已切换到本地修复演示，不会触发真实写回。';
+export const BROWSE_MODE_FIX_HINT = '当前使用本地安全写回演示：只展示修复过程，不会覆盖原文件。';
 
 export const FIX_ACTION_BASE_DURATION_MS: Record<FixAction['type'], number> = {
   insert: 680,

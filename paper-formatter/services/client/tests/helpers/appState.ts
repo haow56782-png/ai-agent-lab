@@ -101,6 +101,12 @@ const baseParseResults = {
   ],
   log: ['解析完成', '规则预匹配完成'],
   rules: { passed: 14, warnings: 3, failed: 0 },
+  disciplineHint: {
+    discipline: 'unknown',
+    confidence: 0,
+    needsBanner: false,
+    topSignals: [],
+  },
   ruleDetails: [
     {
       cat: '正文',

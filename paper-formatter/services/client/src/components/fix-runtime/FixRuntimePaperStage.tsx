@@ -335,14 +335,6 @@ export const FixRuntimePaperStage: React.FC<Props> = ({
       <div className="fix-runtime-printer-head" aria-hidden="true" />
       <div className="fix-runtime-paper-glow" aria-hidden="true" />
       <article className={paperBow ? 'fix-runtime-a4 is-bowing' : 'fix-runtime-a4'} aria-label="论文修复工作台">
-        {runtimeStore.status === 'running' && (
-          <div className="fix-runtime-paper-scanner" aria-hidden="true" data-testid="fix-runtime-paper-scanner">
-            <span className="fix-runtime-paper-scanner-beam" />
-            <span className="fix-runtime-paper-scanner-label mono">
-              正在定位 · {runtimeStore.fixedItems}/{runtimeStore.totalItems}
-            </span>
-          </div>
-        )}
         {hasActivePageLayoutAction ? <div className="fix-paper-layout-highlight" aria-hidden="true" /> : null}
         <div className="fix-runtime-page-viewport">
           <div className={`fix-runtime-page-stack ${isPageFlipping ? 'is-flipping' : ''}`}>

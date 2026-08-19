@@ -74,10 +74,21 @@ test.describe('Step4 baseline behaviors', () => {
     await page.goto('/');
 
     await expect(page.getByText(/待处理发现项/)).toBeVisible();
-    await expect(page.getByRole('button', { name: /查看 .* 项发现并处理/ }).first()).toBeVisible();
+    await expect(page.getByTestId('parse-main-chain')).toContainText('STEP3 → STEP4 → STEP5');
+    await expect(page.getByTestId('parse-main-chain')).toContainText('检查完成，准备进入安全写回。');
+    await expect(page.getByTestId('parse-main-chain')).toContainText('只改格式');
+    await expect(page.getByTestId('parse-main-chain')).toContainText('进入 Step4 查看修改');
+    await expect(page.getByText('交稿前需要确认的格式问题已整理完成')).toBeVisible();
+    await expect(page.getByText(/AI 已整理出/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /查看 .* 项发现并处理/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /先处理这些送审风险项/ })).toHaveCount(0);
+    await expect(page.getByText(/处理证据/)).toBeVisible();
+    await expect(page.getByText(/送审风险/)).toBeVisible();
+    await expect(page.getByText(/GLASS BOX/)).toHaveCount(0);
+    await expect(page.getByText(/WORK EVIDENCE/)).toHaveCount(0);
     await expect(page.getByText('查看差异详情')).toHaveCount(0);
 
-    await page.getByRole('button', { name: /查看 .* 项发现并处理/ }).first().click();
+    await page.getByRole('button', { name: /进入 Step4 查看修改/ }).click();
     await expect(page.locator('section.fix-runtime-shell')).toBeVisible();
   });
 
@@ -101,9 +112,8 @@ test.describe('Step4 baseline behaviors', () => {
     const livePage = page.getByTestId('fix-runtime-live-page');
 
     await expect(pageMeta).toContainText('第 3 页');
-    await expect(findingMeta).toContainText('当前正在修复');
-    await expect(pageMeta).toContainText('写回进度 0/3');
-    await expect(actionCount).toContainText('完整修复过程');
+    await expect(findingMeta).toContainText('正在修复 0/3');
+    await expect(actionCount).toContainText('当前发现项');
     await expect(livePage).toHaveAttribute('data-page-number', '3');
 
     await expect(remainingMeta).not.toContainText('剩余 0s');
@@ -177,12 +187,105 @@ test.describe('Step4 baseline behaviors', () => {
     await bootstrapState(page, state);
     await page.goto('/');
 
-    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('完整修复过程');
-    await expect(page.getByTestId('fix-runtime-topbar-page')).toContainText('写回进度 0/3');
+    await expect(page.getByTestId('fix-runtime-action-count')).toContainText('当前发现项');
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('正在修复 0/3');
     await expect(page.getByTestId('fix-runtime-topbar-remaining')).not.toContainText('已完成');
     await expect(page.getByRole('button', { name: /写回中 · 0\/3/ })).toBeDisabled();
-    await expect(page.getByTestId('fix-runtime-paper-scanner')).toBeVisible();
-    await expect(page.locator('.fix-runtime-action-card.is-live').first()).toBeVisible();
+    await expect(page.getByTestId('fix-runtime-paper-scanner')).toHaveCount(0);
+    await expect(page.getByRole('progressbar', { name: '修复步骤进度' })).toHaveAttribute('aria-valuenow', '0');
+    await expect(page.getByRole('progressbar', { name: '修复步骤进度' })).toHaveAttribute('aria-valuemax', '3');
+    await expect(page.getByTestId('fix-runtime-current-task-card')).toBeVisible();
+  });
+
+  test('Step4Fix completed view matches the fixed review-modification layout', async ({ page }) => {
+    await bootstrapState(page, seedAppStatePatch(4));
+    await page.goto('/');
+
+    await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
+
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('修复完成 · 共 3 项');
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('已写回');
+    await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('修复进度');
+    await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('3 / 3');
+    await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('待确认');
+    await expect(page.getByRole('button', { name: /进入校对台/ })).toBeVisible();
+    await expect(page.getByText('修复记录')).toBeVisible();
+    await expect(page.getByTestId('fix-runtime-stream-report')).toContainText('已完成 3 项格式写回');
+    await page.getByTestId('fix-runtime-stream-report').getByRole('button', { name: /查看完整修复过程 · 3 项/ }).click();
+    await expect(page.getByTestId('fix-process-drawer')).toContainText('完整修复过程');
+    await page.getByTestId('fix-runtime-stream-report').getByRole('button', { name: '安全说明' }).click();
+    await expect(page.getByLabel('安全修复模式')).toHaveClass(/is-highlighted/);
+    await expect(page.getByText('安全修复模式已开启')).toBeVisible();
+    await expect(page.getByRole('button', { name: /写回中/ })).toHaveCount(0);
+  });
+
+  test('Step4Fix completed zero-finding browse mode still shows the streaming report', async ({ page }) => {
+    const state = seedAppStatePatch(4);
+    state.parseResults = {
+      ...state.parseResults!,
+      findings: [],
+      ruleDetails: [],
+      rules: { passed: 14, warnings: 0, failed: 0 },
+    };
+
+    await bootstrapState(page, state);
+    await page.goto('/');
+
+    await page.getByRole('button', { name: '跳过动画，查看结果' }).click();
+
+    await expect(page.getByTestId('fix-runtime-complete-card')).toContainText('修复进度');
+    await expect(page.getByTestId('fix-runtime-stream-report')).toContainText('未发现需要写回的格式项');
+    await expect(page.getByTestId('fix-runtime-stream-report')).toContainText('查看完整修复过程 · 0 项');
+    await expect(page.getByRole('button', { name: /写回中/ })).toHaveCount(0);
+  });
+
+  test('Step4Fix keeps visual progress sequential when server reports batched writebacks', async ({ page }) => {
+    const state = seedAppStatePatch(4);
+    state.documentIdentity = {
+      legacyDocId: 'doc_running_batch',
+      canonicalDocumentId: '11111111-1111-4111-8111-111111111111',
+    };
+    state.schoolId = 'thu';
+    state.fixJobId = 'job_running_batch';
+    state.jobStatus = 'running';
+
+    await page.route('**/api/v1/jobs/job_running_batch/fix-status', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'running',
+          completedSteps: [
+            { type: 'heading', status: 'done', summary: '标题层级已写回', duration: 1 },
+            { type: 'body_style', status: 'done', summary: '正文样式已写回', duration: 1 },
+            { type: 'reference_format', status: 'done', summary: '参考文献已写回', duration: 1 },
+          ],
+          currentStep: 'reference_format',
+          progress: 80,
+          stage: 'writing',
+          message: '服务端已批量写回，前端仍逐项展示',
+          artifacts: [
+            { id: 'art_heading', fixType: 'heading', title: '标题层级', summary: '已写回标题层级', details: [], status: 'ready', finding_id: canonicalFindingIds.first },
+            { id: 'art_body', fixType: 'body_style', title: '正文样式', summary: '已写回正文样式', details: [], status: 'ready', finding_id: canonicalFindingIds.second },
+            { id: 'art_reference', fixType: 'reference_format', title: '参考文献', summary: '已写回参考文献', details: [], status: 'ready', finding_id: canonicalFindingIds.third },
+          ],
+          findingTotal: 3,
+          autoFixableFindingTotal: 3,
+          fixedFindingTotal: 3,
+          needsReviewFindingTotal: 0,
+          notAutoFixedFindingTotal: 0,
+        }),
+      });
+    });
+
+    await bootstrapState(page, state);
+    await page.goto('/');
+
+    const stepProgress = page.getByRole('progressbar', { name: '修复步骤进度' });
+    await expect(stepProgress).toHaveAttribute('aria-valuemax', '3');
+    await expect(stepProgress).toHaveAttribute('aria-valuenow', '0');
+    await expect(page.getByTestId('fix-runtime-topbar-finding')).toContainText('正在修复 0/3');
+    await expect(page.getByRole('button', { name: /写回中 · 0\/3/ })).toBeDisabled();
   });
 
   test('Step4Fix right action card click reframes the card upward and syncs the paper page', async ({ page }) => {
@@ -250,6 +353,95 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByTestId('diff-paper-page-3')).toContainText('本文围绕论文排版中的标题层级');
   });
 
+  test('Step5 discipline banner lets users switch ambiguous STEM inference to humanities view', async ({ page }) => {
+    const state = seedAppStatePatch(5);
+    state.parseResults = JSON.parse(JSON.stringify(state.parseResults));
+    state.parseResults.disciplineHint = {
+      discipline: 'stem',
+      confidence: 0.62,
+      needsBanner: true,
+      topSignals: [{ label: '公式对象密度', detail: '2 个公式 / 6 段' }],
+    };
+    state.parseResults.findings = [
+      {
+        ...state.parseResults.findings[0],
+        finding_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        rule_id: 'FORMULA_NUMBERING',
+        ruleSource: 'discipline',
+        ruleLevel: 'discipline',
+        rule_group: '公式',
+        rule_snapshot: {
+          ...state.parseResults.findings[0].rule_snapshot,
+          rule_text: '公式连续编号',
+          rule_description: '独立公式按章节连续编号。',
+        },
+        evidence_spans: [{ page: 3, char_start: 0, char_end: 8, snippet: '公式编号 (3-3)' }],
+        evidence_snapshot: '公式编号 (3-3)',
+        suggestion: {
+          ...state.parseResults.findings[0].suggestion,
+          fix_diff: {
+            before: '公式编号 (3-3)',
+            after: '公式编号 (3-2)',
+            spans_affected: [{ page: 3, char_start: 0, char_end: 8, snippet: '公式编号 (3-3)' }],
+          },
+          explanation: '公式编号需要连续。',
+        },
+      },
+      {
+        ...state.parseResults.findings[1],
+        finding_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        rule_id: 'FIGURE_CAPTION_STYLE',
+        ruleSource: 'school',
+        ruleLevel: 'school',
+        rule_group: '图表',
+        rule_snapshot: {
+          ...state.parseResults.findings[1].rule_snapshot,
+          rule_text: '图表题注格式',
+          rule_description: '图表题注按学校模板统一。',
+        },
+        evidence_spans: [{ page: 5, char_start: 0, char_end: 8, snippet: '图表题注格式' }],
+        evidence_snapshot: '图表题注格式',
+        suggestion: {
+          ...state.parseResults.findings[1].suggestion,
+          fix_diff: {
+            before: '图表题注格式',
+            after: '图表题注格式按学校模板统一',
+            spans_affected: [{ page: 5, char_start: 0, char_end: 8, snippet: '图表题注格式' }],
+          },
+          explanation: '图表题注按学校模板统一。',
+        },
+      },
+      state.parseResults.findings[2],
+    ];
+    state.parseResults.ruleDetails = [
+      {
+        cat: '公式',
+        items: [{ ruleId: 'FORMULA_NUMBERING', ruleSource: 'discipline', ruleLevel: 'discipline', label: '公式连续编号', status: 'warn', location: { pageIndex: 2 } }],
+      },
+      {
+        cat: '图表',
+        items: [{ ruleId: 'FIGURE_CAPTION_STYLE', ruleSource: 'school', ruleLevel: 'school', label: '图表题注格式', status: 'warn', location: { pageIndex: 4 } }],
+      },
+      ...state.parseResults.ruleDetails,
+    ];
+
+    await bootstrapState(page, state);
+    await page.goto('/');
+
+    await expect(page.getByTestId('discipline-confirm-banner')).toBeVisible();
+    await expect(page.getByText('已按理工科规则校验')).toBeVisible();
+    await expect(page.getByText('公式对象密度: 2 个公式 / 6 段')).toBeVisible();
+    await expect(page.getByText('公式编号 (3-3)').first()).toBeVisible();
+    await expect(page.getByText('图表题注格式').first()).toBeVisible();
+
+    await page.getByRole('button', { name: '改为文科' }).click();
+
+    await expect(page.getByTestId('discipline-confirm-banner')).toHaveCount(0);
+    await expect(page.getByText('公式编号 (3-3)')).toHaveCount(0);
+    await expect(page.getByText('图表题注格式').first()).toBeVisible();
+    await expect(page.getByText('参考文献缺少 DOI 信息').first()).toBeVisible();
+  });
+
   test('Step4Diff review cards expose canonical finding_id and write hash focus from card clicks', async ({ page }) => {
     await bootstrapState(page, seedAppStatePatch(5));
     await page.goto('/');
@@ -271,6 +463,18 @@ test.describe('Step4 baseline behaviors', () => {
     await expect(page.getByRole('progressbar', { name: '确认进度' })).toHaveAttribute('aria-valuenow', '2');
     expect(await hashFindingId(page)).toBe(secondFindingId);
     await expect(page.locator(`[data-finding-id="${secondFindingId}"]`)).toHaveCount(1);
+  });
+
+  test('Step4Diff rule card click focuses the matching review card instead of jumping to the first item', async ({ page }) => {
+    await bootstrapState(page, seedAppStatePatch(5));
+    await page.goto('/');
+
+    await page.getByRole('button', { name: '文档对比' }).click();
+    await page.getByRole('button', { name: /缺 DOI/ }).click();
+
+    await expect(reviewCard(page, canonicalFindingIds.third)).toHaveClass(/is-focus/);
+    await expect(page.getByTestId('diff-review-panel').getByRole('progressbar', { name: '确认进度' })).toHaveAttribute('aria-valuenow', '3');
+    expect(await hashFindingId(page)).toBe(canonicalFindingIds.third);
   });
 
   test('Step4Diff canvas anchors and review cards subscribe to the same finding_id focus', async ({ page }) => {

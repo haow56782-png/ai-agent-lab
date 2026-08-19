@@ -204,10 +204,6 @@ export function useFixRuntimePlayback({
       notAutoFixed,
     };
   }, [appliedFindingCount, playableFindingCount, serverNeedsReviewFindingIds.size, totalFindingCount]);
-  const serverAppliedFindingCount = useMemo(() => {
-    return serverWrittenFindingIds.size;
-  }, [serverWrittenFindingIds]);
-
   useEffect(() => {
     if (!shouldReplayCompletedServerResult || playbackActions.length === 0 || serverWrittenFindingIds.size === 0) return;
     const replaySignature = Array.from(serverWrittenFindingIds).sort().join('|');
@@ -430,17 +426,14 @@ export function useFixRuntimePlayback({
   }, [appliedCount, playbackActions.length, progressRatio, serverCompletedReplayDone]);
 
   const visualCompleted = serverCompleted && (!shouldReplayCompletedServerResult || serverCompletedReplayDone);
-  const viewDiffEnabled = visualCompleted && totalFindingCount > 0;
+  const viewDiffEnabled = visualCompleted;
 
   const visualRuntimeStore = useMemo<FixRuntimeStore>(() => {
-    const observedFixedItems = playbackRunningAfterServerDone
-      ? appliedFindingCount
-      : Math.max(serverAppliedFindingCount, appliedFindingCount);
     const derivedFixedItems = totalFindingCount <= 0
       ? 0
       : visualCompleted
       ? totalFindingCount
-      : Math.min(Math.max(totalFindingCount - 1, 0), observedFixedItems);
+      : Math.min(Math.max(totalFindingCount - 1, 0), appliedFindingCount);
     return {
       ...runtimeStore,
       totalItems: totalFindingCount,
@@ -457,7 +450,6 @@ export function useFixRuntimePlayback({
     runtimeStore,
     totalFindingCount,
     appliedFindingCount,
-    serverAppliedFindingCount,
     visualCompleted,
     playbackRunningAfterServerDone,
     visualProgressRatio,

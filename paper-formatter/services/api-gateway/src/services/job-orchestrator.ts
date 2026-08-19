@@ -1,4 +1,3 @@
-import { v4 as uuid } from "uuid";
 import { createError, ERROR_CODES } from "../middleware/error-handler.js";
 import * as docRepo from "../repositories/documents.js";
 import * as jobRepo from "../repositories/jobs.js";
@@ -46,7 +45,7 @@ export async function startAnalyzeJob(input: AnalyzeJobCommand): Promise<QueuedJ
   const doc = await docRepo.getDocument(input.legacyDocId);
   if (!doc) throw createError(404, ERROR_CODES.NOT_FOUND, `Document ${input.legacyDocId} not found`);
 
-  const jobId = `job_${uuid().slice(0, 8)}`;
+  const jobId = `job_${crypto.randomUUID().slice(0, 8)}`;
   await jobRepo.createJob({
     jobId,
     jobType: "analyze",
@@ -61,7 +60,7 @@ export async function startAnalyzeJob(input: AnalyzeJobCommand): Promise<QueuedJ
 
 export async function startFormatJob(input: FormatJobCommand): Promise<QueuedJobResponse> {
   const doc = await resolveDocument(input.legacyDocId, input.jobId);
-  const jobId = `job_${uuid().slice(0, 8)}`;
+  const jobId = `job_${crypto.randomUUID().slice(0, 8)}`;
 
   await jobRepo.createJob({
     jobId,
@@ -89,7 +88,7 @@ export async function startFixJob(input: FixJobCommand): Promise<QueuedJobRespon
     throw createError(400, ERROR_CODES.VALIDATION_ERROR, `Unsupported fixTypes: ${invalidFixTypes.join(", ")}`);
   }
 
-  const jobId = `job_${uuid().slice(0, 8)}`;
+  const jobId = `job_${crypto.randomUUID().slice(0, 8)}`;
   const estimatedSeconds = Math.max(requestedFixTypes.length * 2, ESTIMATED_SECONDS.fix);
 
   await jobRepo.createJob({

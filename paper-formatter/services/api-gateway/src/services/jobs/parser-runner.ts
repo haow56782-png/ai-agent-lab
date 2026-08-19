@@ -2,10 +2,9 @@ import { spawnSync } from "child_process";
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "fs";
 import os from "os";
 import path from "path";
-import { v4 as uuid } from "uuid";
 
 const DOCX_PARSER_SCRIPT = process.env.DOCX_PARSER_SCRIPT ||
-  path.resolve(import.meta.dirname, "../../parser/parse.py");
+  path.resolve(process.cwd(), "src/parser/parse.py");
 const PARSER_TEMP_DIR = path.join(os.tmpdir(), "zheng-gao-parser");
 
 function ensureParserTempDir() {
@@ -15,7 +14,7 @@ function ensureParserTempDir() {
 export function runPythonParser(documentBuffer: Buffer, filename: string): any {
   ensureParserTempDir();
   const fileExtension = path.extname(filename) || ".docx";
-  const temporaryDocumentPath = path.join(PARSER_TEMP_DIR, `${uuid().slice(0, 8)}${fileExtension}`);
+  const temporaryDocumentPath = path.join(PARSER_TEMP_DIR, `${crypto.randomUUID().slice(0, 8)}${fileExtension}`);
   try {
     writeFileSync(temporaryDocumentPath, documentBuffer);
     const parserResult = spawnSync("python3", [DOCX_PARSER_SCRIPT, temporaryDocumentPath], {

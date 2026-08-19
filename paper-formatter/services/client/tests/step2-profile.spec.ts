@@ -756,10 +756,68 @@ test.describe('RulesModal two-column layout', () => {
     await page.getByRole('button', { name: /继续查看待补规则/ }).click();
     await page.getByText('空白规则大学').click();
     await expect(page.getByText(/0 条规则/)).toBeVisible();
+    await expect(page.getByRole('button', { name: '按这套规范开始解析' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '待补规则，暂不能解析' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '补充规则模板' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '补充模板' })).toBeVisible();
     await page.getByRole('button', { name: '查看完整规则' }).click();
 
     await expect(page.getByText('这篇论文将遵循的完整规则')).toBeVisible();
     await expect(page.getByText('还处在待补规则状态')).toBeVisible();
     await expect(page.getByText('当前识别到的是学校档案')).toBeVisible();
+  });
+
+  test('supplement template button opens the file picker only once per click', async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as any).__templateInputClickCount = 0;
+      const originalClick = HTMLInputElement.prototype.click;
+      HTMLInputElement.prototype.click = function clickOnceSpy() {
+        if (this.type === 'file' && this.accept.includes('.docx')) {
+          (window as any).__templateInputClickCount += 1;
+          return undefined;
+        }
+        return originalClick.call(this);
+      };
+    });
+    await bootstrapStep2WithProfile(page, EMPTY_DETAIL);
+
+    await page.getByRole('button', { name: '补充模板' }).click();
+
+    await expect.poll(() => page.evaluate(() => (window as any).__templateInputClickCount)).toBe(1);
+  });
+
+  test('uploaded template for a pending school can start parsing without backend review', async ({ page }) => {
+    await bootstrapStep2WithProfile(page, EMPTY_DETAIL);
+    await page.route('**/api/v1/profiles/import-template', async (route) => {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          profileId: 'prof_draft_test',
+          status: 'draft',
+          ruleCount: 65,
+          confidence: 0.72,
+          manualReviewRequired: true,
+          suggestedSchool: '空白规则大学',
+        }),
+      });
+    });
+
+    await page.getByRole('button', { name: /全部/ }).click();
+    await page.getByRole('button', { name: /继续查看待补规则/ }).click();
+    await page.getByText('空白规则大学').click();
+    await expect(page.getByRole('button', { name: '待补规则，暂不能解析' })).toBeDisabled();
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: '空白规则大学格式手册.docx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      buffer: Buffer.from('template'),
+    });
+
+    await expect(page.locator('.chip.leaf').getByText('无需后台审核', { exact: true })).toBeVisible();
+    await expect(page.getByText('无需等待后台审核，可以先用于当前论文解析')).toBeVisible();
+    await page.getByRole('button', { name: '使用这套临时规则开始解析' }).click();
+
+    await expect(page.getByText('系统正在替你拆开这篇论文的结构')).toBeVisible();
   });
 });
